@@ -1,0 +1,17 @@
+{
+  "@@locale": "en",
+  "appTitle": "Interior Manager",
+  "signIn": "Sign In",
+  "register": "Register",
+  "pendingApproval": "Awaiting approval",
+  "projects": "Projects",
+  "newProject": "New Project",
+  "drawings": "Drawings",
+  "reports": "Reports",
+  "payments": "Payments",
+  "notifications": "Notifications",
+  "approvals": "Approvals",
+  "submitReport": "Submit Report",
+  "todaysWork": "Today's Work",
+  "assignedSites": "Assigned Sites"
+}
