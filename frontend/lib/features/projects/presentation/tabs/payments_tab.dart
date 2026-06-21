@@ -31,7 +31,8 @@ class PaymentsTab extends ConsumerWidget {
         ),
         data: (data) {
           final summary = data['summary'] as Map<String, dynamic>;
-          final history = (data['history'] as List).cast<Map<String, dynamic>>();
+          final history =
+              (data['history'] as List).cast<Map<String, dynamic>>();
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
@@ -40,26 +41,37 @@ class PaymentsTab extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     children: [
-                      _summaryRow('Quotation',
-                          Formatters.currency(summary['quotationAmount'] as num?)),
-                      _summaryRow('Received',
-                          Formatters.currency(summary['totalReceived'] as num?),
-                          color: AppColors.success),
+                      _summaryRow(
+                        'Quotation',
+                        Formatters.currency(summary['quotationAmount'] as num?),
+                      ),
+                      _summaryRow(
+                        'Received',
+                        Formatters.currency(summary['totalReceived'] as num?),
+                        color: AppColors.success,
+                      ),
                       const Divider(),
-                      _summaryRow('Balance',
-                          Formatters.currency(summary['balanceAmount'] as num?),
-                          color: AppColors.danger, bold: true),
+                      _summaryRow(
+                        'Balance',
+                        Formatters.currency(summary['balanceAmount'] as num?),
+                        color: AppColors.danger,
+                        bold: true,
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              const Text('Payment History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text(
+                'Payment History',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (history.isEmpty)
-                const Text('No payments recorded',
-                    style: TextStyle(color: AppColors.textSecondary))
+                const Text(
+                  'No payments recorded',
+                  style: TextStyle(color: AppColors.textSecondary),
+                )
               else
                 for (final h in history)
                   Card(
@@ -72,8 +84,10 @@ class PaymentsTab extends ConsumerWidget {
                         '${h['method'] != null ? ' · ${h['method']}' : ''}',
                       ),
                       trailing: h['referenceNumber'] != null
-                          ? Text('#${h['referenceNumber']}',
-                              style: const TextStyle(fontSize: 12))
+                          ? Text(
+                              '#${h['referenceNumber']}',
+                              style: const TextStyle(fontSize: 12),
+                            )
                           : null,
                     ),
                   ),
@@ -84,18 +98,22 @@ class PaymentsTab extends ConsumerWidget {
     );
   }
 
-  Widget _summaryRow(String label, String value, {Color? color, bool bold = false}) {
+  Widget _summaryRow(String label, String value,
+      {Color? color, bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: bold ? 18 : 15)),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              fontSize: bold ? 18 : 15,
+            ),
+          ),
         ],
       ),
     );
@@ -122,11 +140,13 @@ class PaymentsTab extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Record Payment',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const Text(
+                'Record Payment',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: AppSpacing.lg),
               DropdownButtonFormField<String>(
-                value: kind,
+                initialValue: kind,
                 decoration: const InputDecoration(labelText: 'Type'),
                 items: const [
                   DropdownMenuItem(value: 'advance', child: Text('Advance')),
@@ -145,7 +165,7 @@ class PaymentsTab extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<String>(
-                value: method,
+                initialValue: method,
                 decoration: const InputDecoration(labelText: 'Method'),
                 items: const [
                   DropdownMenuItem(value: 'cash', child: Text('Cash')),
@@ -158,14 +178,17 @@ class PaymentsTab extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: reference,
-                decoration: const InputDecoration(labelText: 'Reference (optional)'),
+                decoration:
+                    const InputDecoration(labelText: 'Reference (optional)'),
               ),
               const SizedBox(height: AppSpacing.lg),
               FilledButton(
                 onPressed: () async {
                   final value = num.tryParse(amount.text) ?? 0;
                   if (value <= 0) return;
-                  await ref.read(paymentsRepositoryProvider).addHistory(projectId, {
+                  await ref
+                      .read(paymentsRepositoryProvider)
+                      .addHistory(projectId, {
                     'kind': kind,
                     'amount': value,
                     'method': method,

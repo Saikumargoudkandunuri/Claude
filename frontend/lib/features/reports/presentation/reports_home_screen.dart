@@ -36,8 +36,10 @@ class ReportsHomeScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              const Text('Select a site to submit your end-of-day report',
-                  style: TextStyle(color: AppColors.textSecondary)),
+              const Text(
+                'Select a site to submit your end-of-day report',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
               const SizedBox(height: AppSpacing.md),
               for (final p in projects)
                 Card(
@@ -45,7 +47,8 @@ class ReportsHomeScreen extends ConsumerWidget {
                   child: ListTile(
                     title: Text(p.projectName),
                     subtitle: Text(p.projectNumber),
-                    trailing: const Icon(Icons.edit_note, color: AppColors.primary),
+                    trailing:
+                        const Icon(Icons.edit_note, color: AppColors.primary),
                     onTap: () => showReportForm(context, ref, p.id, role),
                   ),
                 ),

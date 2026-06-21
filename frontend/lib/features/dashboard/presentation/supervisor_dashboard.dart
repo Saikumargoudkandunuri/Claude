@@ -71,13 +71,13 @@ class SupervisorDashboard extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const Text("Today's Work",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                 const SizedBox(height: AppSpacing.sm),
                 if (todays.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                     child: Text('No work planned for today',
-                        style: TextStyle(color: AppColors.textSecondary)),
+                        style: TextStyle(color: AppColors.textSecondary),),
                   )
                 else
                   for (final w in todays.cast<Map<String, dynamic>>())
@@ -93,7 +93,7 @@ class SupervisorDashboard extends ConsumerWidget {
                     ),
                 const SizedBox(height: AppSpacing.lg),
                 const Text('Recent Updates',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                 RecentUpdatesList(updates: (d['recentUpdates'] as List?) ?? const []),
               ],
             );

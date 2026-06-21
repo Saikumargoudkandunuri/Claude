@@ -71,7 +71,9 @@ class _ReportCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  type == 'supervisor' ? Icons.supervisor_account : Icons.engineering,
+                  type == 'supervisor'
+                      ? Icons.supervisor_account
+                      : Icons.engineering,
                   size: 18,
                   color: AppColors.primary,
                 ),
@@ -82,8 +84,11 @@ class _ReportCard extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-                Text(Formatters.date(report['reportDate']),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                Text(
+                  Formatters.date(report['reportDate']),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -110,9 +115,12 @@ class _ReportCard extends StatelessWidget {
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
           children: [
             TextSpan(
-                text: '$label: ',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+              text: '$label: ',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             TextSpan(text: value.toString()),
           ],
         ),

@@ -28,7 +28,7 @@ class ProjectsListScreen extends ConsumerWidget {
           preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm,),
             child: TextField(
               decoration: const InputDecoration(
                 hintText: 'Search projects...',
@@ -86,7 +86,7 @@ class ProjectsListScreen extends ConsumerWidget {
                                 child: Text(
                                   p.projectName,
                                   style: const TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w700),
+                                      fontSize: 16, fontWeight: FontWeight.w700,),
                                 ),
                               ),
                               StageChip(stage: p.currentStage),
@@ -110,7 +110,7 @@ class ProjectsListScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text('${p.progress}% complete',
                               style: const TextStyle(
-                                  fontSize: 12, color: AppColors.textMuted)),
+                                  fontSize: 12, color: AppColors.textMuted,),),
                         ],
                       ),
                     ),

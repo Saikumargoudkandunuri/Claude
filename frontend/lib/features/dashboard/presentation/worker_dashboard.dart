@@ -54,7 +54,7 @@ class WorkerDashboard extends ConsumerWidget {
                     color: AppColors.warning.withValues(alpha: 0.08),
                     child: ListTile(
                       leading: const Icon(Icons.assignment_late_outlined,
-                          color: AppColors.warning),
+                          color: AppColors.warning,),
                       title: const Text('End-of-day report due'),
                       subtitle: const Text('Submit before you leave the site'),
                       trailing: const Icon(Icons.chevron_right),
@@ -63,7 +63,7 @@ class WorkerDashboard extends ConsumerWidget {
                   ),
                 const SizedBox(height: AppSpacing.md),
                 const Text("Today's Work",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),),
                 const SizedBox(height: AppSpacing.sm),
                 if (todays.isEmpty)
                   const EmptyState(
@@ -76,7 +76,7 @@ class WorkerDashboard extends ConsumerWidget {
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: ListTile(
                         title: Text(w['projectName']?.toString() ?? 'Site',
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                            style: const TextStyle(fontWeight: FontWeight.w700),),
                         subtitle: Text(w['task']?.toString() ?? ''),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () =>
@@ -85,13 +85,13 @@ class WorkerDashboard extends ConsumerWidget {
                     ),
                 const SizedBox(height: AppSpacing.lg),
                 const Text('Assigned Sites',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                 const SizedBox(height: AppSpacing.sm),
                 for (final s in assigned.cast<Map<String, dynamic>>())
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.location_on_outlined,
-                        color: AppColors.primary),
+                        color: AppColors.primary,),
                     title: Text(s['projectName']?.toString() ?? ''),
                     subtitle: Text(
                       '${s['task'] ?? ''} · ${Formatters.stageLabel(s['currentStage'] as String?)}',
@@ -135,7 +135,7 @@ class _StatusMenu extends ConsumerWidget {
             const Icon(Icons.circle, size: 10, color: AppColors.success),
             const SizedBox(width: 4),
             Text(_options[current] ?? 'Status',
-                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),),
             const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
           ],
         ),

@@ -50,10 +50,12 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
     try {
       final s = await repo.assignable('supervisor');
       final d = await repo.assignable('designer');
-      if (mounted) setState(() {
-        _supervisors = s;
-        _designers = d;
-      });
+      if (mounted) {
+        setState(() {
+          _supervisors = s;
+          _designers = d;
+        });
+      }
     } catch (_) {/* ignore */}
   }
 
@@ -86,8 +88,8 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
       context.go('/admin/projects/${project.id}');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(DioClient.toApiException(e).message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DioClient.toApiException(e).message)));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -105,7 +107,8 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
             _group('Customer'),
             _tf('projectNumber', 'Project Number', required: true),
             _tf('customerName', 'Customer Name', required: true),
-            _tf('phone', 'Phone', required: true, keyboard: TextInputType.phone),
+            _tf('phone', 'Phone',
+                required: true, keyboard: TextInputType.phone),
             _tf('altPhone', 'Alternative Phone', keyboard: TextInputType.phone),
             _tf('address', 'Address'),
             _tf('siteLocation', 'Site Location'),
@@ -114,13 +117,22 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
             _tf('projectType', 'Project Type'),
             _tf('workDescription', 'Work Description', maxLines: 3),
             _group('Commercials'),
-            _tf('quotationAmount', 'Quotation Amount', keyboard: TextInputType.number),
+            _tf('quotationAmount', 'Quotation Amount',
+                keyboard: TextInputType.number),
             _group('Assignment'),
-            _dropdown('Assign Supervisor', _supervisors, _supervisorId,
-                (v) => setState(() => _supervisorId = v)),
+            _dropdown(
+              'Assign Supervisor',
+              _supervisors,
+              _supervisorId,
+              (v) => setState(() => _supervisorId = v),
+            ),
             const SizedBox(height: AppSpacing.lg),
-            _dropdown('Assign Designer', _designers, _designerId,
-                (v) => setState(() => _designerId = v)),
+            _dropdown(
+              'Assign Designer',
+              _designers,
+              _designerId,
+              (v) => setState(() => _designerId = v),
+            ),
             const SizedBox(height: AppSpacing.lg),
             _tf('remarks', 'Remarks', maxLines: 2),
             const SizedBox(height: AppSpacing.xl),
@@ -131,7 +143,10 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Save Project'),
             ),
           ],
@@ -141,13 +156,21 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
   }
 
   Widget _group(String title) => Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
-        child: Text(title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+        padding:
+            const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        ),
       );
 
-  Widget _tf(String key, String label,
-      {bool required = false, TextInputType? keyboard, int maxLines = 1}) {
+  Widget _tf(
+    String key,
+    String label, {
+    bool required = false,
+    TextInputType? keyboard,
+    int maxLines = 1,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: AppTextField(
@@ -160,17 +183,23 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
     );
   }
 
-  Widget _dropdown(String label, List<Map<String, dynamic>> options, String? value,
-      ValueChanged<String?> onChanged) {
+  Widget _dropdown(
+    String label,
+    List<Map<String, dynamic>> options,
+    String? value,
+    ValueChanged<String?> onChanged,
+  ) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       decoration: InputDecoration(labelText: label),
       items: [
         const DropdownMenuItem(value: null, child: Text('Not assigned')),
         for (final o in options)
           DropdownMenuItem(
-              value: o['id'] as String, child: Text(o['fullName'] as String? ?? '')),
+            value: o['id'] as String,
+            child: Text(o['fullName'] as String? ?? ''),
+          ),
       ],
       onChanged: onChanged,
     );

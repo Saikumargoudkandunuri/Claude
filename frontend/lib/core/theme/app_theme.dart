@@ -35,13 +35,10 @@ class AppTheme {
           fontWeight: FontWeight.w700,
         ),
       ),
-      cardTheme: CardTheme(
-        color: AppColors.surface,
+      cardTheme: CardThemeData(
         elevation: 0,
-        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -99,7 +96,8 @@ class AppTheme {
         backgroundColor: AppColors.surfaceAlt,
         side: BorderSide(color: AppColors.border),
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.border, thickness: 1),
+      dividerTheme:
+          const DividerThemeData(color: AppColors.border, thickness: 1),
     );
   }
 }

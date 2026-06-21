@@ -22,7 +22,7 @@ class NotificationsRepository {
 }
 
 final notificationsRepositoryProvider = Provider<NotificationsRepository>(
-    (ref) => NotificationsRepository(ref.watch(dioProvider)));
+    (ref) => NotificationsRepository(ref.watch(dioProvider)),);
 
 final notificationsProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {

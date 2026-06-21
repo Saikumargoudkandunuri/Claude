@@ -39,7 +39,8 @@ Future<void> showReportForm(
             children: [
               Text(
                 isSupervisor ? 'Supervisor Daily Report' : 'End-of-Day Report',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: AppSpacing.lg),
               _field('Today\'s work done', workDone),
@@ -55,7 +56,9 @@ Future<void> showReportForm(
                     : () async {
                         setState(() => submitting = true);
                         try {
-                          await ref.read(reportsRepositoryProvider).submit(projectId, {
+                          await ref
+                              .read(reportsRepositoryProvider)
+                              .submit(projectId, {
                             'type': isSupervisor ? 'supervisor' : 'worker',
                             'workDone': workDone.text,
                             'pendingWork': pending.text,
@@ -75,8 +78,9 @@ Future<void> showReportForm(
                           if (ctx.mounted) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
                               SnackBar(
-                                  content:
-                                      Text(DioClient.toApiException(e).message)),
+                                content:
+                                    Text(DioClient.toApiException(e).message),
+                              ),
                             );
                           }
                         } finally {
@@ -88,7 +92,9 @@ Future<void> showReportForm(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Submit Report'),
               ),

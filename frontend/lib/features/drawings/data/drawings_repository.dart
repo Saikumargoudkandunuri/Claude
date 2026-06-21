@@ -8,7 +8,7 @@ class DrawingsRepository {
 
   Future<List<DrawingFile>> listForProject(String projectId, {String? category}) async {
     final res = await _dio.get('/projects/$projectId/files',
-        queryParameters: {if (category != null) 'category': category});
+        queryParameters: {if (category != null) 'category': category},);
     final list = (res.data['data'] as List).cast<Map<String, dynamic>>();
     return list.map(DrawingFile.fromJson).toList();
   }

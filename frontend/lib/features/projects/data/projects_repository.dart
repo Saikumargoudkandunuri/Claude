@@ -7,13 +7,17 @@ class ProjectsRepository {
   ProjectsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<Project>> list({String? stage, String? q, bool assignedToMe = false}) async {
-    final res = await _dio.get('/projects', queryParameters: {
-      if (stage != null) 'stage': stage,
-      if (q != null && q.isNotEmpty) 'q': q,
-      if (assignedToMe) 'assigned': 'me',
-      'limit': 100,
-    });
+  Future<List<Project>> list(
+      {String? stage, String? q, bool assignedToMe = false}) async {
+    final res = await _dio.get(
+      '/projects',
+      queryParameters: {
+        if (stage != null) 'stage': stage,
+        if (q != null && q.isNotEmpty) 'q': q,
+        if (assignedToMe) 'assigned': 'me',
+        'limit': 100,
+      },
+    );
     final list = (res.data['data'] as List).cast<Map<String, dynamic>>();
     return list.map(Project.fromJson).toList();
   }
@@ -35,12 +39,16 @@ class ProjectsRepository {
 
   Future<void> delete(String id) => _dio.delete('/projects/$id');
 
-  Future<Project> setStage(String id, String stage, {String status = 'in_progress', String? note}) async {
-    final res = await _dio.put('/projects/$id/stage', data: {
-      'stage': stage,
-      'status': status,
-      if (note != null) 'note': note,
-    });
+  Future<Project> setStage(String id, String stage,
+      {String status = 'in_progress', String? note}) async {
+    final res = await _dio.put(
+      '/projects/$id/stage',
+      data: {
+        'stage': stage,
+        'status': status,
+        if (note != null) 'note': note,
+      },
+    );
     return Project.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
@@ -50,15 +58,19 @@ class ProjectsRepository {
   }
 
   Future<void> assignWorker(String id, String userId, {String? task}) async {
-    await _dio.post('/projects/$id/assignments', data: {
-      'userId': userId,
-      'role': 'worker',
-      if (task != null) 'task': task,
-    });
+    await _dio.post(
+      '/projects/$id/assignments',
+      data: {
+        'userId': userId,
+        'role': 'worker',
+        if (task != null) 'task': task,
+      },
+    );
   }
 
   Future<List<Map<String, dynamic>>> assignable(String role) async {
-    final res = await _dio.get('/users/assignable', queryParameters: {'role': role});
+    final res =
+        await _dio.get('/users/assignable', queryParameters: {'role': role});
     return (res.data['data'] as List).cast<Map<String, dynamic>>();
   }
 }
