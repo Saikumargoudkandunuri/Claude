@@ -7,16 +7,22 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/pending_approval_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/assignments/presentation/assignment_management_screen.dart';
 import '../../features/dashboard/presentation/admin_dashboard.dart';
 import '../../features/dashboard/presentation/designer_dashboard.dart';
 import '../../features/dashboard/presentation/supervisor_dashboard.dart';
 import '../../features/dashboard/presentation/worker_dashboard.dart';
 import '../../features/drawings/presentation/pdf_viewer_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/payments/presentation/payments_overview_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/projects/presentation/project_detail_screen.dart';
 import '../../features/projects/presentation/project_form_screen.dart';
 import '../../features/projects/presentation/projects_list_screen.dart';
+import '../../features/reports/presentation/all_reports_screen.dart';
 import '../../features/reports/presentation/reports_home_screen.dart';
+import '../../features/tasks/presentation/task_panel_screen.dart';
 import '../../features/users/presentation/approvals_screen.dart';
 import '../widgets/role_scaffold.dart';
 
@@ -67,6 +73,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
 
       // ===== Admin shell =====
       ShellRoute(
@@ -84,6 +92,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/approvals',
             builder: (_, __) => const ApprovalsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/assignments',
+            builder: (_, __) => const AssignmentManagementScreen(),
+          ),
+          GoRoute(
+            path: '/admin/tasks',
+            builder: (_, __) => const TaskPanelScreen(),
+          ),
+          GoRoute(
+            path: '/admin/all-reports',
+            builder: (_, __) => const AllReportsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/payments',
+            builder: (_, __) => const PaymentsOverviewScreen(),
           ),
           GoRoute(
             path: '/admin/notifications',
@@ -116,6 +140,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/supervisor/reports',
             builder: (_, __) => const ReportsHomeScreen(),
+          ),
+          GoRoute(
+            path: '/supervisor/all-reports',
+            builder: (_, __) => const AllReportsScreen(),
+          ),
+          GoRoute(
+            path: '/supervisor/assignments',
+            builder: (_, __) => const AssignmentManagementScreen(),
+          ),
+          GoRoute(
+            path: '/supervisor/tasks',
+            builder: (_, __) => const TaskPanelScreen(),
           ),
           GoRoute(
             path: '/supervisor/notifications',

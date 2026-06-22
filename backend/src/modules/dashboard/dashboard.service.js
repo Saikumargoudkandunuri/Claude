@@ -54,6 +54,26 @@ async function admin() {
       FROM payments`),
   ]);
 
+  // Stage distribution for the dashboard graph.
+  const stageRows = await query(
+    `SELECT current_stage AS stage, COUNT(*)::int AS count
+       FROM projects WHERE is_archived = false
+      GROUP BY current_stage`
+  );
+  const stageDistribution = {};
+  for (const r of stageRows.rows) stageDistribution[r.stage] = r.count;
+
+  // Project summary cards (most recent active projects).
+  const recentProjects = await query(
+    `SELECT p.id, p.project_number, p.project_name, p.customer_name, p.current_stage,
+            COALESCE(pay.quotation_amount,0) AS quotation_amount,
+            COALESCE(pay.total_received,0) AS total_received
+       FROM projects p
+       LEFT JOIN payments pay ON pay.project_id = p.id
+      WHERE p.is_archived = false
+      ORDER BY p.created_at DESC LIMIT 8`
+  );
+
   return {
     totalSites: sites.rows[0].total,
     activeSites: sites.rows[0].active,
@@ -64,6 +84,16 @@ async function admin() {
     pendingPayments: payments.rows[0].pending_count,
     amountReceived: Number(payments.rows[0].received),
     outstandingAmount: Number(payments.rows[0].outstanding),
+    stageDistribution,
+    projects: recentProjects.rows.map((r) => ({
+      id: r.id,
+      projectNumber: r.project_number,
+      projectName: r.project_name,
+      customerName: r.customer_name,
+      currentStage: r.current_stage,
+      quotationAmount: Number(r.quotation_amount),
+      totalReceived: Number(r.total_received),
+    })),
     recentUpdates: await recentUpdates(10),
   };
 }
@@ -141,7 +171,13 @@ async function designer(userId) {
 }
 
 async function worker(userId) {
-  const [assigned, todays, reportToday, recentDrawings] = await Promise.all([
+  const tomorrow = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const [assigned, todays, tomorrowRows, reportToday, recentDrawings] = await Promise.all([
     query(
       `SELECT DISTINCT p.id, p.project_name, p.site_location, p.current_stage, pa.task
          FROM project_assignments pa JOIN projects p ON p.id = pa.project_id
@@ -150,12 +186,22 @@ async function worker(userId) {
       [userId]
     ),
     query(
-      `SELECT wp.id, wp.task, p.id AS project_id, p.project_name, p.site_location
+      `SELECT wp.id, wp.task, wpw.status, wpw.started_at, wpw.completed_at,
+              p.id AS project_id, p.project_name, p.site_location
          FROM work_plan_workers wpw
          JOIN work_plans wp ON wp.id = wpw.work_plan_id
          JOIN projects p ON p.id = wp.project_id
         WHERE wpw.user_id = $1 AND wp.plan_date = $2`,
       [userId, today()]
+    ),
+    query(
+      `SELECT wp.id, wp.task, wpw.status,
+              p.id AS project_id, p.project_name, p.site_location
+         FROM work_plan_workers wpw
+         JOIN work_plans wp ON wp.id = wpw.work_plan_id
+         JOIN projects p ON p.id = wp.project_id
+        WHERE wpw.user_id = $1 AND wp.plan_date = $2`,
+      [userId, tomorrow]
     ),
     query(
       `SELECT COUNT(*)::int AS c FROM daily_reports
@@ -174,6 +220,17 @@ async function worker(userId) {
     ),
   ]);
 
+  const mapTask = (r) => ({
+    id: r.id,
+    task: r.task,
+    status: r.status,
+    startedAt: r.started_at,
+    completedAt: r.completed_at,
+    projectId: r.project_id,
+    projectName: r.project_name,
+    siteLocation: r.site_location,
+  });
+
   return {
     assignedSites: assigned.rows.map((r) => ({
       id: r.id,
@@ -182,13 +239,8 @@ async function worker(userId) {
       currentStage: r.current_stage,
       task: r.task,
     })),
-    todaysWork: todays.rows.map((r) => ({
-      id: r.id,
-      task: r.task,
-      projectId: r.project_id,
-      projectName: r.project_name,
-      siteLocation: r.site_location,
-    })),
+    todaysWork: todays.rows.map(mapTask),
+    tomorrowWork: tomorrowRows.rows.map(mapTask),
     reportDueToday: reportToday.rows[0].c === 0,
     recentDrawings: recentDrawings.rows.map((r) => ({
       id: r.id,

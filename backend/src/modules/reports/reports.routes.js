@@ -5,6 +5,7 @@ const multer = require('multer');
 const controller = require('./reports.controller');
 const schema = require('./reports.schema');
 const { validate } = require('../../middleware/validate');
+const { requireRole } = require('../../middleware/rbac');
 const config = require('../../config');
 
 const upload = multer({
@@ -14,6 +15,14 @@ const upload = multer({
 
 // Mounted at /api root (behind authenticate + requireApproved).
 const router = express.Router();
+
+// All reports across projects — admin & supervisor only.
+router.get(
+  '/reports',
+  requireRole('admin', 'supervisor'),
+  validate(schema.listAllQuery, 'query'),
+  controller.listAll
+);
 
 router.get(
   '/projects/:projectId/reports',

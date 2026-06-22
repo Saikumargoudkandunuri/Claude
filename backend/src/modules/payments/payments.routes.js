@@ -29,6 +29,18 @@ router.post(
   validate(schema.addHistory),
   controller.addHistory
 );
+router.post(
+  '/projects/:projectId/payments/clear',
+  requirePermission('payments:write'),
+  validate(schema.clear),
+  controller.clearBalance
+);
+router.put(
+  '/payments/history/:id',
+  requirePermission('payments:write'),
+  validate(schema.updateHistory),
+  controller.updateHistory
+);
 router.delete(
   '/payments/history/:id',
   requirePermission('payments:write'),

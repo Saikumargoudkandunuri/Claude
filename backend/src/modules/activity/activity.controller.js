@@ -25,4 +25,9 @@ const forProject = asyncHandler(async (req, res) => {
   ok(res, await service.forProject(req.user, req.params.projectId, { page, limit }));
 });
 
-module.exports = { list, forProject };
+const timeline = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit || '300', 10);
+  ok(res, await service.timeline(req.user, req.params.projectId, { limit }));
+});
+
+module.exports = { list, forProject, timeline };

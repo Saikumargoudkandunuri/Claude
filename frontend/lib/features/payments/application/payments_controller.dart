@@ -16,6 +16,21 @@ class PaymentsRepository {
     await _dio.post('/projects/$projectId/payments/history', data: body);
   }
 
+  Future<void> updateHistory(String historyId, Map<String, dynamic> body) async {
+    await _dio.put('/payments/history/$historyId', data: body);
+  }
+
+  Future<void> deleteHistory(String historyId) async {
+    await _dio.delete('/payments/history/$historyId');
+  }
+
+  Future<void> clearBalance(String projectId, {String? method, String? reference}) async {
+    await _dio.post('/projects/$projectId/payments/clear', data: {
+      if (method != null) 'method': method,
+      if (reference != null) 'referenceNumber': reference,
+    });
+  }
+
   Future<void> updateQuotation(String projectId, num amount) async {
     await _dio.put('/projects/$projectId/payments', data: {'quotationAmount': amount});
   }

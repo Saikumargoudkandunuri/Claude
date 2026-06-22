@@ -34,6 +34,7 @@ class StatCard extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null)
@@ -43,22 +44,28 @@ class StatCard extends StatelessWidget {
                   color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppSpacing.sm),
                 ),
-                child: Icon(icon, color: accent, size: 20),
+                child: Icon(icon, color: accent, size: 18),
               ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+            const SizedBox(height: AppSpacing.sm),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: 2),
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 color: AppColors.textSecondary,
               ),
             ),

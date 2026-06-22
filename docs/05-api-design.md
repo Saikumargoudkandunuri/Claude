@@ -113,3 +113,44 @@ List endpoints accept `?page=1&limit=20`; respond with `{ data: [...], meta: { p
 
 ## 5.13 Status codes
 `200` ok · `201` created · `204` no content · `400` bad request · `401` unauthenticated · `403` forbidden · `404` not found · `409` conflict (duplicate) · `422` validation · `429` rate limited · `500` server error.
+
+
+---
+
+## 5.14 ERP Enhancements (v1.1)
+
+### Daily Reports (enriched)
+- Report bodies now also accept: `progressPercent` (0–100), `materialsUsed`, plus existing `workDone, pendingWork, problems` (issues faced), `materialsNeeded`, `tomorrowNotes`, `siteProgress`.
+- Report responses include `progressPercent`, `materialsUsed`, `authorRole`, `projectName`, and a `media[]` array (each `{id, category, originalName, mimeType, sizeBytes, downloadUrl}`).
+- `POST /reports/:id/media` (existing) attaches photo/video/voice_note files to a report.
+
+| Method | Path | Access | Notes |
+|--------|------|--------|-------|
+| GET | `/reports` | A (all), S (own projects) | All reports across projects. `?date=&type=&projectId=&page=&limit=` |
+
+### Worker Tasks (work plans + status)
+`work_plan_workers` now tracks per-worker `status` (`assigned`→`started`→`completed`) with `started_at`/`completed_at`.
+
+| Method | Path | Access | Notes |
+|--------|------|--------|-------|
+| GET | `/workplans?date=` | A, S | Task panel for a date (S scoped to own projects). Each plan includes `workers[]` with `status`. |
+| PUT | `/workplans/:id/status` | W (own), A | `{status}` mark started/completed; completion notifies supervisor + admins |
+| GET | `/workplans/me?date=` | W, S | now includes `status, startedAt, completedAt` |
+
+### Payments (full CRUD)
+| Method | Path | Access | Notes |
+|--------|------|--------|-------|
+| PUT | `/payments/history/:id` | A | edit a payment entry (recomputes totals) |
+| POST | `/projects/:id/payments/clear` | A | record a final payment equal to the remaining balance |
+
+### Project Timeline
+| Method | Path | Access | Notes |
+|--------|------|--------|-------|
+| GET | `/projects/:id/timeline` | role-scoped | full history (creation → completion), ascending, with `date/day/time/userName/action/description` |
+
+### Notifications
+- Stage changes now notify admins, the supervisor, the designer and all assigned workers (`type: 'project.stage'`).
+
+### Dashboard
+- `GET /dashboard/admin` adds `stageDistribution` (map of stage→count) for the graph and `projects[]` summary cards (`{id, projectNumber, projectName, customerName, currentStage, quotationAmount, totalReceived}`).
+- `GET /dashboard/worker` adds `tomorrowWork[]` and includes task `status/startedAt/completedAt` in `todaysWork[]`.

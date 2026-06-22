@@ -8,5 +8,6 @@ const router = express.Router();
 
 router.get('/activity', controller.list);
 router.get('/projects/:projectId/activity', controller.forProject);
+router.get('/projects/:projectId/timeline', controller.timeline);
 
 module.exports = router;

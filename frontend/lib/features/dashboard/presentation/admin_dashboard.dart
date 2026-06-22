@@ -6,9 +6,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
+import '../../../core/widgets/responsive_grid.dart';
+import '../../../core/widgets/simple_bar_chart.dart';
+import '../../../core/widgets/stage_chip.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/dashboard_controller.dart';
+import 'widgets/app_overflow_menu.dart';
 import 'widgets/recent_updates_list.dart';
 
 class AdminDashboard extends ConsumerWidget {
@@ -27,10 +31,7 @@ class AdminDashboard extends ConsumerWidget {
             icon: const Icon(Icons.notifications_none_rounded),
             onPressed: () => context.go('/admin/notifications'),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          ),
+          const AppOverflowMenu(basePath: '/admin'),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -51,13 +52,8 @@ class AdminDashboard extends ConsumerWidget {
           data: (d) => ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: AppSpacing.md,
-                crossAxisSpacing: AppSpacing.md,
-                childAspectRatio: 0.92,
+              ResponsiveGrid(
+                minItemWidth: 150,
                 children: [
                   StatCard(
                     label: 'Total Sites',
@@ -103,6 +99,16 @@ class AdminDashboard extends ConsumerWidget {
                 outstanding: d['outstandingAmount'] as num? ?? 0,
                 pending: d['pendingPayments'] as int? ?? 0,
               ),
+              const SizedBox(height: AppSpacing.lg),
+              _StageGraph(distribution: (d['stageDistribution'] as Map?) ?? const {}),
+              const SizedBox(height: AppSpacing.xl),
+              _SectionHeader(
+                title: 'Projects',
+                actionLabel: 'View all',
+                onAction: () => context.go('/admin/projects'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _ProjectCards(projects: (d['projects'] as List?) ?? const []),
               const SizedBox(height: AppSpacing.xl),
               const Text('Recent Updates',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -112,6 +118,130 @@ class AdminDashboard extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        ),
+        if (actionLabel != null)
+          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+      ],
+    );
+  }
+}
+
+class _StageGraph extends StatelessWidget {
+  const _StageGraph({required this.distribution});
+  final Map distribution;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = distribution.entries
+        .map((e) => BarChartItem(
+              Formatters.stageLabel(e.key.toString()),
+              (e.value as num?) ?? 0,
+              color: AppColors.stageColors[e.key.toString()] ?? AppColors.primary,
+            ))
+        .toList();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Projects by Stage',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: AppSpacing.md),
+            if (items.isEmpty)
+              const Text('No project data',
+                  style: TextStyle(color: AppColors.textSecondary))
+            else
+              SimpleBarChart(items: items),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectCards extends StatelessWidget {
+  const _ProjectCards({required this.projects});
+  final List projects;
+
+  @override
+  Widget build(BuildContext context) {
+    if (projects.isEmpty) {
+      return const Text('No projects yet',
+          style: TextStyle(color: AppColors.textSecondary));
+    }
+    return Column(
+      children: [
+        for (final p in projects.cast<Map<String, dynamic>>())
+          Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              onTap: () => context.go('/admin/projects/${p['id']}'),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            p['projectName']?.toString() ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        StageChip(stage: p['currentStage']?.toString() ?? 'discussion'),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${p['projectNumber']} · ${p['customerName']}',
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Value ${Formatters.currency(p['quotationAmount'] as num?)}',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          'Received ${Formatters.currency(p['totalReceived'] as num?)}',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.success),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -181,8 +311,13 @@ class _Money extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+        ),
         const SizedBox(height: 2),
         Text(label,
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),

@@ -15,9 +15,17 @@ const addHistory = asyncHandler(async (req, res) => {
   ok(res, await service.addHistory(req.user.id, req.params.projectId, req.body), 201);
 });
 
+const updateHistory = asyncHandler(async (req, res) => {
+  ok(res, await service.updateHistory(req.user.id, req.params.id, req.body));
+});
+
+const clearBalance = asyncHandler(async (req, res) => {
+  ok(res, await service.clearBalance(req.user.id, req.params.projectId, req.body), 201);
+});
+
 const removeHistory = asyncHandler(async (req, res) => {
   await service.removeHistory(req.user.id, req.params.id);
   res.status(204).send();
 });
 
-module.exports = { get, updateSummary, addHistory, removeHistory };
+module.exports = { get, updateSummary, addHistory, updateHistory, clearBalance, removeHistory };

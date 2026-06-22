@@ -80,4 +80,22 @@ async function forProject(user, projectId, { page, limit }) {
   return rows.map(serialize);
 }
 
-module.exports = { serialize, list, forProject };
+/**
+ * Complete project timeline (creation -> completion), ascending by time.
+ * Built entirely from activity_logs which already capture project creation,
+ * file/drawing uploads, reports, payments, assignments and stage changes.
+ */
+async function timeline(user, projectId, { limit = 300 } = {}) {
+  await projects.getAccessibleProject(user, projectId);
+  const { rows } = await query(
+    `SELECT a.*, u.full_name AS user_name
+       FROM activity_logs a LEFT JOIN users u ON u.id = a.user_id
+      WHERE a.project_id = $1
+      ORDER BY a.created_at ASC
+      LIMIT ${Math.min(Number(limit) || 300, 1000)}`,
+    [projectId]
+  );
+  return rows.map(serialize);
+}
+
+module.exports = { serialize, list, forProject, timeline };

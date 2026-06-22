@@ -11,6 +11,12 @@ const list = asyncHandler(async (req, res) => {
   ok(res, await service.list(req.user, req.params.projectId, req.query));
 });
 
+// All reports across projects (admin: all, supervisor: own projects).
+const listAll = asyncHandler(async (req, res) => {
+  const { data, meta } = await service.listAll(req.user, req.query);
+  res.status(200).json({ data, meta });
+});
+
 const create = asyncHandler(async (req, res) => {
   ok(res, await service.create(req.user, req.params.projectId, req.body), 201);
 });
@@ -64,4 +70,4 @@ const addMedia = asyncHandler(async (req, res) => {
   ok(res, filesService.serialize(rows[0], base), 201);
 });
 
-module.exports = { list, create, todayForMe, addMedia };
+module.exports = { list, listAll, create, todayForMe, addMedia };

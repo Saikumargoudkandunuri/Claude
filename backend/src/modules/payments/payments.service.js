@@ -120,6 +120,72 @@ async function addHistory(adminId, projectId, body) {
   return serializeHistory(rows[0]);
 }
 
+async function updateHistory(adminId, historyId, body) {
+  const existing = await query('SELECT * FROM payment_history WHERE id = $1', [historyId]);
+  if (!existing.rows[0]) throw ApiError.notFound('Payment entry not found');
+
+  const fieldMap = {
+    kind: 'kind',
+    amount: 'amount',
+    paidOn: 'paid_on',
+    method: 'method',
+    referenceNumber: 'reference_number',
+    remarks: 'remarks',
+  };
+  const set = [];
+  const params = [];
+  for (const [key, col] of Object.entries(fieldMap)) {
+    if (key in body) {
+      params.push(body[key]);
+      set.push(`${col} = $${params.length}`);
+    }
+  }
+  if (set.length === 0) throw ApiError.badRequest('No fields to update');
+  params.push(historyId);
+
+  const { rows } = await query(
+    `UPDATE payment_history SET ${set.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+  // Trigger recomputes payments.total_received.
+  await logActivity({
+    userId: adminId,
+    projectId: rows[0].project_id,
+    action: 'payment.update',
+    entityType: 'payment_history',
+    entityId: historyId,
+    description: `Updated payment entry to ${rows[0].amount}`,
+    metadata: { fields: Object.keys(body) },
+  });
+  return serializeHistory(rows[0]);
+}
+
+/** Settle the project: record a final payment equal to the remaining balance. */
+async function clearBalance(adminId, projectId, body) {
+  await ensureSummary(projectId);
+  const summaryRes = await query('SELECT * FROM payments WHERE project_id = $1', [projectId]);
+  const summary = serializeSummary(summaryRes.rows[0]);
+  if (summary.balanceAmount <= 0) {
+    throw ApiError.badRequest('Payment is already fully cleared');
+  }
+  const entry = await addHistory(adminId, projectId, {
+    kind: 'final',
+    amount: summary.balanceAmount,
+    method: body.method || null,
+    referenceNumber: body.referenceNumber || null,
+    remarks: body.remarks || 'Balance cleared',
+  });
+  await logActivity({
+    userId: adminId,
+    projectId,
+    action: 'payment.clear',
+    entityType: 'payment',
+    entityId: projectId,
+    description: `Cleared remaining balance of ${summary.balanceAmount}`,
+  });
+  return entry;
+}
+
 async function removeHistory(adminId, historyId) {
   const { rows } = await query('SELECT * FROM payment_history WHERE id = $1', [historyId]);
   if (!rows[0]) throw ApiError.notFound('Payment entry not found');
@@ -134,4 +200,4 @@ async function removeHistory(adminId, historyId) {
   });
 }
 
-module.exports = { get, updateSummary, addHistory, removeHistory };
+module.exports = { get, updateSummary, addHistory, updateHistory, clearBalance, removeHistory };

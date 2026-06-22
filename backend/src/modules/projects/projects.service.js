@@ -344,15 +344,53 @@ async function setStage(user, projectId, { stage, status, note }) {
     if (stage === 'completed' && status === 'completed') {
       await notifyAdmins(
         {
-          type: 'work.completed',
+          type: 'project.stage',
           title: 'Project completed',
           body: `${project.project_name} marked completed`,
           projectId,
-          data: { route: `icms://project/${projectId}` },
+          data: { route: `icms://project/${projectId}`, stage },
         },
         client
       );
     }
+
+    // Notify everyone connected to the project on any stage change.
+    const stageLabel = String(stage).replace(/_/g, ' ');
+    const recipients = new Set();
+    if (project.supervisor_id) recipients.add(project.supervisor_id);
+    if (project.designer_id) recipients.add(project.designer_id);
+    const workers = await client.query(
+      `SELECT user_id FROM project_assignments
+        WHERE project_id = $1 AND role = 'worker' AND active = true`,
+      [projectId]
+    );
+    workers.rows.forEach((w) => recipients.add(w.user_id));
+    recipients.delete(user.id);
+    await notifyUsers(
+      [...recipients],
+      {
+        type: 'project.stage',
+        title: 'Project stage updated',
+        body: `${project.project_name}: now ${stageLabel}`,
+        projectId,
+        data: { route: `icms://project/${projectId}`, stage },
+      },
+      client
+    );
+    // Admins always get stage updates (completion already handled above).
+    if (!(stage === 'completed' && status === 'completed')) {
+      await notifyAdmins(
+        {
+          type: 'project.stage',
+          title: 'Project stage updated',
+          body: `${project.project_name}: now ${stageLabel}`,
+          projectId,
+          data: { route: `icms://project/${projectId}`, stage },
+        },
+        client
+      );
+    }
+
     return serializeProject({ ...project, current_stage: stage }, user.role);
   });
 }

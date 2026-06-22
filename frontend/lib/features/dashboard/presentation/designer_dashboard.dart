@@ -9,6 +9,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/dashboard_controller.dart';
+import 'widgets/app_overflow_menu.dart';
 
 class DesignerDashboard extends ConsumerWidget {
   const DesignerDashboard({super.key});
@@ -26,10 +27,7 @@ class DesignerDashboard extends ConsumerWidget {
             icon: const Icon(Icons.notifications_none_rounded),
             onPressed: () => context.go('/designer/notifications'),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          ),
+          const AppOverflowMenu(basePath: '/designer'),
         ],
       ),
       body: RefreshIndicator(

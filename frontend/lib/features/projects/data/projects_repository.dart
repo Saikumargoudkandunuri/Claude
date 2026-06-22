@@ -49,13 +49,19 @@ class ProjectsRepository {
     return (res.data['data'] as List).cast<Map<String, dynamic>>();
   }
 
-  Future<void> assignWorker(String id, String userId, {String? task}) async {
+  Future<void> assign(String id, String userId, String role, {String? task}) async {
     await _dio.post('/projects/$id/assignments', data: {
       'userId': userId,
-      'role': 'worker',
+      'role': role,
       if (task != null) 'task': task,
     });
   }
+
+  Future<void> assignWorker(String id, String userId, {String? task}) =>
+      assign(id, userId, 'worker', task: task);
+
+  Future<void> removeAssignment(String id, String assignmentId) =>
+      _dio.delete('/projects/$id/assignments/$assignmentId');
 
   Future<List<Map<String, dynamic>>> assignable(String role) async {
     final res = await _dio.get('/users/assignable', queryParameters: {'role': role});

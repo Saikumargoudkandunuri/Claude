@@ -12,4 +12,8 @@ const listQuery = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
-module.exports = { create, listQuery };
+const updateStatus = z.object({
+  status: z.enum(['assigned', 'started', 'completed']),
+});
+
+module.exports = { create, listQuery, updateStatus };

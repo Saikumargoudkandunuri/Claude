@@ -22,6 +22,30 @@ class ReportsRepository {
     final res = await _dio.get('/reports/today/me');
     return res.data['data'] as Map<String, dynamic>;
   }
+
+  /// All reports across projects (admin: all, supervisor: own projects).
+  Future<List<Map<String, dynamic>>> listAll({String? date, String? type}) async {
+    final res = await _dio.get('/reports', queryParameters: {
+      if (date != null) 'date': date,
+      if (type != null) 'type': type,
+      'limit': 100,
+    });
+    return (res.data['data'] as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Attach a media file (photo/video/voice_note/file) to a report.
+  Future<void> addMedia({
+    required String reportId,
+    required String category,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'category': category,
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    await _dio.post('/reports/$reportId/media', data: form);
+  }
 }
 
 final reportsRepositoryProvider =
@@ -30,4 +54,10 @@ final reportsRepositoryProvider =
 final projectReportsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, projectId) async {
   return ref.watch(reportsRepositoryProvider).listForProject(projectId);
+});
+
+/// All reports across projects (admin: everything, supervisor: own projects).
+final allReportsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(reportsRepositoryProvider).listAll();
 });

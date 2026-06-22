@@ -8,6 +8,7 @@ import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/dashboard_controller.dart';
+import 'widgets/app_overflow_menu.dart';
 import 'widgets/recent_updates_list.dart';
 
 class SupervisorDashboard extends ConsumerWidget {
@@ -26,10 +27,7 @@ class SupervisorDashboard extends ConsumerWidget {
             icon: const Icon(Icons.notifications_none_rounded),
             onPressed: () => context.go('/supervisor/notifications'),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          ),
+          const AppOverflowMenu(basePath: '/supervisor'),
         ],
       ),
       body: RefreshIndicator(

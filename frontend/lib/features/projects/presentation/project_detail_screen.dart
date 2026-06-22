@@ -14,6 +14,7 @@ import '../domain/project.dart';
 import 'tabs/details_tab.dart';
 import 'tabs/drawings_tab.dart';
 import 'tabs/payments_tab.dart';
+import 'tabs/timeline_tab.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -40,12 +41,14 @@ class ProjectDetailScreen extends ConsumerWidget {
           const Tab(text: 'Drawings'),
           const Tab(text: 'Reports'),
           if (isAdmin) const Tab(text: 'Payments'),
+          const Tab(text: 'Timeline'),
         ];
         final views = <Widget>[
           DetailsTab(project: project),
           DrawingsTab(projectId: project.id),
           ReportsTab(projectId: project.id),
           if (isAdmin) PaymentsTab(projectId: project.id),
+          TimelineTab(projectId: project.id),
         ];
 
         return DefaultTabController(
