@@ -35,7 +35,8 @@ class ApprovalsScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: users.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) => _ApprovalCard(user: users[i]),
             );
           },
@@ -78,7 +79,9 @@ class _ApprovalCardState extends ConsumerState<_ApprovalCard> {
   Future<void> _reject() async {
     setState(() => _busy = true);
     try {
-      await ref.read(usersRepositoryProvider).reject(widget.user['id'] as String);
+      await ref
+          .read(usersRepositoryProvider)
+          .reject(widget.user['id'] as String);
       ref.invalidate(pendingUsersProvider);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -94,14 +97,20 @@ class _ApprovalCardState extends ConsumerState<_ApprovalCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(u['fullName']?.toString() ?? '',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              u['fullName']?.toString() ?? '',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 2),
-            Text('${u['email']} · ${u['phone']}',
-                style: const TextStyle(color: AppColors.textSecondary)),
+            Text(
+              '${u['email']} · ${u['phone']}',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
             const SizedBox(height: AppSpacing.md),
-            const Text('Assign role',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const Text(
+              'Assign role',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: AppSpacing.sm,
@@ -136,7 +145,10 @@ class _ApprovalCardState extends ConsumerState<_ApprovalCard> {
                             height: 18,
                             width: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text('Approve'),
                   ),
                 ),

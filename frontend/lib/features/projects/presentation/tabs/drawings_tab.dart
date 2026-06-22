@@ -129,8 +129,9 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
         content: Text('Remove ${file.originalName}? This cannot be undone.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),
@@ -154,30 +155,39 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
           Row(
             children: [
               Expanded(
-                child: Text(widget.title,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700)),
+                child: Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               if (widget.canUpload)
                 _uploading
                     ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : TextButton.icon(
                         onPressed: _pickAndUpload,
                         icon: Icon(
-                            widget.files.isEmpty ? Icons.upload : Icons.autorenew,
-                            size: 18),
-                        label: Text(widget.files.isEmpty ? 'Upload' : 'Replace'),
+                          widget.files.isEmpty ? Icons.upload : Icons.autorenew,
+                          size: 18,
+                        ),
+                        label:
+                            Text(widget.files.isEmpty ? 'Upload' : 'Replace'),
                       ),
             ],
           ),
           if (widget.files.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Text('No file uploaded',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+              child: Text(
+                'No file uploaded',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
             )
           else
             for (final file in widget.files)
@@ -192,7 +202,8 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
                             : Icons.insert_drive_file_outlined,
                     color: AppColors.primary,
                   ),
-                  title: Text(file.originalName, overflow: TextOverflow.ellipsis),
+                  title:
+                      Text(file.originalName, overflow: TextOverflow.ellipsis),
                   subtitle: Text(file.caption ?? widget.title),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -201,15 +212,20 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
                         IconButton(
                           icon: const Icon(Icons.open_in_full),
                           tooltip: 'Open',
-                          onPressed: () => context.push('/viewer', extra: {
-                            'url': file.downloadUrl,
-                            'name': file.originalName,
-                          }),
+                          onPressed: () => context.push(
+                            '/viewer',
+                            extra: {
+                              'url': file.downloadUrl,
+                              'name': file.originalName,
+                            },
+                          ),
                         ),
                       if (widget.canUpload)
                         IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: AppColors.danger),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: AppColors.danger,
+                          ),
                           onPressed: () => _delete(file),
                         ),
                     ],

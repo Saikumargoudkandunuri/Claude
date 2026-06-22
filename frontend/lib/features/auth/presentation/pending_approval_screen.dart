@@ -50,7 +50,7 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.hourglass_top_rounded,
-                      color: AppColors.warning, size: 44),
+                      color: AppColors.warning, size: 44,),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const Text(

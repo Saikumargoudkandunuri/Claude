@@ -83,12 +83,16 @@ class PaymentsTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              const Text('Payment History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text(
+                'Payment History',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (history.isEmpty)
-                const Text('No payments recorded',
-                    style: TextStyle(color: AppColors.textSecondary))
+                const Text(
+                  'No payments recorded',
+                  style: TextStyle(color: AppColors.textSecondary),
+                )
               else
                 for (final h in history)
                   Card(
@@ -124,18 +128,22 @@ class PaymentsTab extends ConsumerWidget {
     );
   }
 
-  Widget _summaryRow(String label, String value, {Color? color, bool bold = false}) {
+  Widget _summaryRow(String label, String value,
+      {Color? color, bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: bold ? 18 : 15)),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              fontSize: bold ? 18 : 15,
+            ),
+          ),
         ],
       ),
     );

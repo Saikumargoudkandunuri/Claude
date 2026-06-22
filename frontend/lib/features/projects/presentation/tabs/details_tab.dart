@@ -46,7 +46,8 @@ class DetailsTab extends StatelessWidget {
 
   Widget _contacts(ProjectContacts c) {
     return _section('Contacts', [
-      if (c.adminName != null) _row('Admin', '${c.adminName} · ${c.adminPhone ?? ''}'),
+      if (c.adminName != null)
+        _row('Admin', '${c.adminName} · ${c.adminPhone ?? ''}'),
       if (c.supervisorName != null)
         _row('Supervisor', '${c.supervisorName} · ${c.supervisorPhone ?? ''}'),
     ]);
@@ -58,11 +59,14 @@ class DetailsTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           Card(
             child: Padding(
@@ -86,12 +90,16 @@ class DetailsTab extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: const TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

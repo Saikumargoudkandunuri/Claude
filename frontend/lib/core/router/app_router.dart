@@ -235,22 +235,22 @@ const _adminTabs = [
       label: 'Home',
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard,
-      route: '/admin'),
+      route: '/admin',),
   RoleDestination(
       label: 'Projects',
       icon: Icons.home_work_outlined,
       selectedIcon: Icons.home_work,
-      route: '/admin/projects'),
+      route: '/admin/projects',),
   RoleDestination(
       label: 'Approvals',
       icon: Icons.how_to_reg_outlined,
       selectedIcon: Icons.how_to_reg,
-      route: '/admin/approvals'),
+      route: '/admin/approvals',),
   RoleDestination(
       label: 'Alerts',
       icon: Icons.notifications_none,
       selectedIcon: Icons.notifications,
-      route: '/admin/notifications'),
+      route: '/admin/notifications',),
 ];
 
 const _supervisorTabs = [
@@ -258,22 +258,22 @@ const _supervisorTabs = [
       label: 'Home',
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard,
-      route: '/supervisor'),
+      route: '/supervisor',),
   RoleDestination(
       label: 'Projects',
       icon: Icons.home_work_outlined,
       selectedIcon: Icons.home_work,
-      route: '/supervisor/projects'),
+      route: '/supervisor/projects',),
   RoleDestination(
       label: 'Reports',
       icon: Icons.assignment_outlined,
       selectedIcon: Icons.assignment,
-      route: '/supervisor/reports'),
+      route: '/supervisor/reports',),
   RoleDestination(
       label: 'Alerts',
       icon: Icons.notifications_none,
       selectedIcon: Icons.notifications,
-      route: '/supervisor/notifications'),
+      route: '/supervisor/notifications',),
 ];
 
 const _designerTabs = [
@@ -281,17 +281,17 @@ const _designerTabs = [
       label: 'Home',
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard,
-      route: '/designer'),
+      route: '/designer',),
   RoleDestination(
       label: 'Projects',
       icon: Icons.home_work_outlined,
       selectedIcon: Icons.home_work,
-      route: '/designer/projects'),
+      route: '/designer/projects',),
   RoleDestination(
       label: 'Alerts',
       icon: Icons.notifications_none,
       selectedIcon: Icons.notifications,
-      route: '/designer/notifications'),
+      route: '/designer/notifications',),
 ];
 
 const _workerTabs = [
@@ -299,15 +299,15 @@ const _workerTabs = [
       label: 'Home',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
-      route: '/worker'),
+      route: '/worker',),
   RoleDestination(
       label: 'Reports',
       icon: Icons.assignment_outlined,
       selectedIcon: Icons.assignment,
-      route: '/worker/reports'),
+      route: '/worker/reports',),
   RoleDestination(
       label: 'Alerts',
       icon: Icons.notifications_none,
       selectedIcon: Icons.notifications,
-      route: '/worker/notifications'),
+      route: '/worker/notifications',),
 ];

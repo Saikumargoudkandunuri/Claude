@@ -45,7 +45,7 @@ class DesignerDashboard extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 const Text('Sites Needing Design',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                 const SizedBox(height: AppSpacing.sm),
                 if (needing.isEmpty)
                   const EmptyState(
@@ -67,17 +67,17 @@ class DesignerDashboard extends ConsumerWidget {
                     ),
                 const SizedBox(height: AppSpacing.xl),
                 const Text('My Recent Uploads',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                 const SizedBox(height: AppSpacing.sm),
                 if (uploads.isEmpty)
                   const Text('No uploads yet',
-                      style: TextStyle(color: AppColors.textSecondary))
+                      style: TextStyle(color: AppColors.textSecondary),)
                 else
                   for (final f in uploads.cast<Map<String, dynamic>>())
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.insert_drive_file_outlined,
-                          color: AppColors.primary),
+                          color: AppColors.primary,),
                       title: Text(f['originalName']?.toString() ?? ''),
                       subtitle: Text(
                         '${Formatters.stageLabel(f['category'] as String?)} · ${f['projectName']}',

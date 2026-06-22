@@ -65,14 +65,19 @@ class ProjectDetailScreen extends ConsumerWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                            AppSpacing.lg,
+                            0,
+                            AppSpacing.lg,
+                            AppSpacing.sm,
+                          ),
                           child: Row(
                             children: [
                               Expanded(
                                 child: Text(
                                   '${project.projectNumber} · ${project.customerName}',
                                   style: const TextStyle(
-                                      color: AppColors.textSecondary),
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                               StageChip(stage: project.currentStage),
@@ -108,8 +113,9 @@ class _StageFab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controllable =
-        kProjectStages.where((s) => Permissions.canControlStage(role, s)).toList();
+    final controllable = kProjectStages
+        .where((s) => Permissions.canControlStage(role, s))
+        .toList();
     if (controllable.isEmpty) return const SizedBox.shrink();
 
     return FloatingActionButton.extended(
@@ -126,8 +132,10 @@ class _StageFab extends ConsumerWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Text('Set current stage',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  child: Text(
+                    'Set current stage',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                 ),
                 for (final s in controllable)
                   ListTile(

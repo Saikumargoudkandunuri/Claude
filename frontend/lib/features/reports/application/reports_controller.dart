@@ -7,13 +7,17 @@ class ReportsRepository {
   ReportsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<Map<String, dynamic>>> listForProject(String projectId, {String? date}) async {
-    final res = await _dio.get('/projects/$projectId/reports',
-        queryParameters: {if (date != null) 'date': date});
+  Future<List<Map<String, dynamic>>> listForProject(String projectId,
+      {String? date}) async {
+    final res = await _dio.get(
+      '/projects/$projectId/reports',
+      queryParameters: {if (date != null) 'date': date},
+    );
     return (res.data['data'] as List).cast<Map<String, dynamic>>();
   }
 
-  Future<Map<String, dynamic>> submit(String projectId, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> submit(
+      String projectId, Map<String, dynamic> body) async {
     final res = await _dio.post('/projects/$projectId/reports', data: body);
     return res.data['data'] as Map<String, dynamic>;
   }
@@ -48,8 +52,8 @@ class ReportsRepository {
   }
 }
 
-final reportsRepositoryProvider =
-    Provider<ReportsRepository>((ref) => ReportsRepository(ref.watch(dioProvider)));
+final reportsRepositoryProvider = Provider<ReportsRepository>(
+    (ref) => ReportsRepository(ref.watch(dioProvider)));
 
 final projectReportsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, projectId) async {

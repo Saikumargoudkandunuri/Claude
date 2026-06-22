@@ -123,7 +123,7 @@ class AdminDashboard extends ConsumerWidget {
               _ProjectCards(projects: (d['projects'] as List?) ?? const []),
               const SizedBox(height: AppSpacing.xl),
               const Text('Recent Updates',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
               const SizedBox(height: AppSpacing.sm),
               RecentUpdatesList(updates: (d['recentUpdates'] as List?) ?? const []),
             ],
@@ -278,7 +278,7 @@ class _PaymentsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Payments',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -332,7 +332,7 @@ class _Money extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),),
       ],
     );
   }
