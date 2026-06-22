@@ -23,6 +23,10 @@ const paymentsRoutes = require('./modules/payments/payments.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
 const activityRoutes = require('./modules/activity/activity.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+const checklistsRoutes = require('./modules/checklists/checklists.routes');
+const expensesRoutes = require('./modules/expenses/expenses.routes');
+const chatRoutes = require('./modules/chat/chat.routes');
+const clientRoutes = require('./modules/client/client.routes');
 
 function createApp() {
   const app = express();
@@ -46,7 +50,14 @@ function createApp() {
 
   // Health checks (public, outside API prefix)
   app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
-  app.get('/health/db', async (_req, res) => {
+  app.get('/health/db', (req, res, next) => {
+    // FIX-09: Protect /health/db with internal secret.
+    const secret = req.headers['x-internal-token'];
+    if (config.isProd && secret !== process.env.INTERNAL_HEALTH_SECRET) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND' } });
+    }
+    next();
+  }, async (_req, res) => {
     try {
       await pool.query('SELECT 1');
       res.json({ status: 'ok', db: 'up' });
@@ -75,8 +86,14 @@ function createApp() {
   api.use('/', workplansRoutes);
   api.use('/', paymentsRoutes);
   api.use('/', activityRoutes);
+  api.use('/', checklistsRoutes);
+  api.use('/', expensesRoutes);
+  api.use('/', chatRoutes);
 
   app.use(config.apiPrefix, api);
+
+  // Public client portal (no auth) — mounted outside API prefix for clean URLs.
+  app.use(config.apiPrefix, clientRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

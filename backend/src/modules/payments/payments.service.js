@@ -84,6 +84,13 @@ async function updateSummary(adminId, projectId, { quotationAmount }) {
 
 async function addHistory(adminId, projectId, body) {
   const project = await ensureSummary(projectId);
+
+  // FIX-06: Require quotation amount to be set before recording payments.
+  const payCheck = await query('SELECT quotation_amount FROM payments WHERE project_id = $1', [projectId]);
+  if (!payCheck.rows[0] || Number(payCheck.rows[0].quotation_amount) === 0) {
+    throw ApiError.validation('Set the quotation amount for this project before recording payments.');
+  }
+
   const paidOn = body.paidOn || new Date().toISOString().slice(0, 10);
   const { rows } = await query(
     `INSERT INTO payment_history

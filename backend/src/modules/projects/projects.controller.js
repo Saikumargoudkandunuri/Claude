@@ -25,6 +25,11 @@ const remove = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
+const unarchive = asyncHandler(async (req, res) => {
+  await service.unarchive(req.user.id, req.params.id);
+  res.status(204).send();
+});
+
 const getStages = asyncHandler(async (req, res) => {
   ok(res, await service.getStages(req.user, req.params.id));
 });
@@ -52,6 +57,7 @@ module.exports = {
   create,
   update,
   remove,
+  unarchive,
   getStages,
   setStage,
   listAssignments,

@@ -45,7 +45,7 @@ function assertCanUpload(role, category) {
       throw ApiError.forbidden('Only Admin or Designer can upload drawings, 3D or quotations');
     }
   } else if (MEDIA_CATEGORIES.has(category)) {
-    if (!['admin', 'supervisor', 'worker'].includes(role)) {
+    if (!['admin', 'supervisor', 'worker', 'designer'].includes(role)) {
       throw ApiError.forbidden('Your role cannot upload media');
     }
   } else {
@@ -92,7 +92,11 @@ async function upload(user, projectId, { category, caption, file }, fileBaseUrl)
     let removedKey = null;
 
     if (isReplacement) {
-      // Find and delete the existing file of this category (latest-only rule).
+      // Lock existing row to prevent concurrent duplicate uploads (FIX-02).
+      await client.query(
+        `SELECT id FROM files WHERE project_id = $1 AND category = $2 FOR UPDATE`,
+        [projectId, category]
+      );
       const existing = await client.query(
         `SELECT id, storage_key FROM files WHERE project_id = $1 AND category = $2`,
         [projectId, category]

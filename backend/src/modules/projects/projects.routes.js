@@ -15,6 +15,8 @@ router.post('/', requireRole('admin'), validate(schema.create), controller.creat
 router.get('/:id', controller.getOne);
 router.put('/:id', requireRole('admin'), validate(schema.update), controller.update);
 router.delete('/:id', requireRole('admin'), controller.remove);
+router.post('/:id/archive', requireRole('admin'), controller.remove);
+router.post('/:id/unarchive', requireRole('admin'), controller.unarchive);
 
 // Stages
 router.get('/:id/stages', controller.getStages);

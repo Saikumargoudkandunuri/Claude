@@ -98,10 +98,17 @@ async function contactsForWorker(project) {
 }
 
 async function list(user, { stage, q, assigned, page, limit }) {
-  const where = [];
+  const where = ['is_archived = false'];
   const params = [];
 
-  if (user.role === 'worker' || assigned === 'me') {
+  // FIX-07: Workers ALWAYS scoped to assigned projects regardless of query params.
+  if (user.role === 'worker') {
+    params.push(user.id);
+    where.push(
+      `EXISTS (SELECT 1 FROM project_assignments pa
+                WHERE pa.project_id = projects.id AND pa.user_id = $${params.length} AND pa.active = true)`
+    );
+  } else if (assigned === 'me') {
     params.push(user.id);
     where.push(
       `EXISTS (SELECT 1 FROM project_assignments pa
@@ -296,13 +303,34 @@ async function update(adminId, projectId, body) {
 async function remove(adminId, projectId) {
   const { rows } = await query('SELECT * FROM projects WHERE id = $1', [projectId]);
   if (!rows[0]) throw ApiError.notFound('Project not found');
-  await query('DELETE FROM projects WHERE id = $1', [projectId]);
+  // FIX-10: Archive instead of hard delete to preserve all data.
+  await query(
+    'UPDATE projects SET is_archived = true, archived_at = now() WHERE id = $1',
+    [projectId]
+  );
   await logActivity({
     userId: adminId,
-    action: 'project.delete',
+    projectId,
+    action: 'project.archive',
     entityType: 'project',
     entityId: projectId,
-    description: `Deleted project ${rows[0].project_number}`,
+    description: `Archived project ${rows[0].project_number}`,
+  });
+}
+
+/** Unarchive a previously archived project (admin only). */
+async function unarchive(adminId, projectId) {
+  await query(
+    'UPDATE projects SET is_archived = false, archived_at = NULL WHERE id = $1',
+    [projectId]
+  );
+  await logActivity({
+    userId: adminId,
+    projectId,
+    action: 'project.unarchive',
+    entityType: 'project',
+    entityId: projectId,
+    description: 'Unarchived project',
   });
 }
 
@@ -321,6 +349,15 @@ async function setStage(user, projectId, { stage, status, note }) {
   const project = await getAccessibleProject(user, projectId);
   if (!canControlStage(user.role, stage)) {
     throw ApiError.forbidden('Your role cannot control this stage');
+  }
+
+  // FIX-03: Enforce sequential stage transitions (non-admins must advance one step at a time).
+  const currentIndex = STAGES.indexOf(project.current_stage);
+  const newIndex = STAGES.indexOf(stage);
+  if (user.role !== 'admin' && newIndex !== currentIndex + 1 && newIndex !== currentIndex) {
+    throw ApiError.validation(
+      `Cannot move from '${project.current_stage}' to '${stage}'. Stages must advance one at a time.`
+    );
   }
 
   return withTransaction(async (client) => {

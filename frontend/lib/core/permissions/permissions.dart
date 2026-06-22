@@ -27,6 +27,7 @@ class Permissions {
       'projects:read-all',
       'stages:design',
       'drawings:upload', 'drawings:delete',
+      'media:upload',
       'activity:read-project',
     ],
     'worker': [
@@ -55,5 +56,5 @@ class Permissions {
       role == 'admin' || role == 'designer';
 
   static bool canUploadMedia(String? role) =>
-      role == 'admin' || role == 'supervisor' || role == 'worker';
+      role == 'admin' || role == 'supervisor' || role == 'worker' || role == 'designer';
 }

@@ -101,8 +101,19 @@ async function refresh({ refreshToken }) {
     [tokenHash]
   );
   const record = rows[0];
-  if (!record || record.revoked || new Date(record.expires_at) < new Date()) {
+
+  // FIX-12: Token reuse detection — if the token is not found or already revoked,
+  // it may be a stolen/reused token. Revoke ALL tokens for safety.
+  if (!record) {
     throw ApiError.unauthorized('Invalid or expired refresh token');
+  }
+  if (record.revoked) {
+    // Reuse detected — revoke all tokens for this user (security measure).
+    await query('UPDATE refresh_tokens SET revoked = true WHERE user_id = $1', [record.user_id]);
+    throw ApiError.unauthorized('Session invalidated for security. Please log in again.');
+  }
+  if (new Date(record.expires_at) < new Date()) {
+    throw ApiError.unauthorized('Refresh token expired');
   }
 
   // Rotate: revoke the old token and issue a new pair.

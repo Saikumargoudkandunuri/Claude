@@ -29,6 +29,7 @@ const ROLE_PERMISSIONS = {
     'projects:read-all',
     'stages:design',
     'drawings:upload', 'drawings:delete',
+    'media:upload',
     'activity:read-project',
   ],
   worker: [
