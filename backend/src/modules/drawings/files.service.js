@@ -9,14 +9,18 @@ const projects = require('../projects/projects.service');
 
 // Categories that keep only the latest file per project (no version history).
 const SINGLE_INSTANCE = new Set([
-  'working_drawing', 'measurement_drawing', 'site_drawing', 'pdf_drawing',
-  '3d_design', 'quotation',
+  '2d_drawing', 'working_drawing', '3d_design', 'site_measurement',
+  // legacy categories kept for backward compatibility
+  'measurement_drawing', 'site_drawing', 'pdf_drawing',
+  'quotation',
 ]);
 
 const DRAWING_CATEGORIES = new Set([
-  'working_drawing', 'measurement_drawing', 'site_drawing', 'pdf_drawing', '3d_design', 'quotation',
+  '2d_drawing', 'working_drawing', '3d_design', 'site_measurement', 'quotation',
+  // legacy
+  'measurement_drawing', 'site_drawing', 'pdf_drawing',
 ]);
-const MEDIA_CATEGORIES = new Set(['photo', 'video', 'voice_note']);
+const MEDIA_CATEGORIES = new Set(['photo', 'video', 'voice_note', 'document']);
 
 function serialize(row, fileBaseUrl) {
   return {

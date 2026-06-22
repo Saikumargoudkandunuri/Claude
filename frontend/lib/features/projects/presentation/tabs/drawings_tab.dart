@@ -23,6 +23,7 @@ class DrawingsTab extends ConsumerWidget {
     final async = ref.watch(projectFilesProvider(projectId));
     final role = ref.watch(authControllerProvider).user?.role;
     final canUpload = Permissions.canUploadDrawings(role);
+    final isWorker = role == 'worker';
 
     return async.when(
       loading: () => const LoadingView(),
@@ -40,6 +41,24 @@ class DrawingsTab extends ConsumerWidget {
                 category: entry.key,
                 title: entry.value,
                 files: files.where((f) => f.category == entry.key).toList(),
+                canUpload: canUpload,
+              ),
+            // Site Measurements section
+            _CategorySection(
+              projectId: projectId,
+              category: kMeasurementCategory.key,
+              title: kMeasurementCategory.value,
+              files: files.where((f) => f.category == kMeasurementCategory.key).toList(),
+              canUpload: canUpload,
+            ),
+            // Quotation is visible to admin/supervisor/designer, hidden from workers.
+            if (!isWorker)
+              _CategorySection(
+                projectId: projectId,
+                category: kQuotationCategory,
+                title: 'Quotation',
+                files:
+                    files.where((f) => f.category == kQuotationCategory).toList(),
                 canUpload: canUpload,
               ),
             const SizedBox(height: AppSpacing.xl),

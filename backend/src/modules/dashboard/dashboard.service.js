@@ -63,6 +63,15 @@ async function admin() {
   const stageDistribution = {};
   for (const r of stageRows.rows) stageDistribution[r.stage] = r.count;
 
+  // Active workers (currently at a site) + count of assignments planned today.
+  const activeWorkersRes = await query(
+    `SELECT COUNT(*)::int AS c FROM users WHERE role = 'worker' AND worker_status = 'at_site'`
+  );
+  const todaysAssignmentsRes = await query(
+    `SELECT COUNT(*)::int AS c FROM work_plans WHERE plan_date = $1`,
+    [today()]
+  );
+
   // Project summary cards (most recent active projects).
   const recentProjects = await query(
     `SELECT p.id, p.project_number, p.project_name, p.customer_name, p.current_stage,
@@ -79,6 +88,8 @@ async function admin() {
     activeSites: sites.rows[0].active,
     completedSites: sites.rows[0].completed,
     workersToday: workersToday.rows[0].c,
+    activeWorkers: activeWorkersRes.rows[0].c,
+    todaysAssignments: todaysAssignmentsRes.rows[0].c,
     pendingReports: pendingReports.rows[0].c,
     pendingApprovals: pendingApprovals.rows[0].c,
     pendingPayments: payments.rows[0].pending_count,
@@ -99,7 +110,7 @@ async function admin() {
 }
 
 async function supervisor(userId) {
-  const [mySites, todaysWork, pendingReports] = await Promise.all([
+  const [mySites, todaysWork, pendingReports, workersRows] = await Promise.all([
     query(
       `SELECT COUNT(*)::int AS c FROM projects WHERE supervisor_id = $1 AND is_archived = false`,
       [userId]
@@ -116,6 +127,17 @@ async function supervisor(userId) {
         WHERE author_id = $1 AND type = 'supervisor' AND report_date = $2`,
       [userId, today()]
     ),
+    // Workers assigned to this supervisor's projects.
+    query(
+      `SELECT DISTINCT u.id AS user_id, u.full_name, u.worker_status,
+              p.project_name, p.site_location, pa.task
+         FROM project_assignments pa
+         JOIN projects p ON p.id = pa.project_id
+         JOIN users u ON u.id = pa.user_id
+        WHERE p.supervisor_id = $1 AND pa.role = 'worker' AND pa.active = true
+        ORDER BY u.full_name`,
+      [userId]
+    ),
   ]);
 
   return {
@@ -129,6 +151,14 @@ async function supervisor(userId) {
       siteLocation: r.site_location,
     })),
     reportSubmittedToday: pendingReports.rows[0].c > 0,
+    workers: workersRows.rows.map((r) => ({
+      userId: r.user_id,
+      fullName: r.full_name,
+      status: r.worker_status,
+      projectName: r.project_name,
+      siteLocation: r.site_location,
+      task: r.task,
+    })),
     recentUpdates: await recentUpdates(
       10,
       `WHERE a.project_id IN (SELECT id FROM projects WHERE supervisor_id = $1)`,
@@ -231,6 +261,31 @@ async function worker(userId) {
     siteLocation: r.site_location,
   });
 
+  // Supervisor + admin contacts the worker is allowed to see.
+  const contactsRes = await query(
+    `SELECT DISTINCT u.full_name, u.phone, u.role
+       FROM users u
+      WHERE (u.role = 'admin' AND u.status = 'approved')
+         OR u.id IN (
+              SELECT p.supervisor_id FROM projects p
+               JOIN project_assignments pa ON pa.project_id = p.id
+              WHERE pa.user_id = $1 AND pa.role = 'worker' AND pa.active = true
+                AND p.supervisor_id IS NOT NULL
+            )
+      ORDER BY u.role`,
+    [userId]
+  );
+
+  // Recent work history for this worker (their own activity).
+  const historyRes = await query(
+    `SELECT a.action, a.description, a.created_at, p.project_name
+       FROM activity_logs a
+       LEFT JOIN projects p ON p.id = a.project_id
+      WHERE a.user_id = $1
+      ORDER BY a.created_at DESC LIMIT 15`,
+    [userId]
+  );
+
   return {
     assignedSites: assigned.rows.map((r) => ({
       id: r.id,
@@ -242,6 +297,17 @@ async function worker(userId) {
     todaysWork: todays.rows.map(mapTask),
     tomorrowWork: tomorrowRows.rows.map(mapTask),
     reportDueToday: reportToday.rows[0].c === 0,
+    contacts: contactsRes.rows.map((r) => ({
+      name: r.full_name,
+      phone: r.phone,
+      role: r.role,
+    })),
+    recentWork: historyRes.rows.map((r) => ({
+      action: r.action,
+      description: r.description,
+      projectName: r.project_name,
+      createdAt: r.created_at,
+    })),
     recentDrawings: recentDrawings.rows.map((r) => ({
       id: r.id,
       category: r.category,

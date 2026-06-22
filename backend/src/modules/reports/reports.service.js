@@ -157,15 +157,6 @@ async function create(user, projectId, body) {
         (project_id, author_id, type, report_date, work_done, pending_work, problems,
          materials_needed, materials_used, tomorrow_notes, progress_percent, site_progress)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-       ON CONFLICT (project_id, author_id, report_date, type)
-       DO UPDATE SET work_done = EXCLUDED.work_done,
-                     pending_work = EXCLUDED.pending_work,
-                     problems = EXCLUDED.problems,
-                     materials_needed = EXCLUDED.materials_needed,
-                     materials_used = EXCLUDED.materials_used,
-                     tomorrow_notes = EXCLUDED.tomorrow_notes,
-                     progress_percent = EXCLUDED.progress_percent,
-                     site_progress = EXCLUDED.site_progress
        RETURNING *`,
       [
         projectId,

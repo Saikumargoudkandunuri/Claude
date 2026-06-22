@@ -79,6 +79,18 @@ class AdminDashboard extends ConsumerWidget {
                     icon: Icons.engineering_outlined,
                   ),
                   StatCard(
+                    label: 'Active Workers',
+                    value: '${d['activeWorkers'] ?? 0}',
+                    icon: Icons.people_outlined,
+                    color: AppColors.success,
+                  ),
+                  StatCard(
+                    label: "Today's Tasks",
+                    value: '${d['todaysAssignments'] ?? 0}',
+                    icon: Icons.task_alt_outlined,
+                    color: AppColors.info,
+                  ),
+                  StatCard(
                     label: 'Pending Reports',
                     value: '${d['pendingReports'] ?? 0}',
                     icon: Icons.assignment_late_outlined,

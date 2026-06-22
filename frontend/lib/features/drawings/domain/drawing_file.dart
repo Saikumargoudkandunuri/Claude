@@ -41,18 +41,22 @@ class DrawingFile {
       );
 }
 
-/// The drawing categories rendered as sections in the UI.
+/// Only three drawing categories + site measurements are shown.
 const kDrawingCategories = <String, String>{
+  '2d_drawing': '2D Drawings',
   'working_drawing': 'Working Drawings',
-  'measurement_drawing': 'Measurement Drawings',
-  'site_drawing': 'Site Drawings',
-  'pdf_drawing': 'PDF Drawings',
-  '3d_design': '3D Designs',
-  'quotation': 'Quotation',
+  '3d_design': '3D Drawings',
 };
+
+/// Site measurements section inside project drawings.
+const kMeasurementCategory = MapEntry('site_measurement', 'Site Measurements');
+
+/// Quotation is a separate document, hidden from workers.
+const kQuotationCategory = 'quotation';
 
 const kMediaCategories = <String, String>{
   'photo': 'Photos',
   'video': 'Videos',
   'voice_note': 'Voice Notes',
+  'document': 'Documents',
 };

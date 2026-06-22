@@ -49,15 +49,19 @@ Future<void> showReportForm(
         builder: (ctx, setState) {
           Future<void> pick(String category, FileType type,
               {List<String>? ext}) async {
-            final res = await FilePicker.platform.pickFiles(
-              type: type,
-              allowedExtensions: ext,
-              withData: true,
-            );
-            if (res == null || res.files.isEmpty) return;
-            final f = res.files.first;
-            if (f.bytes == null) return;
-            setState(() => media.add(_PendingMedia(category, f.name, f.bytes!)));
+            try {
+              final res = await FilePicker.platform.pickFiles(
+                type: type,
+                allowedExtensions: ext,
+                withData: true,
+              );
+              if (res == null || res.files.isEmpty) return;
+              final f = res.files.first;
+              if (f.bytes == null) return;
+              setState(() => media.add(_PendingMedia(category, f.name, f.bytes!)));
+            } catch (_) {
+              // Fixes file-attachment error on some devices.
+            }
           }
 
           return SingleChildScrollView(

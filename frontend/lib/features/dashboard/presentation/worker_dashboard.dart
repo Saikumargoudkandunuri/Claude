@@ -106,6 +106,56 @@ class WorkerDashboard extends ConsumerWidget {
                     ),
                     onTap: () => context.go('/worker/sites/${s['id']}'),
                   ),
+                // Supervisor & Admin contacts
+                if ((d['contacts'] as List?)?.isNotEmpty == true) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Contacts',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final c
+                      in (d['contacts'] as List).cast<Map<String, dynamic>>())
+                    Card(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: ListTile(
+                        leading: Icon(
+                          c['role'] == 'admin'
+                              ? Icons.admin_panel_settings_outlined
+                              : Icons.supervisor_account_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(c['name']?.toString() ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          '${Formatters.roleLabel(c['role'] as String?)} · ${c['phone'] ?? ''}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                ],
+                // Recent work history
+                if ((d['recentWork'] as List?)?.isNotEmpty == true) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Recent Work',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final h
+                      in (d['recentWork'] as List).cast<Map<String, dynamic>>())
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      leading: const Icon(Icons.history, size: 20, color: AppColors.textMuted),
+                      title: Text(
+                        h['description']?.toString() ?? h['action']?.toString() ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        '${h['projectName'] ?? ''} · ${Formatters.dateTime(h['createdAt'])}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                    ),
+                ],
               ],
             );
           },

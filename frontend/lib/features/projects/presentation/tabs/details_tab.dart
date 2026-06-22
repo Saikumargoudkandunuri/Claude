@@ -16,8 +16,9 @@ class DetailsTab extends StatelessWidget {
       children: [
         _section('Customer', [
           _row('Customer', project.customerName),
-          _row('Phone', project.phone),
-          if (project.altPhone != null) _row('Alt Phone', project.altPhone!),
+          if (project.phone.isNotEmpty) _row('Phone', project.phone),
+          if (project.altPhone != null && project.altPhone!.isNotEmpty)
+            _row('Alt Phone', project.altPhone!),
           if (project.address != null) _row('Address', project.address!),
           if (project.siteLocation != null) _row('Site', project.siteLocation!),
         ]),

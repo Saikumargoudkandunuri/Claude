@@ -90,6 +90,36 @@ class SupervisorDashboard extends ConsumerWidget {
                       ),
                     ),
                 const SizedBox(height: AppSpacing.lg),
+                // Workers assigned to supervisor
+                if ((d['workers'] as List?)?.isNotEmpty == true) ...[
+                  const Text('My Workers',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final w
+                      in (d['workers'] as List).cast<Map<String, dynamic>>())
+                    Card(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AppColors.surfaceAlt,
+                          child: Text(
+                            (w['fullName']?.toString() ?? '?')[0].toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        title: Text(w['fullName']?.toString() ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          '${w['projectName'] ?? ''}${w['task'] != null ? ' · ${w['task']}' : ''}',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        trailing: _workerStatusBadge(w['status']?.toString()),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
                 const Text('Recent Updates',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 RecentUpdatesList(updates: (d['recentUpdates'] as List?) ?? const []),
@@ -100,4 +130,27 @@ class SupervisorDashboard extends ConsumerWidget {
       ),
     );
   }
+}
+
+Widget _workerStatusBadge(String? status) {
+  final label = switch (status) {
+    'at_site' => 'At Site',
+    'leave' => 'Leave',
+    'holiday' => 'Holiday',
+    _ => 'Workshop',
+  };
+  final color = switch (status) {
+    'at_site' => AppColors.success,
+    'leave' => AppColors.warning,
+    'holiday' => AppColors.info,
+    _ => AppColors.textMuted,
+  };
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+  );
 }

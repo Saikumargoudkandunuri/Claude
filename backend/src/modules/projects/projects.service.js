@@ -11,12 +11,14 @@ const EXECUTION_STAGES = STAGES.filter((s) => !DESIGN_STAGES.includes(s));
 
 /** Serialize a project row to API shape; strips staff contacts for workers. */
 function serializeProject(row, viewerRole) {
+  const isWorker = viewerRole === 'worker';
   const base = {
     id: row.id,
     projectNumber: row.project_number,
     customerName: row.customer_name,
-    phone: row.phone,
-    altPhone: row.alt_phone,
+    // Workers must NOT see customer phone numbers / sensitive contact details.
+    phone: isWorker ? null : row.phone,
+    altPhone: isWorker ? null : row.alt_phone,
     address: row.address,
     siteLocation: row.site_location,
     projectName: row.project_name,
@@ -32,7 +34,7 @@ function serializeProject(row, viewerRole) {
     createdAt: row.created_at,
     progress: stageProgress(row.current_stage),
   };
-  if (viewerRole !== 'worker') {
+  if (!isWorker) {
     base.quotationAmount = Number(row.quotation_amount);
   }
   return base;
