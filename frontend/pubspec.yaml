@@ -46,7 +46,6 @@ dependencies:
   record: ^5.1.2
   # UI utilities
   shimmer: ^3.0.0
-  flutter_keyboard_visibility: ^5.4.1
   connectivity_plus: ^6.1.1
   percent_indicator: ^4.2.3
   url_launcher: ^6.3.1
