@@ -5,7 +5,9 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
 class ICMSApp extends ConsumerWidget {
-  const ICMSApp({super.key});
+  const ICMSApp({super.key, this.navigatorKey});
+
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

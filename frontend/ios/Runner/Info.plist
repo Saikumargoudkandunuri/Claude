@@ -4,6 +4,14 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ICMS needs camera access to capture site photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ICMS needs microphone access to record voice notes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ICMS needs photo library access to upload drawings and site photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ICMS needs to save photos to your library.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
