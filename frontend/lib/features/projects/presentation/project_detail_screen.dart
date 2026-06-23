@@ -97,7 +97,23 @@ class ProjectDetailScreen extends ConsumerWidget {
               ],
               body: TabBarView(children: views),
             ),
-            floatingActionButton: _StageFab(project: project, role: role),
+            // BUG-05: hide the stage button on the Reports tab so it never
+            // overlaps the chat send button.
+            floatingActionButton: Builder(
+              builder: (ctx) {
+                final controller = DefaultTabController.of(ctx);
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (_, __) {
+                    final reportsIndex = tabs.indexWhere((t) => t.text == 'Reports');
+                    if (controller.index == reportsIndex) {
+                      return const SizedBox.shrink();
+                    }
+                    return _StageFab(project: project, role: role);
+                  },
+                );
+              },
+            ),
           ),
         );
       },

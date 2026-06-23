@@ -12,6 +12,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../drawings/application/drawings_controller.dart';
 import '../../../drawings/domain/drawing_file.dart';
+import '../../../drawings/presentation/upload_drawings_screen.dart';
 
 /// Lists drawings grouped by category. Admin/Designer can upload & replace.
 class DrawingsTab extends ConsumerWidget {
@@ -163,6 +164,23 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
                   ),
                 ),
               ),
+              // BUG-01: multi-file upload for drawing categories (not quotation).
+              if (widget.canUpload && widget.category != 'quotation')
+                IconButton(
+                  tooltip: 'Upload multiple',
+                  icon: const Icon(Icons.library_add, size: 20),
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => UploadDrawingsScreen(
+                          projectId: widget.projectId,
+                          category: widget.category,
+                        ),
+                      ),
+                    );
+                    ref.invalidate(projectFilesProvider(widget.projectId));
+                  },
+                ),
               if (widget.canUpload)
                 _uploading
                     ? const SizedBox(
