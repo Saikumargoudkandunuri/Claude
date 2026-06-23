@@ -7,4 +7,5 @@ export 'status_badge.dart';
 export 'customer_chip.dart';
 export 'shimmer_loader.dart';
 export 'stage_progress_bar.dart';
+export 'stage_tracker.dart';
 export 'attachment_tile.dart';

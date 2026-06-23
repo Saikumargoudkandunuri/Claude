@@ -74,7 +74,7 @@ class ProjectsListScreen extends ConsumerWidget {
                 return Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    onTap: () => context.go('$basePath/projects/${p.id}'),
+                    onTap: () => context.push('$basePath/projects/${p.id}'),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Column(

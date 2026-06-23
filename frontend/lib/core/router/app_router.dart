@@ -24,6 +24,7 @@ import '../../features/reports/presentation/all_reports_screen.dart';
 import '../../features/reports/presentation/reports_home_screen.dart';
 import '../../features/tasks/presentation/task_panel_screen.dart';
 import '../../features/users/presentation/approvals_screen.dart';
+import '../../shared/navigation/back_guard.dart';
 import '../widgets/role_scaffold.dart';
 
 /// GoRouter wired to auth state with role-based redirects and shells.
@@ -62,19 +63,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
 
-      // Full-screen routes (no bottom nav)
+      // Full-screen routes (no bottom nav) — wrapped in BackGuard so the
+      // system/AppBar back never closes the app from an inner screen.
       GoRoute(
         path: '/viewer',
         builder: (_, state) {
           final extra = (state.extra as Map?) ?? const {};
-          return PdfViewerScreen(
-            url: extra['url']?.toString() ?? '',
-            name: extra['name']?.toString() ?? 'Drawing',
+          return BackGuard(
+            child: PdfViewerScreen(
+              url: extra['url']?.toString() ?? '',
+              name: extra['name']?.toString() ?? 'Drawing',
+            ),
           );
         },
       ),
-      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(
+          path: '/profile',
+          builder: (_, __) => const BackGuard(child: ProfileScreen())),
+      GoRoute(
+          path: '/settings',
+          builder: (_, __) => const BackGuard(child: SettingsScreen())),
 
       // ===== Admin shell =====
       ShellRoute(
@@ -117,11 +125,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/projects/new',
-        builder: (_, __) => const ProjectFormScreen(),
+        builder: (_, __) => const BackGuard(child: ProjectFormScreen()),
       ),
       GoRoute(
         path: '/admin/projects/:id',
-        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Supervisor shell =====
@@ -161,7 +169,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/supervisor/projects/:id',
-        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Designer shell =====
@@ -185,7 +193,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/designer/projects/:id',
-        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Worker shell =====
@@ -209,7 +217,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/worker/sites/:id',
-        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
     ],
   );

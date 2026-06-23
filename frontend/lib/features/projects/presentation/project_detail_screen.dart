@@ -48,7 +48,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           DrawingsTab(projectId: project.id),
           ReportsTab(projectId: project.id),
           if (isAdmin) PaymentsTab(projectId: project.id),
-          TimelineTab(projectId: project.id),
+          TimelineTab(project: project),
         ];
 
         return DefaultTabController(

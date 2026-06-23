@@ -18,7 +18,11 @@ class RoleDestination {
 }
 
 /// Material 3 bottom-navigation scaffold shared by every role shell.
-class RoleScaffold extends StatelessWidget {
+/// Back behavior:
+///  • On a non-home tab → switch to the home (Dashboard) tab.
+///  • On the home tab → first back shows "Press back again to exit",
+///    second back within 2 seconds exits the app.
+class RoleScaffold extends StatefulWidget {
   const RoleScaffold({
     super.key,
     required this.destinations,
@@ -30,14 +34,24 @@ class RoleScaffold extends StatelessWidget {
   final Widget child;
   final String location;
 
+  @override
+  State<RoleScaffold> createState() => _RoleScaffoldState();
+}
+
+class _RoleScaffoldState extends State<RoleScaffold> {
+  DateTime? _lastBack;
+
+  String get _homeRoute => widget.destinations.first.route;
+  bool get _isHome => widget.location == _homeRoute;
+
   int get _currentIndex {
-    // Choose the destination whose route is the longest prefix of [location]
-    // so '/admin/projects' selects Projects, not Home ('/admin').
     var bestIndex = 0;
     var bestLen = -1;
-    for (var i = 0; i < destinations.length; i++) {
-      final route = destinations[i].route;
-      if (location == route || location.startsWith('$route/') || location.startsWith(route)) {
+    for (var i = 0; i < widget.destinations.length; i++) {
+      final route = widget.destinations[i].route;
+      if (widget.location == route ||
+          widget.location.startsWith('$route/') ||
+          widget.location.startsWith(route)) {
         if (route.length > bestLen) {
           bestLen = route.length;
           bestIndex = i;
@@ -47,24 +61,54 @@ class RoleScaffold extends StatelessWidget {
     return bestIndex;
   }
 
+  void _handleBack() {
+    final router = GoRouter.of(context);
+
+    // If something is stacked above the shell, pop it first.
+    if (router.canPop()) {
+      router.pop();
+      return;
+    }
+
+    // Not on the home tab → go home instead of exiting.
+    if (!_isHome) {
+      context.go(_homeRoute);
+      return;
+    }
+
+    // On the home tab → double-back to exit.
+    final now = DateTime.now();
+    if (_lastBack == null || now.difference(_lastBack!) > const Duration(seconds: 2)) {
+      _lastBack = now;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Press back again to exit'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } else {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        final shouldExit = await _confirmExit(context);
-        if (shouldExit == true) {
-          await SystemNavigator.pop();
-        }
+        _handleBack();
       },
       child: Scaffold(
-        body: child,
+        body: widget.child,
         bottomNavigationBar: NavigationBar(
           selectedIndex: _currentIndex,
-          onDestinationSelected: (i) => context.go(destinations[i].route),
+          onDestinationSelected: (i) => context.go(widget.destinations[i].route),
           destinations: [
-            for (final d in destinations)
+            for (final d in widget.destinations)
               NavigationDestination(
                 icon: Icon(d.icon),
                 selectedIcon: Icon(d.selectedIcon),
@@ -72,24 +116,6 @@ class RoleScaffold extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<bool?> _confirmExit(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Exit app?'),
-        content: const Text('Do you want to close the app?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Stay')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Exit')),
-        ],
       ),
     );
   }
