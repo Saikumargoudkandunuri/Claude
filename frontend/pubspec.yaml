@@ -43,7 +43,6 @@ dependencies:
   video_player: ^2.9.2
   chewie: ^1.8.5
   just_audio: ^0.9.40
-  record: ^5.1.2
   # UI utilities
   shimmer: ^3.0.0
   connectivity_plus: ^6.1.1
