@@ -22,10 +22,13 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   # File / media handling
-  file_picker: ^8.0.6
+  file_picker: ^10.3.3
   image_picker: ^1.1.2
   # PDF viewing (drawings)
-  syncfusion_flutter_pdfviewer: ^26.1.40
+  syncfusion_flutter_core: ^33.2.13
+  syncfusion_flutter_pdf: ^33.2.13
+  syncfusion_flutter_pdfviewer: ^33.2.13
+  syncfusion_flutter_signaturepad: ^33.2.13
   # Local file paths for offline downloads
   path_provider: ^2.1.3
   # Formatting
