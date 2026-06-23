@@ -21,11 +21,13 @@ async function ensureSummary(projectId) {
 function serializeSummary(row) {
   const quotation = Number(row.quotation_amount);
   const received = Number(row.total_received);
+  const balance = Number((quotation - received).toFixed(2));
   return {
     projectId: row.project_id,
     quotationAmount: quotation,
     totalReceived: received,
-    balanceAmount: Number((quotation - received).toFixed(2)),
+    balanceAmount: balance,
+    paymentPercentage: quotation > 0 ? Math.round((received / quotation) * 1000) / 10 : 0,
     updatedAt: row.updated_at,
   };
 }
@@ -193,6 +195,29 @@ async function clearBalance(adminId, projectId, body) {
   return entry;
 }
 
+/** BUG-08: record a partial received payment, validating it does not exceed the balance. */
+async function addReceived(adminId, projectId, body) {
+  await ensureSummary(projectId);
+  const summaryRes = await query('SELECT * FROM payments WHERE project_id = $1', [projectId]);
+  const summary = serializeSummary(summaryRes.rows[0]);
+  if (summary.quotationAmount === 0) {
+    throw ApiError.validation('Set the quotation amount for this project before recording payments.');
+  }
+  if (body.amount > summary.balanceAmount + 0.01) {
+    throw ApiError.validation(
+      `Amount exceeds the pending balance of ${summary.balanceAmount}.`
+    );
+  }
+  return addHistory(adminId, projectId, {
+    kind: body.kind || 'other',
+    amount: body.amount,
+    paidOn: body.paidOn,
+    method: body.paymentMode || body.method || null,
+    referenceNumber: body.referenceNumber || null,
+    remarks: body.note || body.remarks || null,
+  });
+}
+
 async function removeHistory(adminId, historyId) {
   const { rows } = await query('SELECT * FROM payment_history WHERE id = $1', [historyId]);
   if (!rows[0]) throw ApiError.notFound('Payment entry not found');
@@ -207,4 +232,4 @@ async function removeHistory(adminId, historyId) {
   });
 }
 
-module.exports = { get, updateSummary, addHistory, updateHistory, clearBalance, removeHistory };
+module.exports = { get, updateSummary, addHistory, updateHistory, clearBalance, addReceived, removeHistory };

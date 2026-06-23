@@ -97,8 +97,8 @@ async function contactsForWorker(project) {
   };
 }
 
-async function list(user, { stage, q, assigned, page, limit }) {
-  const where = ['is_archived = false'];
+async function list(user, { stage, q, assigned, status, sort, page, limit }) {
+  const where = [];
   const params = [];
 
   // FIX-07: Workers ALWAYS scoped to assigned projects regardless of query params.
@@ -115,6 +115,18 @@ async function list(user, { stage, q, assigned, page, limit }) {
                 WHERE pa.project_id = projects.id AND pa.user_id = $${params.length} AND pa.active = true)`
     );
   }
+
+  // NEW-08: status filter (archived projects hidden by default).
+  if (status === 'archived') {
+    where.push('is_archived = true');
+  } else if (status === 'completed') {
+    where.push("is_archived = false AND current_stage = 'completed'");
+  } else if (status === 'active') {
+    where.push("is_archived = false AND current_stage <> 'completed'");
+  } else {
+    where.push('is_archived = false');
+  }
+
   if (stage) {
     params.push(stage);
     where.push(`current_stage = $${params.length}`);
@@ -126,11 +138,18 @@ async function list(user, { stage, q, assigned, page, limit }) {
     );
   }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  // NEW-08: sort options.
+  let orderSql = 'ORDER BY created_at DESC';
+  if (sort === 'created_at_asc') orderSql = 'ORDER BY created_at ASC';
+  else if (sort === 'stage') orderSql = 'ORDER BY current_stage ASC, created_at DESC';
+  else if (sort === 'payment') orderSql = 'ORDER BY quotation_amount DESC';
+
   const offset = (page - 1) * limit;
 
   const totalRes = await query(`SELECT COUNT(*)::int AS total FROM projects ${whereSql}`, params);
   const { rows } = await query(
-    `SELECT * FROM projects ${whereSql} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+    `SELECT * FROM projects ${whereSql} ${orderSql} LIMIT ${limit} OFFSET ${offset}`,
     params
   );
   return {
@@ -149,14 +168,18 @@ async function getOne(user, projectId) {
 }
 
 function mapCreateFields(body) {
+  // PROJ-01: only customer name is required; auto-generate the rest.
+  const projectNumber =
+    body.projectNumber || `PRJ-${Date.now().toString(36).toUpperCase()}`;
+  const projectName = body.projectName || body.customerName;
   return [
-    body.projectNumber,
+    projectNumber,
     body.customerName,
-    body.phone,
+    body.phone || null,
     body.altPhone || null,
     body.address || null,
     body.siteLocation || null,
-    body.projectName,
+    projectName,
     body.projectType || null,
     body.workDescription || null,
     body.startDate || null,

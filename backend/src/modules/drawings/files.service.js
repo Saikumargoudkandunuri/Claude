@@ -7,13 +7,9 @@ const { createNotification, notifyAdmins, notifyUsers } = require('../../utils/n
 const storage = require('../../services/fileStorage');
 const projects = require('../projects/projects.service');
 
-// Categories that keep only the latest file per project (no version history).
-const SINGLE_INSTANCE = new Set([
-  '2d_drawing', 'working_drawing', '3d_design', 'site_measurement',
-  // legacy categories kept for backward compatibility
-  'measurement_drawing', 'site_drawing', 'pdf_drawing',
-  'quotation',
-]);
+// Only the quotation keeps a single active file. Drawings (2D/Working/3D),
+// site measurements, photos, videos, voice notes and documents allow MANY files.
+const SINGLE_INSTANCE = new Set(['quotation']);
 
 const DRAWING_CATEGORIES = new Set([
   '2d_drawing', 'working_drawing', '3d_design', 'site_measurement', 'quotation',

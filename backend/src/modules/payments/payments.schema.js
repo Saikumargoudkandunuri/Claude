@@ -30,4 +30,13 @@ const clear = z.object({
   remarks: z.string().max(1000).optional().nullable(),
 });
 
-module.exports = { updateSummary, addHistory, updateHistory, clear };
+const received = z.object({
+  amount: z.coerce.number().positive(),
+  paidOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  paymentMode: z.enum(['cash', 'bank_transfer', 'cheque', 'upi', 'other']).optional(),
+  kind: z.enum(['advance', 'second', 'third', 'final', 'other']).optional(),
+  referenceNumber: z.string().max(120).optional().nullable(),
+  note: z.string().max(1000).optional().nullable(),
+});
+
+module.exports = { updateSummary, addHistory, updateHistory, clear, received };

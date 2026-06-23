@@ -47,14 +47,22 @@ async function notifyAdmins(payload, client) {
 }
 
 /**
- * Fire-and-forget FCM push. Returns silently if no server key configured
- * or the user has no push token. In INTEGRATIONS_ONLY/dev this no-ops.
+ * Fire-and-forget FCM push with NATIVE banner support (BUG-02).
+ * Sends both a `notification` block (so Android/iOS show a native banner even
+ * when the app is backgrounded/closed) and a `data` block (for in-app routing
+ * when the notification is tapped). No-ops if no server key / token.
  */
 async function sendPush(userId, title, body, data) {
   if (!config.fcm.serverKey) return;
   const { rows } = await query('SELECT push_token FROM users WHERE id = $1', [userId]);
   const token = rows[0]?.push_token;
   if (!token) return;
+
+  // Stringify all data values — FCM data payload must be string→string.
+  const dataPayload = { tap_action: 'FLUTTER_NOTIFICATION_CLICK' };
+  for (const [k, v] of Object.entries(data || {})) {
+    dataPayload[k] = v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+  }
 
   try {
     await fetch('https://fcm.googleapis.com/fcm/send', {
@@ -65,8 +73,21 @@ async function sendPush(userId, title, body, data) {
       },
       body: JSON.stringify({
         to: token,
-        notification: { title, body: body || '' },
-        data: data || {},
+        priority: 'high',
+        notification: {
+          title,
+          body: body || '',
+          sound: 'default',
+          color: '#6C63FF',
+          android_channel_id: 'icms_default',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        data: dataPayload,
+        android: { priority: 'high' },
+        apns: {
+          headers: { 'apns-priority': '10' },
+          payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+        },
       }),
     });
   } catch (_) {

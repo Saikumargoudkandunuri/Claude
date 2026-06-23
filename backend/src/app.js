@@ -27,6 +27,7 @@ const checklistsRoutes = require('./modules/checklists/checklists.routes');
 const expensesRoutes = require('./modules/expenses/expenses.routes');
 const chatRoutes = require('./modules/chat/chat.routes');
 const clientRoutes = require('./modules/client/client.routes');
+const assignmentsRoutes = require('./modules/assignments/assignments.routes');
 
 function createApp() {
   const app = express();
@@ -89,6 +90,7 @@ function createApp() {
   api.use('/', checklistsRoutes);
   api.use('/', expensesRoutes);
   api.use('/', chatRoutes);
+  api.use('/', assignmentsRoutes);
 
   app.use(config.apiPrefix, api);
 

@@ -28,6 +28,9 @@ function serialize(row, media = []) {
     tomorrowNotes: row.tomorrow_notes,
     progressPercent: row.progress_percent,
     siteProgress: row.site_progress,
+    isAssignmentBrief: row.is_assignment_brief === true,
+    assignmentId: row.assignment_id,
+    readBy: row.read_by || [],
     createdAt: row.created_at,
     media,
   };
@@ -148,6 +151,10 @@ async function create(user, projectId, body) {
   if (body.type === 'supervisor' && user.role !== 'supervisor' && user.role !== 'admin') {
     throw ApiError.forbidden('Only supervisors submit supervisor reports');
   }
+  // BUG-03: designers can submit reports too.
+  if (body.type === 'designer' && user.role !== 'designer' && user.role !== 'admin') {
+    throw ApiError.forbidden('Only designers submit designer reports');
+  }
 
   const reportDate = body.reportDate || new Date().toISOString().slice(0, 10);
 
@@ -240,4 +247,23 @@ async function getRecord(user, reportId) {
   return rows[0];
 }
 
-module.exports = { serialize, list, listAll, create, todayForMe, getRecord };
+/** NEW-02: mark a report as read by the current user (append to read_by jsonb). */
+async function markRead(user, reportId) {
+  const report = await getRecord(user, reportId);
+  await projects.getAccessibleProject(user, report.project_id);
+  const entry = JSON.stringify([{ user_id: user.id, read_at: new Date().toISOString() }]);
+  // Append only if this user hasn't already been recorded.
+  const { rows } = await query(
+    `UPDATE daily_reports
+        SET read_by = CASE
+          WHEN read_by @> $2::jsonb THEN read_by
+          ELSE read_by || $1::jsonb
+        END
+      WHERE id = $3
+      RETURNING read_by`,
+    [entry, JSON.stringify([{ user_id: user.id }]), reportId]
+  );
+  return { id: reportId, readBy: rows[0]?.read_by || [] };
+}
+
+module.exports = { serialize, list, listAll, create, todayForMe, getRecord, markRead };

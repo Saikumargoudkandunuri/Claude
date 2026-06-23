@@ -3,7 +3,7 @@
 const { z } = require('zod');
 
 const create = z.object({
-  type: z.enum(['worker', 'supervisor']),
+  type: z.enum(['worker', 'supervisor', 'designer']),
   reportDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')

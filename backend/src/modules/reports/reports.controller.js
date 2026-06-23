@@ -25,6 +25,11 @@ const todayForMe = asyncHandler(async (req, res) => {
   ok(res, await service.todayForMe(req.user));
 });
 
+// NEW-02: mark a report as read by the current viewer.
+const markRead = asyncHandler(async (req, res) => {
+  ok(res, await service.markRead(req.user, req.params.id));
+});
+
 /** Attach a media file (photo/video/voice_note) to a report authored by the user. */
 const addMedia = asyncHandler(async (req, res) => {
   const report = await service.getRecord(req.user, req.params.id);
@@ -70,4 +75,4 @@ const addMedia = asyncHandler(async (req, res) => {
   ok(res, filesService.serialize(rows[0], base), 201);
 });
 
-module.exports = { list, listAll, create, todayForMe, addMedia };
+module.exports = { list, listAll, create, todayForMe, markRead, addMedia };

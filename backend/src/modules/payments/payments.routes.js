@@ -30,6 +30,12 @@ router.post(
   controller.addHistory
 );
 router.post(
+  '/projects/:projectId/payments/received',
+  requirePermission('payments:write'),
+  validate(schema.received),
+  controller.addReceived
+);
+router.post(
   '/projects/:projectId/payments/clear',
   requirePermission('payments:write'),
   validate(schema.clear),

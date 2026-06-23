@@ -16,6 +16,7 @@ const router = express.Router();
 
 router.get('/projects/:projectId/files', controller.list);
 router.post('/projects/:projectId/files', upload.single('file'), controller.upload);
+router.post('/projects/:projectId/files/batch', upload.array('files', 20), controller.uploadBatch);
 
 router.get('/files/:fileId/meta', controller.getMeta);
 router.get('/files/:fileId/download', controller.download);

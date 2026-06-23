@@ -27,6 +27,24 @@ const upload = asyncHandler(async (req, res) => {
   ok(res, result, 201);
 });
 
+// BUG-01: upload many files at once (multipart field name "files").
+const uploadBatch = asyncHandler(async (req, res) => {
+  const base = `${req.protocol}://${req.get('host')}${process.env.API_PREFIX || '/api/v1'}`;
+  const files = req.files || [];
+  if (files.length === 0) throw ApiError.badRequest('No files provided');
+  const results = [];
+  for (const file of files) {
+    const result = await service.upload(
+      req.user,
+      req.params.projectId,
+      { category: req.body.category, caption: req.body.caption, file },
+      base
+    );
+    results.push(result);
+  }
+  ok(res, results, 201);
+});
+
 const getMeta = asyncHandler(async (req, res) => {
   const base = `${req.protocol}://${req.get('host')}${process.env.API_PREFIX || '/api/v1'}`;
   ok(res, await service.getMeta(req.user, req.params.fileId, base));
@@ -70,4 +88,4 @@ const download = asyncHandler(async (req, res) => {
   return storage.createReadStream(file.storage_key).pipe(res);
 });
 
-module.exports = { list, upload, getMeta, remove, download };
+module.exports = { list, upload, uploadBatch, getMeta, remove, download };

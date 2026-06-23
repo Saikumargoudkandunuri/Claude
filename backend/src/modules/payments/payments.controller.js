@@ -15,6 +15,10 @@ const addHistory = asyncHandler(async (req, res) => {
   ok(res, await service.addHistory(req.user.id, req.params.projectId, req.body), 201);
 });
 
+const addReceived = asyncHandler(async (req, res) => {
+  ok(res, await service.addReceived(req.user.id, req.params.projectId, req.body), 201);
+});
+
 const updateHistory = asyncHandler(async (req, res) => {
   ok(res, await service.updateHistory(req.user.id, req.params.id, req.body));
 });
@@ -28,4 +32,4 @@ const removeHistory = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { get, updateSummary, addHistory, updateHistory, clearBalance, removeHistory };
+module.exports = { get, updateSummary, addHistory, addReceived, updateHistory, clearBalance, removeHistory };

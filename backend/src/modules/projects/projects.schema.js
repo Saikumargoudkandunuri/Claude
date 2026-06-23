@@ -14,13 +14,13 @@ const dateString = z
   .nullable();
 
 const create = z.object({
-  projectNumber: z.string().min(1).max(60),
+  projectNumber: z.string().min(1).max(60).optional().nullable(),
   customerName: z.string().min(1).max(160),
-  phone: z.string().min(6).max(20),
+  phone: z.string().max(20).optional().nullable(),
   altPhone: z.string().max(20).optional().nullable(),
   address: z.string().max(500).optional().nullable(),
   siteLocation: z.string().max(300).optional().nullable(),
-  projectName: z.string().min(1).max(200),
+  projectName: z.string().max(200).optional().nullable(),
   projectType: z.string().max(120).optional().nullable(),
   workDescription: z.string().max(4000).optional().nullable(),
   startDate: dateString,
@@ -31,12 +31,30 @@ const create = z.object({
   remarks: z.string().max(2000).optional().nullable(),
 });
 
-const update = create.partial();
+const update = z.object({
+  projectNumber: z.string().min(1).max(60).optional().nullable(),
+  customerName: z.string().min(1).max(160).optional(),
+  phone: z.string().max(20).optional().nullable(),
+  altPhone: z.string().max(20).optional().nullable(),
+  address: z.string().max(500).optional().nullable(),
+  siteLocation: z.string().max(300).optional().nullable(),
+  projectName: z.string().max(200).optional().nullable(),
+  projectType: z.string().max(120).optional().nullable(),
+  workDescription: z.string().max(4000).optional().nullable(),
+  startDate: dateString,
+  expectedCompletionDate: dateString,
+  quotationAmount: z.coerce.number().min(0).optional(),
+  supervisorId: z.string().uuid().optional().nullable(),
+  designerId: z.string().uuid().optional().nullable(),
+  remarks: z.string().max(2000).optional().nullable(),
+});
 
 const listQuery = z.object({
   stage: z.enum(STAGES).optional(),
   q: z.string().optional(),
   assigned: z.literal('me').optional(),
+  status: z.enum(['active', 'completed', 'archived']).optional(),
+  sort: z.enum(['created_at_desc', 'created_at_asc', 'stage', 'payment']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
