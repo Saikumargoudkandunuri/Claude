@@ -17,15 +17,6 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
-
-    // Force ALL plugins to compileSdk 36.
-    // Must run inside the same block as evaluationDependsOn (project already evaluated).
-    plugins.withId("com.android.library") {
-        val android = extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
-        if (android.compileSdk != null && android.compileSdk!! < 36) {
-            android.compileSdk = 36
-        }
-    }
 }
 
 tasks.register<Delete>("clean") {
