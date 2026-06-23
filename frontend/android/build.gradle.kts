@@ -17,19 +17,13 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
-}
 
-// Force ALL plugins (subprojects) to use compileSdk 36.
-// Fixes: ":file_picker is currently compiled against android-34" error.
-subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            val android = project.extensions.findByName("android")
-            if (android is com.android.build.gradle.BaseExtension) {
-                if (android.compileSdkVersion != "android-36") {
-                    android.compileSdkVersion(36)
-                }
-            }
+    // Force ALL plugins to compileSdk 36.
+    // Must run inside the same block as evaluationDependsOn (project already evaluated).
+    plugins.withId("com.android.library") {
+        val android = extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
+        if (android.compileSdk != null && android.compileSdk!! < 36) {
+            android.compileSdk = 36
         }
     }
 }
