@@ -46,4 +46,13 @@ const resetPassword = z.object({
   newPassword: z.string().min(8).max(100),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword };
+const requestOtp = z.object({
+  phone: z.string().min(6).max(20),
+});
+
+const verifyOtp = z.object({
+  phone: z.string().min(6).max(20),
+  otp: z.string().length(6),
+});
+
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp };

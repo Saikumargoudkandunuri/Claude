@@ -93,6 +93,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: () => context.go('/forgot-password'),
                       child: const Text('Forgot Password?'),
                     ),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/otp-login'),
+                      icon: const Icon(Icons.sms_outlined, size: 18),
+                      label: const Text('Login with OTP'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     TextButton(
                       onPressed: () => context.go('/register'),
                       child: const Text("Don't have an account? Register"),

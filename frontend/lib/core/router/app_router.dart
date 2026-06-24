@@ -7,6 +7,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/pending_approval_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
+import '../../features/auth/presentation/otp_login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/assignments/presentation/assignment_management_screen.dart';
 import '../../features/dashboard/presentation/admin_dashboard.dart';
@@ -41,7 +42,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
       final loc = state.matchedLocation;
-      final onAuthPage = loc == '/login' || loc == '/register';
+      final onAuthPage = loc == '/login' ||
+          loc == '/register' ||
+          loc == '/otp-login' ||
+          loc == '/forgot-password';
 
       if (auth.isLoading) return loc == '/splash' ? null : '/splash';
 
@@ -66,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/forgot-password',
           builder: (_, __) => const ForgotPasswordScreen()),
+      GoRoute(path: '/otp-login', builder: (_, __) => const OtpLoginScreen()),
       GoRoute(
           path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
 

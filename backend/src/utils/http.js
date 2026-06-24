@@ -28,6 +28,9 @@ class ApiError extends Error {
   static validation(message = 'Validation failed', details) {
     return new ApiError(422, 'VALIDATION_ERROR', message, details);
   }
+  static tooManyRequests(message = 'Too many requests') {
+    return new ApiError(429, 'TOO_MANY_REQUESTS', message);
+  }
 }
 
 /** Wrap an async route handler so thrown errors reach the error middleware. */

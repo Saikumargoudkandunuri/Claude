@@ -15,6 +15,8 @@ router.post('/refresh', authLimiter, validate(schema.refresh), controller.refres
 router.post('/logout', validate(schema.refresh), controller.logout);
 router.post('/forgot-password', authLimiter, validate(schema.forgotPassword), controller.forgotPassword);
 router.post('/reset-password', authLimiter, validate(schema.resetPassword), controller.resetPassword);
+router.post('/otp/request', authLimiter, validate(schema.requestOtp), controller.requestOtp);
+router.post('/otp/verify', authLimiter, validate(schema.verifyOtp), controller.verifyOtp);
 
 router.get('/me', authenticate, controller.me);
 router.put('/me', authenticate, validate(schema.updateProfile), controller.updateProfile);

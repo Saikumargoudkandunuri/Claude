@@ -58,4 +58,14 @@ const resetPassword = asyncHandler(async (req, res) => {
   ok(res, { message: 'Password reset successfully. You can now login.' });
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword };
+const requestOtp = asyncHandler(async (req, res) => {
+  const result = await service.requestLoginOtp(req.body.phone);
+  ok(res, result);
+});
+
+const verifyOtp = asyncHandler(async (req, res) => {
+  const result = await service.verifyLoginOtp(req.body.phone, req.body.otp);
+  ok(res, result);
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp };
