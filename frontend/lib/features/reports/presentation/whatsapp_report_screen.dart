@@ -6,8 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/design/app_gradients.dart';
-import '../../../shared/widgets/gradient_button.dart';
-import '../../../shared/widgets/gradient_card.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
@@ -44,17 +42,20 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
     final role = ref.watch(authControllerProvider).user?.role ?? 'worker';
 
     return Scaffold(
-      backgroundColor: AppGradients.surfaceDark,
+      backgroundColor: const Color(0xFF0F172A),
       resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           // Message list
           Expanded(
             child: async.when(
-              loading: () => const Center(child: ShimmerLoader(count: 5, height: 60)),
+              loading: () =>
+                  const Center(child: ShimmerLoader(count: 5, height: 60)),
               error: (e, _) => Center(
-                child: Text(e.toString(),
-                    style: const TextStyle(color: AppGradients.textSecondary)),
+                child: Text(
+                  e.toString(),
+                  style: const TextStyle(color: AppGradients.textSecondary),
+                ),
               ),
               data: (reports) {
                 if (reports.isEmpty) {
@@ -72,7 +73,8 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                 return ListView.builder(
                   controller: _scrollCtrl,
                   reverse: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   itemCount: reports.length,
                   itemBuilder: (_, i) {
                     final r = reports[i];
@@ -92,6 +94,7 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
             onSend: () => _send(role),
             onPickImage: _pickImage,
             onPickFile: _pickFile,
+            onPickVoice: _pickVoice,
           ),
         ],
       ),
@@ -107,11 +110,30 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
 
   Future<void> _pickFile() async {
     try {
-      final res =
-          await FilePicker.platform.pickFiles(allowMultiple: true, withData: true);
+      final res = await FilePicker.platform
+          .pickFiles(allowMultiple: true, withData: true);
       if (res != null) {
-        setState(() => _attachments.addAll(
-            res.files.where((f) => f.bytes != null).map((f) => XFile(f.name))));
+        setState(
+          () => _attachments.addAll(
+            res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pickVoice() async {
+    try {
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        withData: true,
+      );
+      if (res != null && res.files.isNotEmpty) {
+        setState(
+          () => _attachments.addAll(
+            res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
+          ),
+        );
       }
     } catch (_) {}
   }
@@ -164,6 +186,7 @@ class _InputBar extends StatelessWidget {
     required this.onSend,
     required this.onPickImage,
     required this.onPickFile,
+    this.onPickVoice,
   });
 
   final TextEditingController textCtrl;
@@ -172,6 +195,7 @@ class _InputBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
+  final VoidCallback? onPickVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -181,13 +205,13 @@ class _InputBar extends StatelessWidget {
       padding: EdgeInsets.only(bottom: kb),
       child: Container(
         constraints: const BoxConstraints(minHeight: 64),
-        decoration: BoxDecoration(
-          color: AppGradients.surfaceCard,
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E293B),
           border: Border(
-            top: BorderSide(color: AppGradients.borderGlow),
+            top: BorderSide(color: Color(0xFF334155)),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         child: SafeArea(
           top: false,
           child: Row(
@@ -197,27 +221,33 @@ class _InputBar extends StatelessWidget {
                 icon: const Icon(Icons.attach_file,
                     color: Color(0xFF6C63FF), size: 22),
                 onPressed: onPickFile,
+                tooltip: 'Attach file',
               ),
               IconButton(
                 icon: const Icon(Icons.camera_alt,
                     color: Color(0xFF6C63FF), size: 22),
                 onPressed: onPickImage,
+                tooltip: 'Photo',
               ),
-              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.mic, color: Color(0xFF10B981), size: 22),
+                onPressed: onPickVoice,
+                tooltip: 'Voice note',
+              ),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppGradients.surfaceDark,
+                    color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppGradients.borderGlow),
+                    border: Border.all(color: const Color(0xFF334155)),
                   ),
                   child: TextField(
                     controller: textCtrl,
-                    style: const TextStyle(
-                        color: AppGradients.textPrimary, fontSize: 14),
+                    style:
+                        const TextStyle(color: Color(0xFFF1F5F9), fontSize: 14),
                     decoration: const InputDecoration(
                       hintText: 'Type a message...',
-                      hintStyle: TextStyle(color: AppGradients.textSecondary),
+                      hintStyle: TextStyle(color: Color(0xFF94A3B8)),
                       border: InputBorder.none,
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -236,9 +266,7 @@ class _InputBar extends StatelessWidget {
                         height: 22,
                         width: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF6C63FF),
-                        ),
+                            strokeWidth: 2, color: Color(0xFF6C63FF)),
                       ),
                     )
                   : GestureDetector(
@@ -248,7 +276,7 @@ class _InputBar extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: AppGradients.primary,
+                            colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
                           ),
                           borderRadius: BorderRadius.circular(22),
                         ),
@@ -304,18 +332,14 @@ class _Bubble extends StatelessWidget {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isMe
-                ? const Radius.circular(16)
-                : const Radius.circular(4),
-            bottomRight: isMe
-                ? const Radius.circular(4)
-                : const Radius.circular(16),
+            bottomLeft:
+                isMe ? const Radius.circular(16) : const Radius.circular(4),
+            bottomRight:
+                isMe ? const Radius.circular(4) : const Radius.circular(16),
           ),
           boxShadow: [
             BoxShadow(
-              color: (isMe
-                      ? const Color(0xFF6C63FF)
-                      : const Color(0xFF334155))
+              color: (isMe ? const Color(0xFF6C63FF) : const Color(0xFF334155))
                   .withValues(alpha: 0.25),
               blurRadius: 8,
               offset: const Offset(0, 2),
@@ -341,20 +365,34 @@ class _Bubble extends StatelessWidget {
             if (progress != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.trending_up,
-                      size: 13, color: Color(0xFF10B981)),
-                  const SizedBox(width: 4),
-                  Text('$progress%',
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.trending_up,
+                      size: 13,
+                      color: Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$progress%',
                       style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: AppGradients.textPrimary)),
-                ]),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppGradients.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             if (text.isNotEmpty)
-              Text(text,
-                  style: const TextStyle(
-                      color: AppGradients.textPrimary, fontSize: 14)),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: AppGradients.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
             if (media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -365,48 +403,63 @@ class _Bubble extends StatelessWidget {
                     for (final m in media)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppGradients.surfaceDark.withValues(alpha: 0.5),
+                          color:
+                              AppGradients.surfaceDark.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.attach_file,
-                              size: 12, color: AppGradients.textSecondary),
-                          const SizedBox(width: 4),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 100),
-                            child: Text(
-                              m['originalName']?.toString() ?? 'file',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: AppGradients.textSecondary,
-                                  fontSize: 11),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.attach_file,
+                              size: 12,
+                              color: AppGradients.textSecondary,
                             ),
-                          ),
-                        ]),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 100),
+                              child: Text(
+                                m['originalName']?.toString() ?? 'file',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppGradients.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
               ),
             const SizedBox(height: 4),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(
-                Formatters.dateTime(report['createdAt']),
-                style: const TextStyle(
-                    color: AppGradients.textSecondary, fontSize: 10),
-              ),
-              if (isMe) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.done_all,
-                  size: 12,
-                  color: (report['readBy'] as List?)?.isNotEmpty == true
-                      ? const Color(0xFF6C63FF)
-                      : AppGradients.textSecondary,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  Formatters.dateTime(report['createdAt']),
+                  style: const TextStyle(
+                    color: AppGradients.textSecondary,
+                    fontSize: 10,
+                  ),
                 ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.done_all,
+                    size: 12,
+                    color: (report['readBy'] as List?)?.isNotEmpty == true
+                        ? const Color(0xFF6C63FF)
+                        : AppGradients.textSecondary,
+                  ),
+                ],
               ],
-            ]),
+            ),
           ],
         ),
       ),
@@ -440,39 +493,43 @@ class _BriefCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: const BoxDecoration(
-              gradient:
-                  LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)]),
+              gradient: LinearGradient(
+                  colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)]),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(14),
                 topRight: Radius.circular(14),
               ),
             ),
-            child: Row(children: [
-              const Icon(Icons.assignment, color: Colors.white, size: 14),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  "TODAY'S ASSIGNMENT",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                    letterSpacing: 1.2,
+            child: const Row(
+              children: [
+                Icon(Icons.assignment, color: Colors.white, size: 14),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "TODAY'S ASSIGNMENT",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
-              ),
-              StatusBadge(
-                label: 'Brief',
-                gradient: AppGradients.primary,
-              ),
-            ]),
+                StatusBadge(
+                  label: 'Brief',
+                  gradient: AppGradients.primary,
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Text(
               report['workDone']?.toString() ?? '',
               style: const TextStyle(
-                  color: AppGradients.textPrimary, fontSize: 14),
+                color: AppGradients.textPrimary,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

@@ -26,6 +26,9 @@ class AppOverflowMenu extends ConsumerWidget {
           case 'profile':
             context.push('/profile');
             break;
+          case 'workers':
+            context.go('$basePath/workers');
+            break;
           case 'assignments':
             context.go('$basePath/assignments');
             break;
@@ -64,6 +67,15 @@ class AppOverflowMenu extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
           ),
         ),
+        if (isAdmin)
+          const PopupMenuItem(
+            value: 'workers',
+            child: ListTile(
+              leading: Icon(Icons.engineering_outlined),
+              title: Text('Workers'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         if (isAdmin || isSupervisor)
           const PopupMenuItem(
             value: 'assignments',

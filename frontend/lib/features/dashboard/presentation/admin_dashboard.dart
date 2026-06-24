@@ -66,35 +66,41 @@ class AdminDashboard extends ConsumerWidget {
                     value: '${d['activeSites'] ?? 0}',
                     icon: Icons.bolt_outlined,
                     color: AppColors.info,
+                    onTap: () => context.go('/admin/projects'),
                   ),
                   StatCard(
                     label: 'Completed',
                     value: '${d['completedSites'] ?? 0}',
                     icon: Icons.check_circle_outline,
                     color: AppColors.success,
+                    onTap: () => context.go('/admin/projects'),
                   ),
                   StatCard(
                     label: 'Workers Today',
                     value: '${d['workersToday'] ?? 0}',
                     icon: Icons.engineering_outlined,
+                    onTap: () => context.go('/admin/workers'),
                   ),
                   StatCard(
                     label: 'Active Workers',
                     value: '${d['activeWorkers'] ?? 0}',
                     icon: Icons.people_outlined,
                     color: AppColors.success,
+                    onTap: () => context.go('/admin/workers'),
                   ),
                   StatCard(
                     label: "Today's Tasks",
                     value: '${d['todaysAssignments'] ?? 0}',
                     icon: Icons.task_alt_outlined,
                     color: AppColors.info,
+                    onTap: () => context.go('/admin/tasks'),
                   ),
                   StatCard(
                     label: 'Pending Reports',
                     value: '${d['pendingReports'] ?? 0}',
                     icon: Icons.assignment_late_outlined,
                     color: AppColors.warning,
+                    onTap: () => context.go('/admin/all-reports'),
                   ),
                   StatCard(
                     label: 'Approvals',
@@ -110,9 +116,11 @@ class AdminDashboard extends ConsumerWidget {
                 received: d['amountReceived'] as num? ?? 0,
                 outstanding: d['outstandingAmount'] as num? ?? 0,
                 pending: d['pendingPayments'] as int? ?? 0,
+                onTap: () => context.go('/admin/payments'),
               ),
               const SizedBox(height: AppSpacing.lg),
-              _StageGraph(distribution: (d['stageDistribution'] as Map?) ?? const {}),
+              _StageGraph(
+                  distribution: (d['stageDistribution'] as Map?) ?? const {}),
               const SizedBox(height: AppSpacing.xl),
               _SectionHeader(
                 title: 'Projects',
@@ -122,10 +130,13 @@ class AdminDashboard extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
               _ProjectCards(projects: (d['projects'] as List?) ?? const []),
               const SizedBox(height: AppSpacing.xl),
-              const Text('Recent Updates',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
+              const Text(
+                'Recent Updates',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
-              RecentUpdatesList(updates: (d['recentUpdates'] as List?) ?? const []),
+              RecentUpdatesList(
+                  updates: (d['recentUpdates'] as List?) ?? const []),
             ],
           ),
         ),
@@ -145,8 +156,10 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
         ),
         if (actionLabel != null)
           TextButton(onPressed: onAction, child: Text(actionLabel!)),
@@ -162,11 +175,13 @@ class _StageGraph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = distribution.entries
-        .map((e) => BarChartItem(
-              Formatters.stageLabel(e.key.toString()),
-              (e.value as num?) ?? 0,
-              color: AppColors.stageColors[e.key.toString()] ?? AppColors.primary,
-            ))
+        .map(
+          (e) => BarChartItem(
+            Formatters.stageLabel(e.key.toString()),
+            (e.value as num?) ?? 0,
+            color: AppColors.stageColors[e.key.toString()] ?? AppColors.primary,
+          ),
+        )
         .toList();
     return Card(
       child: Padding(
@@ -174,12 +189,16 @@ class _StageGraph extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Projects by Stage',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Text(
+              'Projects by Stage',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: AppSpacing.md),
             if (items.isEmpty)
-              const Text('No project data',
-                  style: TextStyle(color: AppColors.textSecondary))
+              const Text(
+                'No project data',
+                style: TextStyle(color: AppColors.textSecondary),
+              )
             else
               SimpleBarChart(items: items),
           ],
@@ -196,8 +215,10 @@ class _ProjectCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (projects.isEmpty) {
-      return const Text('No projects yet',
-          style: TextStyle(color: AppColors.textSecondary));
+      return const Text(
+        'No projects yet',
+        style: TextStyle(color: AppColors.textSecondary),
+      );
     }
     return Column(
       children: [
@@ -221,14 +242,18 @@ class _ProjectCards extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        StageChip(stage: p['currentStage']?.toString() ?? 'discussion'),
+                        StageChip(
+                            stage:
+                                p['currentStage']?.toString() ?? 'discussion'),
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${p['projectNumber']} · ${p['customerName']}',
                       style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -244,7 +269,9 @@ class _ProjectCards extends StatelessWidget {
                         Text(
                           'Received ${Formatters.currency(p['totalReceived'] as num?)}',
                           style: const TextStyle(
-                              fontSize: 12, color: AppColors.success),
+                            fontSize: 12,
+                            color: AppColors.success,
+                          ),
                         ),
                       ],
                     ),
@@ -263,49 +290,57 @@ class _PaymentsCard extends StatelessWidget {
     required this.received,
     required this.outstanding,
     required this.pending,
+    this.onTap,
   });
 
   final num received;
   final num outstanding;
   final int pending;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Payments',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: _Money(
-                    label: 'Received',
-                    value: Formatters.currency(received),
-                    color: AppColors.success,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Payments',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Money(
+                      label: 'Received',
+                      value: Formatters.currency(received),
+                      color: AppColors.success,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _Money(
-                    label: 'Outstanding',
-                    value: Formatters.currency(outstanding),
-                    color: AppColors.danger,
+                  Expanded(
+                    child: _Money(
+                      label: 'Outstanding',
+                      value: Formatters.currency(outstanding),
+                      color: AppColors.danger,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _Money(
-                    label: 'Pending',
-                    value: '$pending',
-                    color: AppColors.warning,
+                  Expanded(
+                    child: _Money(
+                      label: 'Pending',
+                      value: '$pending',
+                      color: AppColors.warning,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -326,13 +361,20 @@ class _Money extends StatelessWidget {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(value,
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
         ),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
       ],
     );
   }

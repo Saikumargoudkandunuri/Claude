@@ -24,6 +24,7 @@ import '../../features/reports/presentation/all_reports_screen.dart';
 import '../../features/reports/presentation/reports_home_screen.dart';
 import '../../features/tasks/presentation/task_panel_screen.dart';
 import '../../features/users/presentation/approvals_screen.dart';
+import '../../features/users/presentation/workers_screen.dart';
 import '../../shared/navigation/back_guard.dart';
 import '../widgets/role_scaffold.dart';
 
@@ -61,7 +62,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
+      GoRoute(
+          path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
 
       // Full-screen routes (no bottom nav) — wrapped in BackGuard so the
       // system/AppBar back never closes the app from an inner screen.
@@ -78,11 +80,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-          path: '/profile',
-          builder: (_, __) => const BackGuard(child: ProfileScreen())),
+        path: '/profile',
+        builder: (_, __) => const BackGuard(child: ProfileScreen()),
+      ),
       GoRoute(
-          path: '/settings',
-          builder: (_, __) => const BackGuard(child: SettingsScreen())),
+        path: '/settings',
+        builder: (_, __) => const BackGuard(child: SettingsScreen()),
+      ),
 
       // ===== Admin shell =====
       ShellRoute(
@@ -104,6 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/assignments',
             builder: (_, __) => const AssignmentManagementScreen(),
+          ),
+          GoRoute(
+            path: '/admin/workers',
+            builder: (_, __) => const WorkersScreen(),
           ),
           GoRoute(
             path: '/admin/tasks',
@@ -129,7 +137,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/projects/:id',
-        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+        builder: (_, s) => BackGuard(
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Supervisor shell =====
@@ -140,10 +149,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: child,
         ),
         routes: [
-          GoRoute(path: '/supervisor', builder: (_, __) => const SupervisorDashboard()),
+          GoRoute(
+              path: '/supervisor',
+              builder: (_, __) => const SupervisorDashboard()),
           GoRoute(
             path: '/supervisor/projects',
-            builder: (_, __) => const ProjectsListScreen(basePath: '/supervisor'),
+            builder: (_, __) =>
+                const ProjectsListScreen(basePath: '/supervisor'),
           ),
           GoRoute(
             path: '/supervisor/reports',
@@ -158,6 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const AssignmentManagementScreen(),
           ),
           GoRoute(
+            path: '/supervisor/workers',
+            builder: (_, __) => const WorkersScreen(),
+          ),
+          GoRoute(
             path: '/supervisor/tasks',
             builder: (_, __) => const TaskPanelScreen(),
           ),
@@ -169,7 +185,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/supervisor/projects/:id',
-        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+        builder: (_, s) => BackGuard(
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Designer shell =====
@@ -180,7 +197,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: child,
         ),
         routes: [
-          GoRoute(path: '/designer', builder: (_, __) => const DesignerDashboard()),
+          GoRoute(
+              path: '/designer', builder: (_, __) => const DesignerDashboard()),
           GoRoute(
             path: '/designer/projects',
             builder: (_, __) => const ProjectsListScreen(basePath: '/designer'),
@@ -193,7 +211,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/designer/projects/:id',
-        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+        builder: (_, s) => BackGuard(
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
 
       // ===== Worker shell =====
@@ -217,7 +236,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/worker/sites/:id',
-        builder: (_, s) => BackGuard(child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+        builder: (_, s) => BackGuard(
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
       ),
     ],
   );
@@ -240,82 +260,96 @@ String _homeForRole(String? role) {
 
 const _adminTabs = [
   RoleDestination(
-      label: 'Home',
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard,
-      route: '/admin',),
+    label: 'Home',
+    icon: Icons.dashboard_outlined,
+    selectedIcon: Icons.dashboard,
+    route: '/admin',
+  ),
   RoleDestination(
-      label: 'Projects',
-      icon: Icons.home_work_outlined,
-      selectedIcon: Icons.home_work,
-      route: '/admin/projects',),
+    label: 'Projects',
+    icon: Icons.home_work_outlined,
+    selectedIcon: Icons.home_work,
+    route: '/admin/projects',
+  ),
   RoleDestination(
-      label: 'Approvals',
-      icon: Icons.how_to_reg_outlined,
-      selectedIcon: Icons.how_to_reg,
-      route: '/admin/approvals',),
+    label: 'Workers',
+    icon: Icons.engineering_outlined,
+    selectedIcon: Icons.engineering,
+    route: '/admin/workers',
+  ),
   RoleDestination(
-      label: 'Alerts',
-      icon: Icons.notifications_none,
-      selectedIcon: Icons.notifications,
-      route: '/admin/notifications',),
+    label: 'Alerts',
+    icon: Icons.notifications_none,
+    selectedIcon: Icons.notifications,
+    route: '/admin/notifications',
+  ),
 ];
 
 const _supervisorTabs = [
   RoleDestination(
-      label: 'Home',
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard,
-      route: '/supervisor',),
+    label: 'Home',
+    icon: Icons.dashboard_outlined,
+    selectedIcon: Icons.dashboard,
+    route: '/supervisor',
+  ),
   RoleDestination(
-      label: 'Projects',
-      icon: Icons.home_work_outlined,
-      selectedIcon: Icons.home_work,
-      route: '/supervisor/projects',),
+    label: 'Projects',
+    icon: Icons.home_work_outlined,
+    selectedIcon: Icons.home_work,
+    route: '/supervisor/projects',
+  ),
   RoleDestination(
-      label: 'Reports',
-      icon: Icons.assignment_outlined,
-      selectedIcon: Icons.assignment,
-      route: '/supervisor/reports',),
+    label: 'Reports',
+    icon: Icons.assignment_outlined,
+    selectedIcon: Icons.assignment,
+    route: '/supervisor/reports',
+  ),
   RoleDestination(
-      label: 'Alerts',
-      icon: Icons.notifications_none,
-      selectedIcon: Icons.notifications,
-      route: '/supervisor/notifications',),
+    label: 'Alerts',
+    icon: Icons.notifications_none,
+    selectedIcon: Icons.notifications,
+    route: '/supervisor/notifications',
+  ),
 ];
 
 const _designerTabs = [
   RoleDestination(
-      label: 'Home',
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard,
-      route: '/designer',),
+    label: 'Home',
+    icon: Icons.dashboard_outlined,
+    selectedIcon: Icons.dashboard,
+    route: '/designer',
+  ),
   RoleDestination(
-      label: 'Projects',
-      icon: Icons.home_work_outlined,
-      selectedIcon: Icons.home_work,
-      route: '/designer/projects',),
+    label: 'Projects',
+    icon: Icons.home_work_outlined,
+    selectedIcon: Icons.home_work,
+    route: '/designer/projects',
+  ),
   RoleDestination(
-      label: 'Alerts',
-      icon: Icons.notifications_none,
-      selectedIcon: Icons.notifications,
-      route: '/designer/notifications',),
+    label: 'Alerts',
+    icon: Icons.notifications_none,
+    selectedIcon: Icons.notifications,
+    route: '/designer/notifications',
+  ),
 ];
 
 const _workerTabs = [
   RoleDestination(
-      label: 'Home',
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home,
-      route: '/worker',),
+    label: 'Home',
+    icon: Icons.home_outlined,
+    selectedIcon: Icons.home,
+    route: '/worker',
+  ),
   RoleDestination(
-      label: 'Reports',
-      icon: Icons.assignment_outlined,
-      selectedIcon: Icons.assignment,
-      route: '/worker/reports',),
+    label: 'Reports',
+    icon: Icons.assignment_outlined,
+    selectedIcon: Icons.assignment,
+    route: '/worker/reports',
+  ),
   RoleDestination(
-      label: 'Alerts',
-      icon: Icons.notifications_none,
-      selectedIcon: Icons.notifications,
-      route: '/worker/notifications',),
+    label: 'Alerts',
+    icon: Icons.notifications_none,
+    selectedIcon: Icons.notifications,
+    route: '/worker/notifications',
+  ),
 ];
