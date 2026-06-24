@@ -16,6 +16,11 @@ class PaymentsRepository {
     await _dio.post('/projects/$projectId/payments/history', data: body);
   }
 
+  /// Record a partial received payment (validates amount <= balance on server).
+  Future<void> addReceived(String projectId, Map<String, dynamic> body) async {
+    await _dio.post('/projects/$projectId/payments/received', data: body);
+  }
+
   Future<void> updateHistory(String historyId, Map<String, dynamic> body) async {
     await _dio.put('/payments/history/$historyId', data: body);
   }
