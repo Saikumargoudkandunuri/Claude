@@ -125,7 +125,17 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
   Future<void> _pickVoice() async {
     try {
       final res = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
+        type: FileType.custom,
+        allowedExtensions: [
+          'mp3',
+          'wav',
+          'aac',
+          'm4a',
+          'ogg',
+          'opus',
+          'amr',
+          '3gp'
+        ],
         withData: true,
       );
       if (res != null && res.files.isNotEmpty) {
@@ -135,7 +145,22 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
           ),
         );
       }
-    } catch (_) {}
+    } catch (_) {
+      // If custom type fails, try with any type as fallback
+      try {
+        final res = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          withData: true,
+        );
+        if (res != null && res.files.isNotEmpty) {
+          setState(
+            () => _attachments.addAll(
+              res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> _send(String role) async {

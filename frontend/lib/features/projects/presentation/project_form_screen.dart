@@ -89,7 +89,8 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(DioClient.toApiException(e).message)));
+        SnackBar(content: Text(DioClient.toApiException(e).message)),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -105,20 +106,25 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _group('Customer'),
-            _tf('projectNumber', 'Project Number', required: true),
             _tf('customerName', 'Customer Name', required: true),
-            _tf('phone', 'Phone',
-                required: true, keyboard: TextInputType.phone),
+            _tf(
+              'phone',
+              'Phone',
+              required: true,
+              keyboard: TextInputType.phone,
+            ),
             _tf('altPhone', 'Alternative Phone', keyboard: TextInputType.phone),
             _tf('address', 'Address'),
             _tf('siteLocation', 'Site Location'),
             _group('Project'),
-            _tf('projectName', 'Project Name', required: true),
-            _tf('projectType', 'Project Type'),
+            _tf('projectType', 'Project Type', required: true),
             _tf('workDescription', 'Work Description', maxLines: 3),
             _group('Commercials'),
-            _tf('quotationAmount', 'Quotation Amount',
-                keyboard: TextInputType.number),
+            _tf(
+              'quotationAmount',
+              'Quotation Amount',
+              keyboard: TextInputType.number,
+            ),
             _group('Assignment'),
             _dropdown(
               'Assign Supervisor',

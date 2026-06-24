@@ -37,15 +37,18 @@ class PaymentsOverviewScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: projects.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = projects[i];
                 return Card(
                   child: ListTile(
-                    title: Text(p.projectName,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    title: Text(
+                      p.customerName,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                     subtitle: Text(
-                      'Contract ${Formatters.currency(p.quotationAmount)}',
+                      '${p.projectName} · ${Formatters.currency(p.quotationAmount)}',
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
                     trailing: const Icon(Icons.chevron_right),

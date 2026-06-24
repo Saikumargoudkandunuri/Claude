@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_view.dart';
-import '../../../core/widgets/stage_chip.dart';
 import '../../projects/application/projects_controller.dart';
 import 'assignment_editor_screen.dart';
 
@@ -37,17 +36,24 @@ class AssignmentManagementScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: projects.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = projects[i];
                 return Card(
                   child: ListTile(
-                    title: Text(p.projectName,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text('${p.projectNumber} · ${p.customerName}',
-                        overflow: TextOverflow.ellipsis),
-                    trailing: const Icon(Icons.group_add_outlined,
-                        color: AppColors.primary),
+                    title: Text(
+                      p.customerName,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text(
+                      '${p.projectNumber} · ${p.projectName}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(
+                      Icons.group_add_outlined,
+                      color: AppColors.primary,
+                    ),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => AssignmentEditorScreen(

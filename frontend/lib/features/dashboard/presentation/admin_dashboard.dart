@@ -237,8 +237,9 @@ class _ProjectCards extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            p['projectName']?.toString() ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            p['customerName']?.toString() ?? '',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 15),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -249,7 +250,7 @@ class _ProjectCards extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${p['projectNumber']} · ${p['customerName']}',
+                      '${p['projectNumber']} · ${p['projectName'] ?? ''}',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,

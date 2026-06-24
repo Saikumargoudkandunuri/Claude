@@ -7,19 +7,18 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_view.dart';
 
-/// Provider that fetches all approved workers from the backend.
+/// Provider that fetches all approved workers using the assignable endpoint.
+/// This endpoint is accessible to both admin and supervisor roles.
 final allWorkersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get('/users', queryParameters: {
+  final res = await dio.get('/users/assignable', queryParameters: {
     'role': 'worker',
-    'status': 'approved',
-    'limit': 200,
   });
   return (res.data['data'] as List).cast<Map<String, dynamic>>();
 });
 
-/// Screen showing all workers with their status and contact info.
+/// Screen showing all workers.
 class WorkersScreen extends ConsumerWidget {
   const WorkersScreen({super.key});
 
@@ -65,69 +64,18 @@ class _WorkerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = worker['fullName']?.toString() ?? '';
-    final phone = worker['phone']?.toString() ?? '';
-    final email = worker['email']?.toString() ?? '';
-    final workerStatus = worker['workerStatus']?.toString() ?? 'idle';
-    final isAtSite = workerStatus == 'at_site';
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: isAtSite
-                  ? AppColors.success.withValues(alpha: 0.15)
-                  : AppColors.textMuted.withValues(alpha: 0.15),
-              child: Icon(
-                Icons.engineering,
-                color: isAtSite ? AppColors.success : AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                  if (phone.isNotEmpty)
-                    Text(
-                      phone,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
-                    ),
-                  if (email.isNotEmpty)
-                    Text(
-                      email,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isAtSite
-                    ? AppColors.success.withValues(alpha: 0.12)
-                    : AppColors.textMuted.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                isAtSite ? 'At Site' : 'Idle',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isAtSite ? AppColors.success : AppColors.textMuted,
-                ),
-              ),
-            ),
-          ],
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+          child: const Icon(Icons.engineering, color: AppColors.primary),
         ),
+        title: Text(
+          name,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        ),
+        subtitle: const Text('Worker'),
       ),
     );
   }

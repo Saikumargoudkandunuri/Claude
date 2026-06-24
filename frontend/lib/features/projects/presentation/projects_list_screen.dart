@@ -28,7 +28,11 @@ class ProjectsListScreen extends ConsumerWidget {
           preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm,),
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: TextField(
               decoration: const InputDecoration(
                 hintText: 'Search projects...',
@@ -68,7 +72,8 @@ class ProjectsListScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: projects.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = projects[i];
                 return Card(
@@ -84,9 +89,11 @@ class ProjectsListScreen extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  p.projectName,
+                                  p.customerName,
                                   style: const TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w700,),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                               StageChip(stage: p.currentStage),
@@ -94,8 +101,9 @@ class ProjectsListScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${p.projectNumber} · ${p.customerName}',
-                            style: const TextStyle(color: AppColors.textSecondary),
+                            '${p.projectNumber} · ${p.projectName}',
+                            style:
+                                const TextStyle(color: AppColors.textSecondary),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           ClipRRect(
@@ -108,9 +116,13 @@ class ProjectsListScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text('${p.progress}% complete',
-                              style: const TextStyle(
-                                  fontSize: 12, color: AppColors.textMuted,),),
+                          Text(
+                            '${p.progress}% complete',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
