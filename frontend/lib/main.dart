@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -23,6 +22,16 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Request notification permission explicitly for Android 13+.
+  // This ensures the permission dialog shows even without Firebase.
+  try {
+    final plugin = FlutterLocalNotificationsPlugin();
+    await plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+  } catch (_) {}
 
   // Firebase init — safe to call even if no google-services.json yet (dev mode).
   try {
