@@ -16,7 +16,8 @@ class PaymentsTab extends ConsumerWidget {
   const PaymentsTab({super.key, required this.projectId});
   final String projectId;
 
-  void _refresh(WidgetRef ref) => ref.invalidate(projectPaymentsProvider(projectId));
+  void _refresh(WidgetRef ref) =>
+      ref.invalidate(projectPaymentsProvider(projectId));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,14 +34,17 @@ class PaymentsTab extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => _refresh(ref)),
+        error: (e, _) =>
+            ErrorView(message: e.toString(), onRetry: () => _refresh(ref)),
         data: (data) {
           final summary = data['summary'] as Map<String, dynamic>;
-          final history = (data['history'] as List).cast<Map<String, dynamic>>();
+          final history =
+              (data['history'] as List).cast<Map<String, dynamic>>();
           final quotation = (summary['quotationAmount'] as num?) ?? 0;
           final received = (summary['totalReceived'] as num?) ?? 0;
           final balance = (summary['balanceAmount'] as num?) ?? 0;
-          final percent = ((summary['paymentPercentage'] as num?) ?? 0).toDouble();
+          final percent =
+              ((summary['paymentPercentage'] as num?) ?? 0).toDouble();
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -70,7 +74,9 @@ class PaymentsTab extends ConsumerWidget {
                     child: _PayCard(
                       label: 'Balance',
                       amount: balance,
-                      gradient: balance > 0 ? AppGradients.warning : AppGradients.success,
+                      gradient: balance > 0
+                          ? AppGradients.warning
+                          : AppGradients.success,
                       icon: Icons.account_balance_wallet,
                     ),
                   ),
@@ -96,10 +102,14 @@ class PaymentsTab extends ConsumerWidget {
                     children: [
                       GradientText(
                         '${percent.toStringAsFixed(0)}%',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.w800),
                       ),
-                      const Text('Paid',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      const Text(
+                        'Paid',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
@@ -133,12 +143,16 @@ class PaymentsTab extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              const Text('Payment History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text(
+                'Payment History',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (history.isEmpty)
-                const Text('No payments recorded',
-                    style: TextStyle(color: AppColors.textSecondary))
+                const Text(
+                  'No payments recorded',
+                  style: TextStyle(color: AppColors.textSecondary),
+                )
               else
                 for (final h in history)
                   Card(
@@ -147,11 +161,16 @@ class PaymentsTab extends ConsumerWidget {
                       leading: const CircleAvatar(
                         radius: 18,
                         backgroundColor: AppColors.surfaceAlt,
-                        child: Icon(Icons.payments_outlined,
-                            color: AppColors.success, size: 18),
+                        child: Icon(
+                          Icons.payments_outlined,
+                          color: AppColors.success,
+                          size: 18,
+                        ),
                       ),
-                      title: Text(Formatters.currency(h['amount'] as num?),
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      title: Text(
+                        Formatters.currency(h['amount'] as num?),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       subtitle: Text(
                         '${Formatters.roleLabel(h['kind'] as String?)} · '
                         '${Formatters.date(h['paidOn'])}'
@@ -182,7 +201,8 @@ class PaymentsTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _editContract(BuildContext context, WidgetRef ref, num current) async {
+  Future<void> _editContract(
+      BuildContext context, WidgetRef ref, num current) async {
     final controller = TextEditingController(text: current.toString());
     final ok = await showDialog<bool>(
       context: context,
@@ -194,25 +214,34 @@ class PaymentsTab extends ConsumerWidget {
           decoration: const InputDecoration(labelText: 'Amount'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save')),
         ],
       ),
     );
     if (ok != true) return;
     final value = num.tryParse(controller.text) ?? 0;
-    await ref.read(paymentsRepositoryProvider).updateQuotation(projectId, value);
+    await ref
+        .read(paymentsRepositoryProvider)
+        .updateQuotation(projectId, value);
     _refresh(ref);
   }
 
-  Future<void> _deleteHistory(BuildContext context, WidgetRef ref, String id) async {
+  Future<void> _deleteHistory(
+      BuildContext context, WidgetRef ref, String id) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete payment?'),
         content: const Text('This payment entry will be removed.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),
@@ -227,13 +256,17 @@ class PaymentsTab extends ConsumerWidget {
   }
 
   /// Add a received payment, or edit an existing entry.
-  void _showAddPayment(BuildContext context, WidgetRef ref, {Map<String, dynamic>? existing}) {
+  void _showAddPayment(BuildContext context, WidgetRef ref,
+      {Map<String, dynamic>? existing}) {
     final isEdit = existing != null;
-    final amount = TextEditingController(text: isEdit ? '${existing['amount']}' : '');
+    final amount =
+        TextEditingController(text: isEdit ? '${existing['amount']}' : '');
     final reference = TextEditingController(
-        text: isEdit ? (existing['referenceNumber']?.toString() ?? '') : '');
+      text: isEdit ? (existing['referenceNumber']?.toString() ?? '') : '',
+    );
     final note = TextEditingController();
-    String kind = isEdit ? (existing['kind']?.toString() ?? 'advance') : 'advance';
+    String kind =
+        isEdit ? (existing['kind']?.toString() ?? 'advance') : 'advance';
     String mode = isEdit ? (existing['method']?.toString() ?? 'cash') : 'cash';
 
     showModalBottomSheet(
@@ -252,11 +285,14 @@ class PaymentsTab extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isEdit ? 'Edit Payment' : 'Record Received Payment',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(
+                  isEdit ? 'Edit Payment' : 'Record Received Payment',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 DropdownButtonFormField<String>(
-                  value: kind,
+                  initialValue: kind,
                   decoration: const InputDecoration(labelText: 'Type'),
                   items: const [
                     DropdownMenuItem(value: 'advance', child: Text('Advance')),
@@ -275,12 +311,13 @@ class PaymentsTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<String>(
-                  value: mode,
+                  initialValue: mode,
                   decoration: const InputDecoration(labelText: 'Payment Mode'),
                   items: const [
                     DropdownMenuItem(value: 'cash', child: Text('Cash')),
                     DropdownMenuItem(value: 'upi', child: Text('UPI')),
-                    DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                    DropdownMenuItem(
+                        value: 'bank_transfer', child: Text('Bank Transfer')),
                     DropdownMenuItem(value: 'cheque', child: Text('Cheque')),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
                   ],
@@ -289,55 +326,68 @@ class PaymentsTab extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: reference,
-                  decoration: const InputDecoration(labelText: 'Reference (optional)'),
+                  decoration:
+                      const InputDecoration(labelText: 'Reference (optional)'),
                 ),
                 if (!isEdit) ...[
                   const SizedBox(height: AppSpacing.md),
                   TextField(
                     controller: note,
-                    decoration: const InputDecoration(labelText: 'Note (optional)'),
+                    decoration:
+                        const InputDecoration(labelText: 'Note (optional)'),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
-                GradientButton(
-                  expand: true,
-                  label: isEdit ? 'Save Changes' : 'Add Payment',
-                  onPressed: () async {
-                    final value = num.tryParse(amount.text) ?? 0;
-                    if (value <= 0) return;
-                    try {
-                      if (isEdit) {
-                        await ref.read(paymentsRepositoryProvider).updateHistory(
-                          existing['id'] as String,
-                          {
-                            'kind': kind,
-                            'amount': value,
-                            'method': mode,
-                            if (reference.text.isNotEmpty) 'referenceNumber': reference.text,
-                          },
-                        );
-                      } else {
-                        await ref.read(paymentsRepositoryProvider).addReceived(
-                          projectId,
-                          {
-                            'kind': kind,
-                            'amount': value,
-                            'paymentMode': mode,
-                            if (reference.text.isNotEmpty) 'referenceNumber': reference.text,
-                            if (note.text.isNotEmpty) 'note': note.text,
-                          },
-                        );
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: () async {
+                      final value = num.tryParse(amount.text) ?? 0;
+                      if (value <= 0) return;
+                      try {
+                        if (isEdit) {
+                          await ref
+                              .read(paymentsRepositoryProvider)
+                              .updateHistory(
+                            existing['id'] as String,
+                            {
+                              'kind': kind,
+                              'amount': value,
+                              'method': mode,
+                              if (reference.text.isNotEmpty)
+                                'referenceNumber': reference.text,
+                            },
+                          );
+                        } else {
+                          await ref
+                              .read(paymentsRepositoryProvider)
+                              .addReceived(
+                            projectId,
+                            {
+                              'kind': kind,
+                              'amount': value,
+                              'paymentMode': mode,
+                              if (reference.text.isNotEmpty)
+                                'referenceNumber': reference.text,
+                              if (note.text.isNotEmpty) 'note': note.text,
+                            },
+                          );
+                        }
+                        _refresh(ref);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text(DioClient.toApiException(e).message)),
+                          );
+                        }
                       }
-                      _refresh(ref);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    } catch (e) {
-                      if (ctx.mounted) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(content: Text(DioClient.toApiException(e).message)),
-                        );
-                      }
-                    }
-                  },
+                    },
+                    child: Text(isEdit ? 'Save Changes' : 'Add Payment'),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
@@ -388,13 +438,20 @@ class _PayCard extends StatelessWidget {
             child: Text(
               Formatters.currency(amount),
               style: const TextStyle(
-                  color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85), fontSize: 11)),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
