@@ -386,7 +386,17 @@ class PaymentsTab extends ConsumerWidget {
                                 );
                               }
                               _refresh(ref);
-                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(isEdit
+                                        ? 'Payment updated successfully'
+                                        : 'Payment recorded successfully'),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
+                              }
                             } catch (e) {
                               if (ctx.mounted) {
                                 setSheetState(() => busy = false);

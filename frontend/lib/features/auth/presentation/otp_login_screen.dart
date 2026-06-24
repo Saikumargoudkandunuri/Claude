@@ -12,7 +12,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../application/auth_controller.dart';
 
-/// OTP Login screen: Enter phone → receive OTP → verify → navigate to dashboard.
+/// OTP Login: Fixed +91 country code, user enters 10-digit number.
 class OtpLoginScreen extends ConsumerStatefulWidget {
   const OtpLoginScreen({super.key});
 
@@ -29,6 +29,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   bool _busy = false;
   int _countdown = 0;
   Timer? _timer;
+  String? _errorMsg;
 
   @override
   void dispose() {
@@ -58,21 +59,27 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   String get _otpValue => _otpControllers.map((c) => c.text).join();
 
   Future<void> _requestOtp() async {
-    final phone = _phoneCtrl.text.trim();
-    if (phone.isEmpty || phone.length < 6) {
-      _snack('Enter a valid phone number');
+    final digits = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 10) {
+      setState(() => _errorMsg = 'Enter a valid 10-digit mobile number');
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _errorMsg = null;
+    });
     try {
       final dio = DioClient.instance.dio;
-      await dio.post('/auth/otp/request',
-          data: {'phone': phone}, options: Options(extra: {'skipAuth': true}));
+      await dio.post(
+        '/auth/otp/request',
+        data: {'phone': '+91$digits'},
+        options: Options(extra: {'skipAuth': true}),
+      );
       setState(() => _step = 1);
       _startCountdown();
-      _snack('OTP sent to $phone');
+      _snack('OTP sent to +91 $digits');
     } catch (e) {
-      _snack(DioClient.toApiException(e).message);
+      setState(() => _errorMsg = DioClient.toApiException(e).message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -81,15 +88,21 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   Future<void> _verifyOtp() async {
     final otp = _otpValue;
     if (otp.length != 6) {
-      _snack('Enter the complete 6-digit OTP');
+      setState(() => _errorMsg = 'Enter the complete 6-digit OTP');
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _errorMsg = null;
+    });
     try {
+      final digits = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
       final dio = DioClient.instance.dio;
-      final res = await dio.post('/auth/otp/verify',
-          data: {'phone': _phoneCtrl.text.trim(), 'otp': otp},
-          options: Options(extra: {'skipAuth': true}));
+      final res = await dio.post(
+        '/auth/otp/verify',
+        data: {'phone': '+91$digits', 'otp': otp},
+        options: Options(extra: {'skipAuth': true}),
+      );
       final data = res.data['data'] as Map<String, dynamic>;
 
       // Save tokens
@@ -98,12 +111,14 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
         refreshToken: data['refreshToken'] as String,
       );
 
-      // Refresh auth state
+      // Refresh auth state → router will redirect to dashboard
       await ref.read(authControllerProvider.notifier).refreshUser();
     } catch (e) {
       if (mounted) {
-        setState(() => _busy = false);
-        _snack(DioClient.toApiException(e).message);
+        setState(() {
+          _busy = false;
+          _errorMsg = DioClient.toApiException(e).message;
+        });
       }
     }
   }
@@ -145,7 +160,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
         const Icon(Icons.phone_android, size: 64, color: AppColors.primary),
         const SizedBox(height: AppSpacing.lg),
         const Text(
-          'Enter your phone number',
+          'Enter your mobile number',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
         ),
@@ -156,20 +171,41 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
           style: TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xxl),
+
+        // Phone input with fixed +91 prefix
         TextField(
           controller: _phoneCtrl,
-          keyboardType: TextInputType.phone,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          keyboardType: TextInputType.number,
+          maxLength: 10,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 1),
           decoration: InputDecoration(
-            labelText: 'Phone Number',
-            prefixIcon: const Icon(Icons.phone_outlined),
-            hintText: '+91 XXXXX XXXXX',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            prefixIcon: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: Alignment.center,
+              width: 70,
+              child: const Text(
+                '+91',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
             ),
+            hintText: '9876543210',
+            counterText: '',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
+
+        if (_errorMsg != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            _errorMsg!,
+            style: const TextStyle(color: AppColors.danger, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
+
         SizedBox(
           height: 50,
           child: FilledButton(
@@ -179,8 +215,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
+                        strokeWidth: 2, color: Colors.white))
                 : const Text('Send OTP', style: TextStyle(fontSize: 16)),
           ),
         ),
@@ -189,6 +224,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   }
 
   Widget _otpStep() {
+    final digits = _phoneCtrl.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -201,13 +237,13 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'OTP sent to ${_phoneCtrl.text.trim()}',
+          'OTP sent to +91 $digits',
           textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xxl),
 
-        // 6-digit OTP input boxes
+        // 6-digit OTP boxes
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(
@@ -225,8 +261,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                       decoration: InputDecoration(
                         counterText: '',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                            borderRadius: BorderRadius.circular(10)),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(
@@ -249,6 +284,15 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                     ),
                   )),
         ),
+
+        if (_errorMsg != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _errorMsg!,
+            style: const TextStyle(color: AppColors.danger, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
 
         SizedBox(
@@ -260,8 +304,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
+                        strokeWidth: 2, color: Colors.white))
                 : const Text('Verify & Login', style: TextStyle(fontSize: 16)),
           ),
         ),
@@ -282,7 +325,13 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
         const SizedBox(height: AppSpacing.sm),
         Center(
           child: TextButton(
-            onPressed: () => setState(() => _step = 0),
+            onPressed: () => setState(() {
+              _step = 0;
+              _errorMsg = null;
+              for (final c in _otpControllers) {
+                c.clear();
+              }
+            }),
             child: const Text('Change phone number'),
           ),
         ),
