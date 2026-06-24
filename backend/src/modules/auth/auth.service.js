@@ -207,12 +207,22 @@ async function resetPassword({ email, otp, newPassword }) {
 /**
  * Request OTP for phone-based login.
  * Only existing approved users can receive OTPs.
+ * Normalizes phone to handle +91, 91, or plain 10-digit formats.
  */
 async function requestLoginOtp(phone) {
-  // Find user by phone
+  // Normalize: strip all non-digits, then try multiple formats
+  const digits = phone.replace(/[^0-9]/g, '');
+  const last10 = digits.slice(-10); // last 10 digits regardless of prefix
+
+  // Find user by phone — try exact match, +91 prefix, or just last 10 digits
   const { rows: users } = await query(
-    `SELECT id, phone, status FROM users WHERE phone = $1`,
-    [phone]
+    `SELECT id, phone, status FROM users
+     WHERE phone = $1
+        OR phone = $2
+        OR phone = $3
+        OR RIGHT(REPLACE(REPLACE(phone, ' ', ''), '-', ''), 10) = $4
+     LIMIT 1`,
+    [phone, `+91${last10}`, last10, last10]
   );
   const user = users[0];
   if (!user) throw ApiError.notFound('No account found with this phone number');
@@ -266,10 +276,19 @@ async function requestLoginOtp(phone) {
  * Verify OTP and issue JWT tokens (same as password login).
  */
 async function verifyLoginOtp(phone, otp) {
-  // Find user
+  // Normalize phone
+  const digits = phone.replace(/[^0-9]/g, '');
+  const last10 = digits.slice(-10);
+
+  // Find user by phone (flexible matching)
   const { rows: users } = await query(
-    `SELECT * FROM users WHERE phone = $1`,
-    [phone]
+    `SELECT * FROM users
+     WHERE phone = $1
+        OR phone = $2
+        OR phone = $3
+        OR RIGHT(REPLACE(REPLACE(phone, ' ', ''), '-', ''), 10) = $4
+     LIMIT 1`,
+    [phone, `+91${last10}`, last10, last10]
   );
   const user = users[0];
   if (!user) throw ApiError.unauthorized('Invalid phone number');
