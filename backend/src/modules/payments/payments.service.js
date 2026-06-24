@@ -47,6 +47,17 @@ function serializeHistory(row) {
   };
 }
 
+/** Recompute payments.total_received from payment_history for a project. */
+async function recomputeTotalReceived(projectId) {
+  await query(
+    `UPDATE payments SET total_received = COALESCE(
+       (SELECT SUM(amount) FROM payment_history WHERE project_id = $1), 0
+     ), updated_at = now()
+     WHERE project_id = $1`,
+    [projectId]
+  );
+}
+
 async function get(projectId) {
   await ensureSummary(projectId);
   const summary = await query('SELECT * FROM payments WHERE project_id = $1', [projectId]);
@@ -126,6 +137,8 @@ async function addHistory(adminId, projectId, body) {
     projectId,
     data: { route: `icms://project/${projectId}` },
   });
+  // Recompute total_received
+  await recomputeTotalReceived(projectId);
   return serializeHistory(rows[0]);
 }
 
@@ -166,6 +179,8 @@ async function updateHistory(adminId, historyId, body) {
     description: `Updated payment entry to ${rows[0].amount}`,
     metadata: { fields: Object.keys(body) },
   });
+  // Recompute total_received
+  await recomputeTotalReceived(rows[0].project_id);
   return serializeHistory(rows[0]);
 }
 
@@ -221,10 +236,13 @@ async function addReceived(adminId, projectId, body) {
 async function removeHistory(adminId, historyId) {
   const { rows } = await query('SELECT * FROM payment_history WHERE id = $1', [historyId]);
   if (!rows[0]) throw ApiError.notFound('Payment entry not found');
+  const projectId = rows[0].project_id;
   await query('DELETE FROM payment_history WHERE id = $1', [historyId]);
+  // Recompute total_received
+  await recomputeTotalReceived(projectId);
   await logActivity({
     userId: adminId,
-    projectId: rows[0].project_id,
+    projectId,
     action: 'payment.delete',
     entityType: 'payment_history',
     entityId: historyId,

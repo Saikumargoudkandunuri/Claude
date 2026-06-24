@@ -53,6 +53,16 @@ async function approve(adminId, targetId, role) {
   const target = await getById(targetId);
   if (target.status === 'approved') throw ApiError.conflict('User already approved');
 
+  // Prevent creating multiple admin users
+  if (role === 'admin') {
+    const { rows: existingAdmins } = await query(
+      `SELECT id FROM users WHERE role = 'admin' AND status = 'approved'`
+    );
+    if (existingAdmins.length > 0) {
+      throw ApiError.forbidden('An admin account already exists. Only one admin is allowed.');
+    }
+  }
+
   return withTransaction(async (client) => {
     const { rows } = await client.query(
       `UPDATE users

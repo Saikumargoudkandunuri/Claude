@@ -4,15 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../shared/design/app_gradients.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
-import '../../../shared/widgets/status_badge.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/reports_controller.dart';
 
-/// BUG-04/05: WhatsApp-style chat for project reports.
-/// The stage button is NOT here — it lives on the Overview tab.
+/// WhatsApp Business-style chat for project reports.
 class WhatsAppReportScreen extends ConsumerStatefulWidget {
   const WhatsAppReportScreen({super.key, required this.projectId});
   final String projectId;
@@ -25,7 +23,7 @@ class WhatsAppReportScreen extends ConsumerStatefulWidget {
 class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
   final _textCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  final _attachments = <XFile>[];
+  final _attachments = <_MediaAttachment>[];
   bool _sending = false;
 
   @override
@@ -42,31 +40,34 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
     final role = ref.watch(authControllerProvider).user?.role ?? 'worker';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      resizeToAvoidBottomInset: false,
+      // WhatsApp Business light background
+      backgroundColor: const Color(0xFFECE5DD),
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          // Message list
           Expanded(
             child: async.when(
               loading: () =>
                   const Center(child: ShimmerLoader(count: 5, height: 60)),
               error: (e, _) => Center(
-                child: Text(
-                  e.toString(),
-                  style: const TextStyle(color: AppGradients.textSecondary),
-                ),
+                child: Text(e.toString(),
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ),
               data: (reports) {
                 if (reports.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text(
-                        'No updates yet.\nSend the first site update.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppGradients.textSecondary),
-                      ),
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat_bubble_outline,
+                            size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No updates yet.\nSend the first site update.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -74,56 +75,195 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                   controller: _scrollCtrl,
                   reverse: true,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemCount: reports.length,
                   itemBuilder: (_, i) {
                     final r = reports[i];
                     final isMe = r['authorId'] == userId;
-                    final isBrief = r['isAssignmentBrief'] == true;
-                    return _Bubble(report: r, isMe: isMe, isBrief: isBrief);
+                    return _Bubble(report: r, isMe: isMe);
                   },
                 );
               },
             ),
           ),
+          // Attachment preview
+          if (_attachments.isNotEmpty)
+            Container(
+              color: Colors.white,
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (int i = 0; i < _attachments.length; i++)
+                    Padding(
+                      padding:
+                          const EdgeInsets.only(right: 6, top: 6, bottom: 6),
+                      child: Chip(
+                        avatar:
+                            Icon(_iconFor(_attachments[i].category), size: 16),
+                        label: Text(_attachments[i].name,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12)),
+                        onDeleted: () =>
+                            setState(() => _attachments.removeAt(i)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           // Input bar
-          _InputBar(
-            textCtrl: _textCtrl,
-            attachments: _attachments,
-            sending: _sending,
-            onSend: () => _send(role),
-            onPickImage: _pickImage,
-            onPickFile: _pickFile,
-            onPickVoice: _pickVoice,
-          ),
+          _buildInputBar(role),
         ],
       ),
     );
   }
 
-  Future<void> _pickImage() async {
-    try {
-      final picked = await ImagePicker().pickMultiImage(imageQuality: 85);
-      if (picked.isNotEmpty) setState(() => _attachments.addAll(picked));
-    } catch (_) {}
+  Widget _buildInputBar(String role) {
+    return Container(
+      color: const Color(0xFFF0F2F5),
+      padding: EdgeInsets.only(
+        left: 4,
+        right: 4,
+        top: 6,
+        bottom: 6 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Camera button → opens device camera
+          IconButton(
+            icon: const Icon(Icons.camera_alt,
+                color: Color(0xFF54656F), size: 24),
+            onPressed: _sending ? null : _captureCamera,
+            tooltip: 'Camera',
+          ),
+          // Expanded text field
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Attach file
+                  IconButton(
+                    icon: const Icon(Icons.attach_file,
+                        color: Color(0xFF54656F), size: 22),
+                    onPressed: _sending ? null : _pickFile,
+                    tooltip: 'Attach',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _textCtrl,
+                      style: const TextStyle(fontSize: 16),
+                      decoration: const InputDecoration(
+                        hintText: 'Message',
+                        hintStyle: TextStyle(color: Color(0xFF8696A0)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      maxLines: 5,
+                      minLines: 1,
+                      keyboardType: TextInputType.multiline,
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Voice / Send button
+          _sending
+              ? const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : Material(
+                  color: const Color(0xFF00A884),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
+                      if (_textCtrl.text.trim().isNotEmpty ||
+                          _attachments.isNotEmpty) {
+                        _send(role);
+                      } else {
+                        _recordVoice();
+                      }
+                    },
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        (_textCtrl.text.trim().isNotEmpty ||
+                                _attachments.isNotEmpty)
+                            ? Icons.send
+                            : Icons.mic,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+        ],
+      ),
+    );
   }
 
+  /// Open device camera and capture a photo
+  Future<void> _captureCamera() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() =>
+            _attachments.add(_MediaAttachment('photo', picked.name, bytes)));
+      }
+    } catch (e) {
+      _snack('Camera not available');
+    }
+  }
+
+  /// Pick files from device
   Future<void> _pickFile() async {
     try {
-      final res = await FilePicker.platform
-          .pickFiles(allowMultiple: true, withData: true);
+      final res = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        withData: true,
+      );
       if (res != null) {
-        setState(
-          () => _attachments.addAll(
-            res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
-          ),
-        );
+        for (final f in res.files) {
+          if (f.bytes != null) {
+            final category = _categorize(f.name);
+            setState(() =>
+                _attachments.add(_MediaAttachment(category, f.name, f.bytes!)));
+          }
+        }
       }
-    } catch (_) {}
+    } catch (_) {
+      _snack('Could not pick file');
+    }
   }
 
-  Future<void> _pickVoice() async {
+  /// Record voice note using ImagePicker (audio source)
+  /// Falls back to file picker if not supported
+  Future<void> _recordVoice() async {
     try {
+      // Try to pick audio file (voice recordings from device recorder)
       final res = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: [
@@ -138,29 +278,26 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
         ],
         withData: true,
       );
-      if (res != null && res.files.isNotEmpty) {
-        setState(
-          () => _attachments.addAll(
-            res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
-          ),
-        );
+      if (res != null &&
+          res.files.isNotEmpty &&
+          res.files.first.bytes != null) {
+        setState(() => _attachments.add(_MediaAttachment(
+            'voice_note', res.files.first.name, res.files.first.bytes!)));
       }
     } catch (_) {
-      // If custom type fails, try with any type as fallback
-      try {
-        final res = await FilePicker.platform.pickFiles(
-          type: FileType.any,
-          withData: true,
-        );
-        if (res != null && res.files.isNotEmpty) {
-          setState(
-            () => _attachments.addAll(
-              res.files.where((f) => f.bytes != null).map((f) => XFile(f.name)),
-            ),
-          );
-        }
-      } catch (_) {}
+      _snack(
+          'Voice recording not available. Use your phone recorder app and attach the file.');
     }
+  }
+
+  String _categorize(String filename) {
+    final ext = filename.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext))
+      return 'photo';
+    if (['mp4', 'mov', 'avi', 'mkv'].contains(ext)) return 'video';
+    if (['mp3', 'wav', 'aac', 'm4a', 'ogg', 'opus', 'amr'].contains(ext))
+      return 'voice_note';
+    return 'document';
   }
 
   Future<void> _send(String role) async {
@@ -168,25 +305,18 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
     if (text.isEmpty && _attachments.isEmpty) return;
     setState(() => _sending = true);
     try {
-      final type = role == 'supervisor'
-          ? 'supervisor'
-          : role == 'designer'
-              ? 'designer'
-              : 'worker';
+      final type = role == 'supervisor' ? 'supervisor' : 'worker';
       final report = await ref
           .read(reportsRepositoryProvider)
           .submit(widget.projectId, {'type': type, 'workDone': text});
       final reportId = report['id'] as String;
       for (final a in _attachments) {
-        if (a.path.isNotEmpty) {
-          final bytes = await a.readAsBytes();
-          await ref.read(reportsRepositoryProvider).addMedia(
-                reportId: reportId,
-                category: 'photo',
-                bytes: bytes,
-                filename: a.name,
-              );
-        }
+        await ref.read(reportsRepositoryProvider).addMedia(
+              reportId: reportId,
+              category: a.category,
+              bytes: a.bytes,
+              filename: a.name,
+            );
       }
       _textCtrl.clear();
       setState(() => _attachments.clear());
@@ -201,132 +331,39 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
       if (mounted) setState(() => _sending = false);
     }
   }
-}
 
-class _InputBar extends StatelessWidget {
-  const _InputBar({
-    required this.textCtrl,
-    required this.attachments,
-    required this.sending,
-    required this.onSend,
-    required this.onPickImage,
-    required this.onPickFile,
-    this.onPickVoice,
-  });
+  void _snack(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
 
-  final TextEditingController textCtrl;
-  final List<XFile> attachments;
-  final bool sending;
-  final VoidCallback onSend;
-  final VoidCallback onPickImage;
-  final VoidCallback onPickFile;
-  final VoidCallback? onPickVoice;
-
-  @override
-  Widget build(BuildContext context) {
-    final kb = MediaQuery.of(context).viewInsets.bottom;
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
-      padding: EdgeInsets.only(bottom: kb),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 64),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1E293B),
-          border: Border(
-            top: BorderSide(color: Color(0xFF334155)),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.attach_file,
-                    color: Color(0xFF6C63FF), size: 22),
-                onPressed: onPickFile,
-                tooltip: 'Attach file',
-              ),
-              IconButton(
-                icon: const Icon(Icons.camera_alt,
-                    color: Color(0xFF6C63FF), size: 22),
-                onPressed: onPickImage,
-                tooltip: 'Photo',
-              ),
-              IconButton(
-                icon: const Icon(Icons.mic, color: Color(0xFF10B981), size: 22),
-                onPressed: onPickVoice,
-                tooltip: 'Voice note',
-              ),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFF334155)),
-                  ),
-                  child: TextField(
-                    controller: textCtrl,
-                    style:
-                        const TextStyle(color: Color(0xFFF1F5F9), fontSize: 14),
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: TextStyle(color: Color(0xFF94A3B8)),
-                      border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    ),
-                    maxLines: 5,
-                    minLines: 1,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              sending
-                  ? const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Color(0xFF6C63FF)),
-                      ),
-                    )
-                  : GestureDetector(
-                      onTap: onSend,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)],
-                          ),
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: const Icon(Icons.send,
-                            color: Colors.white, size: 20),
-                      ),
-                    ),
-            ],
-          ),
-        ),
-      ),
-    );
+  IconData _iconFor(String category) {
+    switch (category) {
+      case 'video':
+        return Icons.videocam_outlined;
+      case 'voice_note':
+        return Icons.mic;
+      case 'document':
+        return Icons.insert_drive_file;
+      default:
+        return Icons.image;
+    }
   }
 }
 
-class _Bubble extends StatelessWidget {
-  const _Bubble({
-    required this.report,
-    required this.isMe,
-    required this.isBrief,
-  });
+class _MediaAttachment {
+  _MediaAttachment(this.category, this.name, this.bytes);
+  final String category;
+  final String name;
+  final List<int> bytes;
+}
 
+/// WhatsApp Business-style message bubble
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.report, required this.isMe});
   final Map<String, dynamic> report;
   final bool isMe;
-  final bool isBrief;
 
   @override
   Widget build(BuildContext context) {
@@ -335,92 +372,77 @@ class _Bubble extends StatelessWidget {
     final text = report['workDone']?.toString().trim() ?? '';
     final progress = report['progressPercent'];
 
-    if (isBrief) {
-      return _BriefCard(report: report);
-    }
-
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        margin: const EdgeInsets.symmetric(vertical: 2),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
+          maxWidth: MediaQuery.of(context).size.width * 0.80,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isMe
-                ? const [Color(0xFF6C63FF), Color(0xFF3B82F6)]
-                : const [Color(0xFF1E293B), Color(0xFF334155)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: isMe ? const Color(0xFFD9FDD3) : Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft:
-                isMe ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight:
-                isMe ? const Radius.circular(4) : const Radius.circular(16),
+            topLeft: const Radius.circular(12),
+            topRight: const Radius.circular(12),
+            bottomLeft: isMe ? const Radius.circular(12) : Radius.zero,
+            bottomRight: isMe ? Radius.zero : const Radius.circular(12),
           ),
           boxShadow: [
             BoxShadow(
-              color: (isMe ? const Color(0xFF6C63FF) : const Color(0xFF334155))
-                  .withValues(alpha: 0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Author name for others
             if (!isMe)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   '${report['authorName'] ?? ''} · ${Formatters.roleLabel(report['authorRole'] as String?)}',
                   style: const TextStyle(
-                    color: Color(0xFF6C63FF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00A884),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+            // Progress
             if (progress != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.trending_up,
-                      size: 13,
-                      color: Color(0xFF10B981),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$progress%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppGradients.textPrimary,
-                      ),
-                    ),
-                  ],
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00A884).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '📈 $progress% complete',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF00A884)),
                 ),
               ),
+            // Message text
             if (text.isNotEmpty)
-              Text(
-                text,
-                style: const TextStyle(
-                  color: AppGradients.textPrimary,
-                  fontSize: 14,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  text,
+                  style:
+                      const TextStyle(fontSize: 15, color: Color(0xFF111B21)),
                 ),
               ),
+            // Media attachments
             if (media.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.only(top: 4, bottom: 2),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
@@ -428,32 +450,24 @@ class _Bubble extends StatelessWidget {
                     for (final m in media)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color:
-                              AppGradients.surfaceDark.withValues(alpha: 0.5),
+                          color: const Color(0xFFF0F2F5),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.attach_file,
-                              size: 12,
-                              color: AppGradients.textSecondary,
-                            ),
+                            Icon(_attachIcon(m['category'] as String?),
+                                size: 14, color: const Color(0xFF54656F)),
                             const SizedBox(width: 4),
                             ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 100),
+                              constraints: const BoxConstraints(maxWidth: 120),
                               child: Text(
                                 m['originalName']?.toString() ?? 'file',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: AppGradients.textSecondary,
-                                  fontSize: 11,
-                                ),
+                                    fontSize: 12, color: Color(0xFF54656F)),
                               ),
                             ),
                           ],
@@ -462,26 +476,20 @@ class _Bubble extends StatelessWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 4),
+            // Timestamp
             Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   Formatters.dateTime(report['createdAt']),
-                  style: const TextStyle(
-                    color: AppGradients.textSecondary,
-                    fontSize: 10,
-                  ),
+                  style:
+                      const TextStyle(fontSize: 11, color: Color(0xFF667781)),
                 ),
                 if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.done_all,
-                    size: 12,
-                    color: (report['readBy'] as List?)?.isNotEmpty == true
-                        ? const Color(0xFF6C63FF)
-                        : AppGradients.textSecondary,
-                  ),
+                  const SizedBox(width: 3),
+                  const Icon(Icons.done_all,
+                      size: 14, color: Color(0xFF53BDEB)),
                 ],
               ],
             ),
@@ -490,75 +498,17 @@ class _Bubble extends StatelessWidget {
       ),
     );
   }
-}
 
-/// Assignment brief highlighted card (visible only on valid day for workers).
-class _BriefCard extends StatelessWidget {
-  const _BriefCard({required this.report});
-  final Map<String, dynamic> report;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF6C63FF).withValues(alpha: 0.15),
-            const Color(0xFF3B82F6).withValues(alpha: 0.15),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6C63FF), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                  colors: [Color(0xFF6C63FF), Color(0xFF3B82F6)]),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(14),
-                topRight: Radius.circular(14),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.assignment, color: Colors.white, size: 14),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "TODAY'S ASSIGNMENT",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                StatusBadge(
-                  label: 'Brief',
-                  gradient: AppGradients.primary,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              report['workDone']?.toString() ?? '',
-              style: const TextStyle(
-                color: AppGradients.textPrimary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  IconData _attachIcon(String? category) {
+    switch (category) {
+      case 'video':
+        return Icons.videocam;
+      case 'voice_note':
+        return Icons.mic;
+      case 'photo':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 }
