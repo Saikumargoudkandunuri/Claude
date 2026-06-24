@@ -17,6 +17,7 @@ router.post('/forgot-password', authLimiter, validate(schema.forgotPassword), co
 router.post('/reset-password', authLimiter, validate(schema.resetPassword), controller.resetPassword);
 router.post('/otp/request', authLimiter, validate(schema.requestOtp), controller.requestOtp);
 router.post('/otp/verify', authLimiter, validate(schema.verifyOtp), controller.verifyOtp);
+router.post('/firebase-phone-login', authLimiter, validate(schema.firebasePhoneLogin), controller.firebasePhoneLogin);
 
 router.get('/me', authenticate, controller.me);
 router.put('/me', authenticate, validate(schema.updateProfile), controller.updateProfile);

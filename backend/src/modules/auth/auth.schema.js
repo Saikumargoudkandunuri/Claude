@@ -55,4 +55,9 @@ const verifyOtp = z.object({
   otp: z.string().length(6),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp };
+const firebasePhoneLogin = z.object({
+  phone: z.string().min(6).max(20),
+  firebaseUid: z.string().min(1),
+});
+
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp, firebasePhoneLogin };

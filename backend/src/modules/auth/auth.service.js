@@ -357,6 +357,51 @@ async function verifyLoginOtp(phone, otp) {
   return { ...tokens, user: publicUser(user) };
 }
 
+/**
+ * Firebase Phone Auth login: After Firebase verifies the phone number,
+ * the client sends the verified phone + Firebase UID.
+ * We look up the user in our database and issue JWT tokens.
+ */
+async function firebasePhoneLogin(phone, firebaseUid) {
+  // Normalize phone
+  const digits = phone.replace(/[^0-9]/g, '');
+  const last10 = digits.slice(-10);
+
+  // Find user by phone (flexible matching)
+  const { rows: users } = await query(
+    `SELECT * FROM users
+     WHERE phone = $1
+        OR phone = $2
+        OR phone = $3
+        OR RIGHT(REPLACE(REPLACE(phone, ' ', ''), '-', ''), 10) = $4
+     LIMIT 1`,
+    [phone, `+91${last10}`, last10, last10]
+  );
+
+  const user = users[0];
+  if (!user) {
+    throw ApiError.forbidden('This mobile number is not registered. Please contact Administrator.');
+  }
+  if (user.status === 'disabled') throw ApiError.forbidden('Account is disabled');
+  if (user.status === 'rejected') throw ApiError.forbidden('Account was rejected');
+  if (user.status === 'pending') throw ApiError.forbidden('Account is pending admin approval');
+
+  // Issue JWT tokens
+  const tokens = await issueTokens(user);
+
+  // Log successful authentication
+  await logActivity({
+    userId: user.id,
+    action: 'auth.firebase_phone',
+    entityType: 'user',
+    entityId: user.id,
+    description: 'Logged in via Firebase Phone Auth',
+    metadata: { firebaseUid },
+  });
+
+  return { ...tokens, user: publicUser(user) };
+}
+
 module.exports = {
   publicUser,
   register,
@@ -372,4 +417,5 @@ module.exports = {
   resetPassword,
   requestLoginOtp,
   verifyLoginOtp,
+  firebasePhoneLogin,
 };

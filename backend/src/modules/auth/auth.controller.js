@@ -68,4 +68,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
   ok(res, result);
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp };
+const firebasePhoneLogin = asyncHandler(async (req, res) => {
+  const result = await service.firebasePhoneLogin(req.body.phone, req.body.firebaseUid);
+  ok(res, result);
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp, firebasePhoneLogin };

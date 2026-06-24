@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../application/auth_controller.dart';
 
-/// OTP Login: Fixed +91 country code, user enters 10-digit number.
+/// Firebase Phone Auth login screen.
+/// Fixed +91 country code, user enters 10-digit number.
+/// After Firebase verifies OTP, backend checks if phone exists in DB.
 class OtpLoginScreen extends ConsumerStatefulWidget {
   const OtpLoginScreen({super.key});
 
@@ -30,6 +33,8 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   int _countdown = 0;
   Timer? _timer;
   String? _errorMsg;
+  String? _verificationId;
+  int? _resendToken;
 
   @override
   void dispose() {
@@ -56,9 +61,11 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
     });
   }
 
+  String get _fullPhone => '+91${_phoneCtrl.text.trim()}';
   String get _otpValue => _otpControllers.map((c) => c.text).join();
 
-  Future<void> _requestOtp() async {
+  /// Step 1: Send OTP via Firebase Phone Auth
+  Future<void> _sendOtp() async {
     final digits = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.length != 10) {
       setState(() => _errorMsg = 'Enter a valid 10-digit mobile number');
@@ -68,64 +75,151 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
       _busy = true;
       _errorMsg = null;
     });
+
     try {
-      final dio = DioClient.instance.dio;
-      await dio.post(
-        '/auth/otp/request',
-        data: {'phone': '+91$digits'},
-        options: Options(extra: {'skipAuth': true}),
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: '+91$digits',
+        timeout: const Duration(seconds: 60),
+        forceResendingToken: _resendToken,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Auto-verification (Android auto-read SMS)
+          await _signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          if (mounted) {
+            setState(() {
+              _busy = false;
+              _errorMsg = e.message ?? 'Verification failed. Try again.';
+            });
+          }
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          if (mounted) {
+            setState(() {
+              _verificationId = verificationId;
+              _resendToken = resendToken;
+              _step = 1;
+              _busy = false;
+            });
+            _startCountdown();
+          }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          _verificationId = verificationId;
+        },
       );
-      setState(() => _step = 1);
-      _startCountdown();
-      _snack('OTP sent to +91 $digits');
     } catch (e) {
-      setState(() => _errorMsg = DioClient.toApiException(e).message);
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _errorMsg = 'Failed to send OTP. Check your internet connection.';
+        });
+      }
     }
   }
 
+  /// Step 2: Verify OTP manually
   Future<void> _verifyOtp() async {
     final otp = _otpValue;
     if (otp.length != 6) {
       setState(() => _errorMsg = 'Enter the complete 6-digit OTP');
       return;
     }
+    if (_verificationId == null) {
+      setState(() => _errorMsg = 'Session expired. Please resend OTP.');
+      return;
+    }
     setState(() {
       _busy = true;
       _errorMsg = null;
     });
+
     try {
-      final digits = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otp,
+      );
+      await _signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          if (e.code == 'invalid-verification-code') {
+            _errorMsg = 'Invalid OTP. Please check and try again.';
+          } else if (e.code == 'session-expired') {
+            _errorMsg = 'OTP expired. Please resend.';
+          } else {
+            _errorMsg = e.message ?? 'Verification failed.';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _errorMsg = 'Verification failed. Try again.';
+        });
+      }
+    }
+  }
+
+  /// After Firebase verifies the phone, check with our backend
+  Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
+    try {
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        setState(() {
+          _busy = false;
+          _errorMsg = 'Authentication failed.';
+        });
+        return;
+      }
+
+      // Now call our backend to get JWT tokens
+      final phone = firebaseUser.phoneNumber ?? _fullPhone;
       final dio = DioClient.instance.dio;
       final res = await dio.post(
-        '/auth/otp/verify',
-        data: {'phone': '+91$digits', 'otp': otp},
+        '/auth/firebase-phone-login',
+        data: {
+          'phone': phone,
+          'firebaseUid': firebaseUser.uid,
+        },
         options: Options(extra: {'skipAuth': true}),
       );
       final data = res.data['data'] as Map<String, dynamic>;
 
-      // Save tokens
+      // Save JWT tokens
       await SecureStore.instance.saveTokens(
         accessToken: data['accessToken'] as String,
         refreshToken: data['refreshToken'] as String,
       );
 
-      // Refresh auth state → router will redirect to dashboard
-      await ref.read(authControllerProvider.notifier).refreshUser();
-    } catch (e) {
+      // Sign out from Firebase (we use our own JWT)
+      await FirebaseAuth.instance.signOut();
+
+      // Refresh auth state → router redirects to dashboard
+      if (mounted) {
+        await ref.read(authControllerProvider.notifier).refreshUser();
+      }
+    } on DioException catch (e) {
+      // Backend rejected: phone not registered
+      await FirebaseAuth.instance.signOut();
       if (mounted) {
         setState(() {
           _busy = false;
           _errorMsg = DioClient.toApiException(e).message;
         });
       }
-    }
-  }
-
-  void _snack(String msg) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _errorMsg = e.toString();
+        });
+      }
     }
   }
 
@@ -166,13 +260,11 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         const Text(
-          'We will send a 6-digit OTP to verify your identity.',
+          'We will send a verification code via SMS.',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xxl),
-
-        // Phone input with fixed +91 prefix
         TextField(
           controller: _phoneCtrl,
           keyboardType: TextInputType.number,
@@ -185,31 +277,25 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               alignment: Alignment.center,
               width: 70,
-              child: const Text(
-                '+91',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
+              child: const Text('+91',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             ),
             hintText: '9876543210',
             counterText: '',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
-
         if (_errorMsg != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            _errorMsg!,
-            style: const TextStyle(color: AppColors.danger, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
+          Text(_errorMsg!,
+              style: const TextStyle(color: AppColors.danger, fontSize: 13),
+              textAlign: TextAlign.center),
         ],
         const SizedBox(height: AppSpacing.xl),
-
         SizedBox(
           height: 50,
           child: FilledButton(
-            onPressed: _busy ? null : _requestOtp,
+            onPressed: _busy ? null : _sendOtp,
             child: _busy
                 ? const SizedBox(
                     height: 20,
@@ -224,26 +310,19 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
   }
 
   Widget _otpStep() {
-    final digits = _phoneCtrl.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Icon(Icons.sms_outlined, size: 64, color: AppColors.primary),
         const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'Verify OTP',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        ),
+        const Text('Verify OTP',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
         const SizedBox(height: AppSpacing.sm),
-        Text(
-          'OTP sent to +91 $digits',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
+        Text('Code sent to ${_fullPhone}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary)),
         const SizedBox(height: AppSpacing.xxl),
-
-        // 6-digit OTP boxes
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(
@@ -276,25 +355,18 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                         if (value.isEmpty && i > 0) {
                           _otpFocusNodes[i - 1].requestFocus();
                         }
-                        // Auto-verify when all 6 digits entered
-                        if (_otpValue.length == 6) {
-                          _verifyOtp();
-                        }
+                        if (_otpValue.length == 6) _verifyOtp();
                       },
                     ),
                   )),
         ),
-
         if (_errorMsg != null) ...[
           const SizedBox(height: AppSpacing.md),
-          Text(
-            _errorMsg!,
-            style: const TextStyle(color: AppColors.danger, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
+          Text(_errorMsg!,
+              style: const TextStyle(color: AppColors.danger, fontSize: 13),
+              textAlign: TextAlign.center),
         ],
         const SizedBox(height: AppSpacing.xl),
-
         SizedBox(
           height: 50,
           child: FilledButton(
@@ -309,20 +381,14 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-
-        // Resend
         Center(
           child: _countdown > 0
-              ? Text(
-                  'Resend OTP in ${_countdown}s',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                )
+              ? Text('Resend in ${_countdown}s',
+                  style: const TextStyle(color: AppColors.textSecondary))
               : TextButton(
-                  onPressed: _busy ? null : _requestOtp,
-                  child: const Text('Resend OTP'),
-                ),
+                  onPressed: _busy ? null : _sendOtp,
+                  child: const Text('Resend OTP')),
         ),
-        const SizedBox(height: AppSpacing.sm),
         Center(
           child: TextButton(
             onPressed: () => setState(() {
@@ -332,7 +398,7 @@ class _OtpLoginScreenState extends ConsumerState<OtpLoginScreen> {
                 c.clear();
               }
             }),
-            child: const Text('Change phone number'),
+            child: const Text('Change number'),
           ),
         ),
       ],
