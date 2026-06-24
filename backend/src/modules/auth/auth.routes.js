@@ -13,8 +13,12 @@ router.post('/register', authLimiter, validate(schema.register), controller.regi
 router.post('/login', authLimiter, validate(schema.login), controller.login);
 router.post('/refresh', authLimiter, validate(schema.refresh), controller.refresh);
 router.post('/logout', validate(schema.refresh), controller.logout);
+router.post('/forgot-password', authLimiter, validate(schema.forgotPassword), controller.forgotPassword);
+router.post('/reset-password', authLimiter, validate(schema.resetPassword), controller.resetPassword);
 
 router.get('/me', authenticate, controller.me);
+router.put('/me', authenticate, validate(schema.updateProfile), controller.updateProfile);
+router.put('/me/password', authenticate, validate(schema.changePassword), controller.changePassword);
 router.put('/me/push-token', authenticate, validate(schema.pushToken), controller.updatePushToken);
 router.put(
   '/me/worker-status',

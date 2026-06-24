@@ -50,11 +50,41 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> updateWorkerStatus(String status) async {
-    final res = await _dio.put('/auth/me/worker-status', data: {'status': status});
+    final res =
+        await _dio.put('/auth/me/worker-status', data: {'status': status});
     return res.data['data'] as Map<String, dynamic>;
   }
 
   Future<void> updatePushToken(String token) async {
     await _dio.put('/auth/me/push-token', data: {'pushToken': token});
+  }
+
+  Future<Map<String, dynamic>> updateProfile(
+      {String? fullName, String? phone}) async {
+    final res = await _dio.put('/auth/me', data: {
+      if (fullName != null) 'fullName': fullName,
+      if (phone != null) 'phone': phone,
+    });
+    return res.data['data'] as Map<String, dynamic>;
+  }
+
+  Future<void> changePassword(
+      String currentPassword, String newPassword) async {
+    await _dio.put('/auth/me/password', data: {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _dio.post('/auth/forgot-password',
+        data: {'email': email}, options: Options(extra: {'skipAuth': true}));
+  }
+
+  Future<void> resetPassword(
+      String email, String otp, String newPassword) async {
+    await _dio.post('/auth/reset-password',
+        data: {'email': email, 'otp': otp, 'newPassword': newPassword},
+        options: Options(extra: {'skipAuth': true}));
   }
 }

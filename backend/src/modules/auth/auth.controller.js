@@ -38,4 +38,24 @@ const updateWorkerStatus = asyncHandler(async (req, res) => {
   ok(res, user);
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus };
+const updateProfile = asyncHandler(async (req, res) => {
+  const user = await service.updateProfile(req.user.id, req.body);
+  ok(res, user);
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  await service.changePassword(req.user.id, req.body);
+  res.status(204).send();
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await service.forgotPassword(req.body.email);
+  ok(res, result || { message: 'If this email exists, a reset OTP has been sent.' });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  await service.resetPassword(req.body);
+  ok(res, { message: 'Password reset successfully. You can now login.' });
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword };

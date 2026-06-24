@@ -154,6 +154,56 @@ async function updateWorkerStatus(userId, status) {
   return publicUser(rows[0]);
 }
 
+async function updateProfile(userId, { fullName, phone }) {
+  const sets = [];
+  const params = [];
+  if (fullName) { params.push(fullName); sets.push(`full_name = $${params.length}`); }
+  if (phone) { params.push(phone); sets.push(`phone = $${params.length}`); }
+  if (sets.length === 0) throw ApiError.badRequest('Nothing to update');
+  params.push(userId);
+  const { rows } = await query(
+    `UPDATE users SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  );
+  return publicUser(rows[0]);
+}
+
+async function changePassword(userId, { currentPassword, newPassword }) {
+  const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+  if (!rows[0]) throw ApiError.notFound('User not found');
+  const valid = await comparePassword(currentPassword, rows[0].password_hash);
+  if (!valid) throw ApiError.forbidden('Current password is incorrect');
+  const hash = await hashPassword(newPassword);
+  await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+}
+
+async function forgotPassword(email) {
+  const { rows } = await query('SELECT id, full_name FROM users WHERE email = $1', [email]);
+  if (!rows[0]) return; // Don't reveal if email exists
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  // Store OTP with 10 min expiry
+  await query(
+    `UPDATE users SET reset_otp = $1, reset_otp_expires = now() + interval '10 minutes' WHERE id = $2`,
+    [otp, rows[0].id]
+  );
+  // In production, send via SMS/email. For now log it.
+  console.log(`[OTP] Password reset OTP for ${email}: ${otp}`);
+  return { message: 'If this email exists, a reset OTP has been sent.' };
+}
+
+async function resetPassword({ email, otp, newPassword }) {
+  const { rows } = await query(
+    `SELECT id FROM users WHERE email = $1 AND reset_otp = $2 AND reset_otp_expires > now()`,
+    [email, otp]
+  );
+  if (!rows[0]) throw ApiError.forbidden('Invalid or expired OTP');
+  const hash = await hashPassword(newPassword);
+  await query(
+    'UPDATE users SET password_hash = $1, reset_otp = NULL, reset_otp_expires = NULL WHERE id = $2',
+    [hash, rows[0].id]
+  );
+}
+
 module.exports = {
   publicUser,
   register,
@@ -163,4 +213,8 @@ module.exports = {
   me,
   updatePushToken,
   updateWorkerStatus,
+  updateProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
 };

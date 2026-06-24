@@ -26,4 +26,24 @@ const workerStatus = z.object({
   status: z.enum(['workshop', 'at_site', 'leave', 'holiday']),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus };
+const updateProfile = z.object({
+  fullName: z.string().min(2).max(120).optional(),
+  phone: z.string().min(6).max(20).optional(),
+});
+
+const changePassword = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
+});
+
+const forgotPassword = z.object({
+  email: z.string().email(),
+});
+
+const resetPassword = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+  newPassword: z.string().min(8).max(100),
+});
+
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword };

@@ -90,6 +90,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     TextButton(
+                      onPressed: () => context.go('/forgot-password'),
+                      child: const Text('Forgot Password?'),
+                    ),
+                    TextButton(
                       onPressed: () => context.go('/register'),
                       child: const Text("Don't have an account? Register"),
                     ),
@@ -118,7 +122,8 @@ class _Brand extends StatelessWidget {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
-          child: const Icon(Icons.chair_alt_rounded, color: Colors.white, size: 34),
+          child: const Icon(Icons.chair_alt_rounded,
+              color: Colors.white, size: 34),
         ),
         const SizedBox(height: AppSpacing.lg),
         const Text(

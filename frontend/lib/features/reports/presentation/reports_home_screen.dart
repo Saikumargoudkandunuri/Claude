@@ -67,23 +67,29 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
             return ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.lg),
               itemCount: projects.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = projects[i];
                 return Card(
                   child: ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: AppColors.surfaceAlt,
-                      child: Icon(Icons.chat_outlined, color: AppColors.primary),
+                      child:
+                          Icon(Icons.chat_outlined, color: AppColors.primary),
                     ),
-                    title: Text(p.projectName,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text(p.customerName,
-                        overflow: TextOverflow.ellipsis),
+                    title: Text(
+                      p.customerName,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text(
+                      '${p.projectNumber} · ${p.projectName}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => setState(() {
                       _selectedProjectId = p.id;
-                      _selectedProjectName = p.projectName;
+                      _selectedProjectName = p.customerName;
                     }),
                   ),
                 );
