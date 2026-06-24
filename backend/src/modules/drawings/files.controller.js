@@ -57,6 +57,7 @@ const remove = asyncHandler(async (req, res) => {
 
 /** Streams the file, supporting HTTP Range requests (videos / large PDFs). */
 const download = asyncHandler(async (req, res) => {
+  if (req.log) req.log.info({ fileId: req.params.fileId, userId: req.user?.id }, 'file download requested');
   const file = await service.resolveForDownload(req.user, req.params.fileId);
   const stat = await storage.stat(file.storage_key);
   const total = stat.size;

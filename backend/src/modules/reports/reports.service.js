@@ -7,7 +7,13 @@ const { notifyAdmins, notifyUsers } = require('../../utils/notify');
 const projects = require('../projects/projects.service');
 
 function fileBaseUrl() {
-  return process.env.API_PREFIX || '/api/v1';
+  // Build an ABSOLUTE base so report-media URLs are never relative (which broke
+  // opening on mobile). Prefer PUBLIC_BASE_URL (set on Render) else fall back
+  // to the API prefix. The mobile app also builds file URLs from API_BASE_URL,
+  // so this is a belt-and-braces correctness fix.
+  const base = process.env.PUBLIC_BASE_URL;
+  const prefix = process.env.API_PREFIX || '/api/v1';
+  return base ? `${base.replace(/\/$/, '')}${prefix}` : prefix;
 }
 
 function serialize(row, media = []) {

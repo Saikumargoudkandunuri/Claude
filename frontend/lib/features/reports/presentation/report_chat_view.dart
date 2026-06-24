@@ -8,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../drawings/presentation/attachment_opener.dart';
 import '../application/reports_controller.dart';
 import 'report_form_sheet.dart';
 
@@ -372,30 +373,41 @@ class _Bubble extends StatelessWidget {
                   runSpacing: AppSpacing.xs,
                   children: [
                     for (final m in media)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.border),
+                      InkWell(
+                        onTap: () => openAttachment(
+                          context,
+                          fileId: (m['id'] ?? '').toString(),
+                          name: m['originalName']?.toString() ?? 'file',
+                          mimeType: m['mimeType']?.toString(),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(_ReportChatViewState._iconFor(
-                                m['category'] as String? ?? 'document'),
-                                size: 14, color: AppColors.primary),
-                            const SizedBox(width: 4),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 140),
-                              child: Text(
-                                m['originalName']?.toString() ?? 'file',
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(_ReportChatViewState._iconFor(
+                                  m['category'] as String? ?? 'document'),
+                                  size: 14, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 140),
+                                child: Text(
+                                  m['originalName']?.toString() ?? 'file',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              const Icon(Icons.open_in_new,
+                                  size: 12, color: AppColors.primary),
+                            ],
+                          ),
                         ),
                       ),
                   ],

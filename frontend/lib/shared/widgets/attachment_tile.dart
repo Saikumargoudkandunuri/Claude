@@ -1,35 +1,61 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/network/file_access.dart';
+import '../../features/drawings/presentation/attachment_opener.dart';
 import '../design/app_gradients.dart';
 import 'shimmer_loader.dart';
 
-/// BUG-06: Tappable file attachment with open/preview support.
-/// Image → fullscreen gallery; PDF → Syncfusion; Video → player; Audio → sheet.
-class AttachmentTile extends StatelessWidget {
+/// Tappable file attachment that opens IN-APP (PDF/image viewer with JWT) —
+/// never the browser, so workers don't hit 404s.
+class AttachmentTile extends StatefulWidget {
   const AttachmentTile({
     super.key,
-    required this.url,
+    required this.fileId,
     required this.fileName,
     this.mimeType = '',
     this.sizeLabel = '',
   });
 
-  final String url;
+  final String fileId;
   final String fileName;
   final String mimeType;
   final String sizeLabel;
 
-  bool get _isImage => mimeType.startsWith('image/');
-  bool get _isVideo => mimeType.startsWith('video/');
-  bool get _isAudio => mimeType.startsWith('audio/');
-  bool get _isPdf => mimeType.contains('pdf');
+  @override
+  State<AttachmentTile> createState() => _AttachmentTileState();
+}
+
+class _AttachmentTileState extends State<AttachmentTile> {
+  Map<String, String>? _headers;
+
+  bool get _isImage =>
+      widget.mimeType.startsWith('image/') ||
+      const ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+          .any(widget.fileName.toLowerCase().endsWith);
+  bool get _isVideo => widget.mimeType.startsWith('video/');
+  bool get _isAudio => widget.mimeType.startsWith('audio/');
+  bool get _isPdf =>
+      widget.mimeType.contains('pdf') ||
+      widget.fileName.toLowerCase().endsWith('.pdf');
+
+  @override
+  void initState() {
+    super.initState();
+    FileAccess.authHeaders().then((h) {
+      if (mounted) setState(() => _headers = h);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _open(context),
+      onTap: () => openAttachment(
+        context,
+        fileId: widget.fileId,
+        name: widget.fileName,
+        mimeType: widget.mimeType,
+      ),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(10),
@@ -45,9 +71,10 @@ class AttachmentTile extends StatelessWidget {
         child: Row(children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: _isImage
+            child: (_isImage && _headers != null)
                 ? CachedNetworkImage(
-                    imageUrl: url,
+                    imageUrl: FileAccess.urlFor(widget.fileId),
+                    httpHeaders: _headers,
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
@@ -68,14 +95,14 @@ class AttachmentTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(fileName,
+                Text(widget.fileName,
                     style: const TextStyle(
                         color: AppGradients.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis),
-                if (sizeLabel.isNotEmpty)
-                  Text(sizeLabel,
+                if (widget.sizeLabel.isNotEmpty)
+                  Text(widget.sizeLabel,
                       style: const TextStyle(
                           color: AppGradients.textSecondary, fontSize: 11)),
               ],
@@ -99,10 +126,5 @@ class AttachmentTile extends StatelessWidget {
     if (_isVideo) return const Color(0xFF10B981);
     if (_isAudio) return const Color(0xFFF59E0B);
     return const Color(0xFF6C63FF);
-  }
-
-  void _open(BuildContext context) {
-    // For now, open in external app — viewers will be wired in BUG-06 phase 2.
-    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 }

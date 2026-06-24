@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
+import '../../drawings/presentation/attachment_opener.dart';
 
 /// Reusable daily-report card (used in project Reports tab and All Reports).
 class ReportCard extends StatelessWidget {
@@ -91,12 +92,18 @@ class ReportCard extends StatelessWidget {
                 runSpacing: AppSpacing.xs,
                 children: [
                   for (final m in media)
-                    Chip(
+                    ActionChip(
                       avatar: Icon(_mediaIcon(m['category'] as String?),
                           size: 16, color: AppColors.primary),
                       label: Text(
                         m['originalName']?.toString() ?? 'file',
                         style: const TextStyle(fontSize: 12),
+                      ),
+                      onPressed: () => openAttachment(
+                        context,
+                        fileId: (m['id'] ?? '').toString(),
+                        name: m['originalName']?.toString() ?? 'file',
+                        mimeType: m['mimeType']?.toString(),
                       ),
                     ),
                 ],

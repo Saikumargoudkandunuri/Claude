@@ -1,7 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/permissions/permissions.dart';
@@ -12,6 +11,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../drawings/application/drawings_controller.dart';
 import '../../../drawings/domain/drawing_file.dart';
+import '../../../drawings/presentation/attachment_opener.dart';
 import '../../../drawings/presentation/upload_drawings_screen.dart';
 
 /// Lists drawings grouped by category. Admin/Designer can upload & replace.
@@ -212,6 +212,14 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
               Card(
                 margin: const EdgeInsets.only(top: AppSpacing.sm),
                 child: ListTile(
+                  // BUGFIX: tap anywhere on the row opens the file in-app
+                  // (PDF/image viewer with JWT) — no browser, no 404.
+                  onTap: () => openAttachment(
+                    context,
+                    fileId: file.id,
+                    name: file.originalName,
+                    mimeType: file.mimeType,
+                  ),
                   leading: Icon(
                     file.isPdf
                         ? Icons.picture_as_pdf
@@ -226,18 +234,16 @@ class _CategorySectionState extends ConsumerState<_CategorySection> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (file.isPdf)
-                        IconButton(
-                          icon: const Icon(Icons.open_in_full),
-                          tooltip: 'Open',
-                          onPressed: () => context.push(
-                            '/viewer',
-                            extra: {
-                              'url': file.downloadUrl,
-                              'name': file.originalName,
-                            },
-                          ),
+                      IconButton(
+                        icon: const Icon(Icons.open_in_full),
+                        tooltip: 'Open',
+                        onPressed: () => openAttachment(
+                          context,
+                          fileId: file.id,
+                          name: file.originalName,
+                          mimeType: file.mimeType,
                         ),
+                      ),
                       if (widget.canUpload)
                         IconButton(
                           icon: const Icon(

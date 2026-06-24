@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
-import '../../../core/storage/secure_store.dart';
+import '../../../core/network/file_access.dart';
 import '../../../core/theme/app_colors.dart';
 
-/// Full-screen PDF/drawing viewer with zoom, page navigation and download.
-/// Receives the file's download URL and name via [extra].
+/// Full-screen in-app PDF/drawing viewer (zoom, scroll) with the auth header
+/// attached and graceful load-failure handling.
 class PdfViewerScreen extends ConsumerStatefulWidget {
   const PdfViewerScreen({super.key, required this.url, required this.name});
 
@@ -20,17 +20,14 @@ class PdfViewerScreen extends ConsumerStatefulWidget {
 class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   final _controller = PdfViewerController();
   Map<String, String>? _headers;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadHeaders();
-  }
-
-  Future<void> _loadHeaders() async {
-    final token = await SecureStore.instance.accessToken;
-    setState(() {
-      _headers = {if (token != null) 'Authorization': 'Bearer $token'};
+    FileAccess.log('opening PDF ${widget.name} url=${widget.url}');
+    FileAccess.authHeaders().then((h) {
+      if (mounted) setState(() => _headers = h);
     });
   }
 
@@ -53,15 +50,61 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
           ),
         ],
       ),
-      body: _headers == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : SfPdfViewer.network(
-              widget.url,
-              headers: _headers,
-              controller: _controller,
-              canShowScrollHead: true,
-              enableDoubleTapZooming: true,
-            ),
+      body: _error != null
+          ? _PdfError(message: _error!)
+          : _headers == null
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary))
+              : SfPdfViewer.network(
+                  widget.url,
+                  headers: _headers,
+                  controller: _controller,
+                  canShowScrollHead: true,
+                  enableDoubleTapZooming: true,
+                  onDocumentLoadFailed: (details) {
+                    FileAccess.log(
+                        'PDF load failed: ${details.error} — ${details.description}');
+                    if (mounted) {
+                      setState(() => _error = _friendly(details.description));
+                    }
+                  },
+                ),
+    );
+  }
+
+  String _friendly(String description) {
+    final d = description.toLowerCase();
+    if (d.contains('404') || d.contains('not found')) {
+      return 'File not found on server.';
+    }
+    if (d.contains('401') || d.contains('403') || d.contains('forbidden')) {
+      return 'You do not have access to this file.';
+    }
+    return 'Could not open this file. Please try again later.';
+  }
+}
+
+class _PdfError extends StatelessWidget {
+  const _PdfError({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.danger, size: 56),
+            const SizedBox(height: 16),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 15)),
+          ],
+        ),
+      ),
     );
   }
 }
