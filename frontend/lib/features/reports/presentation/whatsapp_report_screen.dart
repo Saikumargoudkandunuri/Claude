@@ -7,6 +7,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
+import '../../../shared/widgets/voice_note_player.dart';
 import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/reports_controller.dart';
@@ -441,43 +442,55 @@ class _Bubble extends StatelessWidget {
             if (media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4, bottom: 2),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (final m in media)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F2F5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _attachIcon(m['category'] as String?),
-                              size: 14,
-                              color: const Color(0xFF54656F),
-                            ),
-                            const SizedBox(width: 4),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 120),
-                              child: Text(
-                                m['originalName']?.toString() ?? 'file',
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF54656F),
+                      if (m['category'] == 'voice_note' &&
+                          m['downloadUrl'] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: VoiceNotePlayer(
+                            url: m['downloadUrl'] as String,
+                            fileName: m['originalName'] as String?,
+                            isMe: isMe,
+                          ),
+                        )
+                      else
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F2F5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _attachIcon(m['category'] as String?),
+                                size: 14,
+                                color: const Color(0xFF54656F),
+                              ),
+                              const SizedBox(width: 4),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 120),
+                                child: Text(
+                                  m['originalName']?.toString() ?? 'file',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF54656F),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                   ],
                 ),
               ),

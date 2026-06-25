@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
+import '../../../shared/widgets/voice_note_player.dart';
 import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/reports_controller.dart';
@@ -442,43 +443,55 @@ class _Bubble extends StatelessWidget {
             if (media.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.sm),
-                child: Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (final m in media)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _ReportChatViewState._iconFor(
-                                m['category'] as String? ?? 'document',
+                      if (m['category'] == 'voice_note' &&
+                          m['downloadUrl'] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: VoiceNotePlayer(
+                            url: m['downloadUrl'] as String,
+                            fileName: m['originalName'] as String?,
+                            isMe: isMine,
+                          ),
+                        )
+                      else
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _ReportChatViewState._iconFor(
+                                  m['category'] as String? ?? 'document',
+                                ),
+                                size: 14,
+                                color: AppColors.primary,
                               ),
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 140),
-                              child: Text(
-                                m['originalName']?.toString() ?? 'file',
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12),
+                              const SizedBox(width: 4),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 140),
+                                child: Text(
+                                  m['originalName']?.toString() ?? 'file',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                   ],
                 ),
               ),
