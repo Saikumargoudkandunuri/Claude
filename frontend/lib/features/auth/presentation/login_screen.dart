@@ -139,12 +139,12 @@ class _Brand extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         const Text(
-          'Interior Manager',
+          'Work Management',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: AppSpacing.xs),
         const Text(
-          'One place for your projects, drawings & teams',
+          'Metal & More Interiors',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary),
         ),

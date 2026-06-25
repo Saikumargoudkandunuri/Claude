@@ -13,7 +13,7 @@ class ICMSApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Interior Manager',
+      title: 'Work Management',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: router,
