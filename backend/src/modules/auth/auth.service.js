@@ -21,6 +21,7 @@ function publicUser(u) {
     role: u.role,
     status: u.status,
     workerStatus: u.worker_status,
+    avatarUrl: u.avatar_url || null,
   };
 }
 
@@ -281,6 +282,26 @@ async function resetPinById(userId, newPin) {
   await query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hash, userId]);
 }
 
+async function uploadAvatar(userId, file, req) {
+  const storage = require('../../services/fileStorage');
+  const config = require('../../config');
+  const saved = await storage.save(file.buffer, {
+    projectId: 'avatars',
+    category: 'profile',
+    originalName: file.originalname,
+  });
+  // Build public URL
+  const proto = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  const publicBase = config.publicUrl
+    ? `${config.publicUrl.replace(/\/+$/, '')}${config.apiPrefix}`
+    : `${proto}://${host}${config.apiPrefix}`;
+  // Store as a download URL using the files system (create a virtual file entry)
+  const avatarUrl = `${publicBase}/auth/avatar/${userId}`;
+  await query('UPDATE users SET avatar_url = $1 WHERE id = $2', [saved.storageKey, userId]);
+  return { avatarUrl };
+}
+
 module.exports = {
   publicUser,
   register,
@@ -298,4 +319,5 @@ module.exports = {
   changePin,
   adminSetPin,
   resetPinById,
+  uploadAvatar,
 };

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -47,7 +48,7 @@ class ProfileScreen extends ConsumerWidget {
                             bottom: 0,
                             right: 0,
                             child: GestureDetector(
-                              onTap: () => _pickProfilePhoto(context),
+                              onTap: () => _pickProfilePhoto(context, ref),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -56,21 +57,30 @@ class ProfileScreen extends ConsumerWidget {
                                   border:
                                       Border.all(color: Colors.white, width: 2),
                                 ),
-                                child: const Icon(Icons.camera_alt,
-                                    color: Colors.white, size: 16),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Text(user.fullName,
-                          style: const TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.w800)),
+                      Text(
+                        user.fullName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
@@ -98,8 +108,11 @@ class ProfileScreen extends ConsumerWidget {
                       _tile(Icons.phone_outlined, 'Phone', user.phone),
                       if (user.role == 'worker') ...[
                         const Divider(height: 1),
-                        _tile(Icons.work_outline, 'Status',
-                            Formatters.stageLabel(user.workerStatus)),
+                        _tile(
+                          Icons.work_outline,
+                          'Status',
+                          Formatters.stageLabel(user.workerStatus),
+                        ),
                       ],
                     ],
                   ),
@@ -107,9 +120,10 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
 
                 // Account actions
-                const Text('Account Settings',
-                    style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Account Settings',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 _actionTile(
                   context,
@@ -159,50 +173,82 @@ class ProfileScreen extends ConsumerWidget {
   Widget _tile(IconData icon, String label, String? value) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary),
-      title: Text(label,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-      subtitle: Text(value ?? '',
-          style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600)),
+      title: Text(
+        label,
+        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      ),
+      subtitle: Text(
+        value ?? '',
+        style: const TextStyle(
+          fontSize: 15,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
-  Widget _actionTile(BuildContext context,
-      {required IconData icon,
-      required String title,
-      required String subtitle,
-      required VoidCallback onTap}) {
+  Widget _actionTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ListTile(
         leading: Icon(icon, color: AppColors.primary),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle,
-            style:
-                const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
         onTap: onTap,
       ),
     );
   }
 
-  void _pickProfilePhoto(BuildContext context) async {
+  void _pickProfilePhoto(BuildContext context, WidgetRef ref) async {
     try {
-      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 512,
+      );
       if (picked != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Profile photo selected. Upload will be available soon.')),
+          const SnackBar(content: Text('Uploading photo...')),
+        );
+        final bytes = await picked.readAsBytes();
+        final dio = DioClient.instance.dio;
+        final formData = FormData.fromMap({
+          'avatar': MultipartFile.fromBytes(bytes, filename: picked.name),
+        });
+        await dio.put('/auth/me/avatar', data: formData);
+        await ref.read(authControllerProvider.notifier).refreshUser();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile photo updated!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DioClient.toApiException(e).message)),
         );
       }
-    } catch (_) {}
+    }
   }
 
-  void _showEditProfile(BuildContext context, WidgetRef ref, String currentName,
-      String currentPhone) {
+  void _showEditProfile(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+    String currentPhone,
+  ) {
     final nameCtrl = TextEditingController(text: currentName);
     final phoneCtrl = TextEditingController(text: currentPhone);
     bool busy = false;
@@ -223,9 +269,10 @@ class ProfileScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Edit Profile',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const Text(
+                  'Edit Profile',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: nameCtrl,
@@ -259,7 +306,8 @@ class ProfileScreen extends ConsumerWidget {
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text('Profile updated')),
+                                    content: Text('Profile updated'),
+                                  ),
                                 );
                               }
                             } catch (e) {
@@ -267,8 +315,10 @@ class ProfileScreen extends ConsumerWidget {
                                 setSheetState(() => busy = false);
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   SnackBar(
-                                      content: Text(
-                                          DioClient.toApiException(e).message)),
+                                    content: Text(
+                                      DioClient.toApiException(e).message,
+                                    ),
+                                  ),
                                 );
                               }
                             }
@@ -278,7 +328,10 @@ class ProfileScreen extends ConsumerWidget {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text('Save Changes'),
                   ),
                 ),
@@ -313,9 +366,10 @@ class ProfileScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Change Password',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const Text(
+                  'Change Password',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: currentCtrl,
@@ -346,15 +400,18 @@ class ProfileScreen extends ConsumerWidget {
                             if (newCtrl.text != confirmCtrl.text) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Passwords do not match')),
+                                  content: Text('Passwords do not match'),
+                                ),
                               );
                               return;
                             }
                             if (newCtrl.text.length < 8) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 const SnackBar(
-                                    content: Text(
-                                        'Password must be at least 8 characters')),
+                                  content: Text(
+                                    'Password must be at least 8 characters',
+                                  ),
+                                ),
                               );
                               return;
                             }
@@ -362,13 +419,17 @@ class ProfileScreen extends ConsumerWidget {
                             try {
                               final api = ref.read(authApiProvider);
                               await api.changePassword(
-                                  currentCtrl.text, newCtrl.text);
+                                currentCtrl.text,
+                                newCtrl.text,
+                              );
                               if (ctx.mounted) {
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text(
-                                          'Password changed successfully')),
+                                    content: Text(
+                                      'Password changed successfully',
+                                    ),
+                                  ),
                                 );
                               }
                             } catch (e) {
@@ -376,8 +437,10 @@ class ProfileScreen extends ConsumerWidget {
                                 setSheetState(() => busy = false);
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   SnackBar(
-                                      content: Text(
-                                          DioClient.toApiException(e).message)),
+                                    content: Text(
+                                      DioClient.toApiException(e).message,
+                                    ),
+                                  ),
                                 );
                               }
                             }
@@ -387,7 +450,10 @@ class ProfileScreen extends ConsumerWidget {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text('Change Password'),
                   ),
                 ),
@@ -401,7 +467,10 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   void _showOtpPasswordChange(
-      BuildContext context, WidgetRef ref, String email) {
+    BuildContext context,
+    WidgetRef ref,
+    String email,
+  ) {
     final otpCtrl = TextEditingController();
     final newCtrl = TextEditingController();
     final confirmCtrl = TextEditingController();
@@ -424,13 +493,18 @@ class ProfileScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Reset via OTP',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const Text(
+                  'Reset via OTP',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: AppSpacing.sm),
-                Text('OTP will be sent to $email',
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 13)),
+                Text(
+                  'OTP will be sent to $email',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 if (!otpSent) ...[
                   SizedBox(
@@ -457,9 +531,10 @@ class ProfileScreen extends ConsumerWidget {
                                   setSheetState(() => busy = false);
                                   ScaffoldMessenger.of(ctx).showSnackBar(
                                     SnackBar(
-                                        content: Text(
-                                            DioClient.toApiException(e)
-                                                .message)),
+                                      content: Text(
+                                        DioClient.toApiException(e).message,
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -469,7 +544,10 @@ class ProfileScreen extends ConsumerWidget {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text('Send OTP'),
                     ),
                   ),
@@ -503,14 +581,16 @@ class ProfileScreen extends ConsumerWidget {
                               if (newCtrl.text != confirmCtrl.text) {
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   const SnackBar(
-                                      content: Text('Passwords do not match')),
+                                    content: Text('Passwords do not match'),
+                                  ),
                                 );
                                 return;
                               }
                               if (newCtrl.text.length < 8) {
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   const SnackBar(
-                                      content: Text('Minimum 8 characters')),
+                                    content: Text('Minimum 8 characters'),
+                                  ),
                                 );
                                 return;
                               }
@@ -518,13 +598,18 @@ class ProfileScreen extends ConsumerWidget {
                               try {
                                 final api = ref.read(authApiProvider);
                                 await api.resetPassword(
-                                    email, otpCtrl.text.trim(), newCtrl.text);
+                                  email,
+                                  otpCtrl.text.trim(),
+                                  newCtrl.text,
+                                );
                                 if (ctx.mounted) {
                                   Navigator.pop(ctx);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                        content: Text(
-                                            'Password reset successfully')),
+                                      content: Text(
+                                        'Password reset successfully',
+                                      ),
+                                    ),
                                   );
                                 }
                               } catch (e) {
@@ -532,9 +617,10 @@ class ProfileScreen extends ConsumerWidget {
                                   setSheetState(() => busy = false);
                                   ScaffoldMessenger.of(ctx).showSnackBar(
                                     SnackBar(
-                                        content: Text(
-                                            DioClient.toApiException(e)
-                                                .message)),
+                                      content: Text(
+                                        DioClient.toApiException(e).message,
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -544,7 +630,10 @@ class ProfileScreen extends ConsumerWidget {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text('Reset Password'),
                     ),
                   ),

@@ -73,4 +73,25 @@ const resetPinByIdCtrl = asyncHandler(async (req, res) => {
   ok(res, { message: 'PIN reset successfully' });
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl, resetPinByIdCtrl };
+const uploadAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: { message: 'No file provided' } });
+  const result = await service.uploadAvatar(req.user.id, req.file, req);
+  ok(res, result);
+});
+
+const getAvatar = asyncHandler(async (req, res) => {
+  const { query: dbQuery } = require('../../db/pool');
+  const storage = require('../../services/fileStorage');
+  const { rows } = await dbQuery('SELECT avatar_url FROM users WHERE id = $1', [req.params.userId]);
+  const storageKey = rows[0]?.avatar_url;
+  if (!storageKey || !storage.exists(storageKey)) {
+    return res.status(404).json({ error: { message: 'No avatar' } });
+  }
+  const stat = await storage.stat(storageKey);
+  res.setHeader('Content-Type', 'image/jpeg');
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  storage.createReadStream(storageKey).pipe(res);
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl, resetPinByIdCtrl, uploadAvatar, getAvatar };

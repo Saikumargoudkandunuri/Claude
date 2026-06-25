@@ -1,11 +1,17 @@
 'use strict';
 
 const express = require('express');
+const multer = require('multer');
 const controller = require('./auth.controller');
 const schema = require('./auth.schema');
 const { validate } = require('../../middleware/validate');
 const { authenticate } = require('../../middleware/auth');
 const { authLimiter } = require('../../middleware/rateLimit');
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
 
 const router = express.Router();
 
@@ -20,9 +26,11 @@ router.post('/reset-pin-by-id', authLimiter, validate(schema.resetPinById), cont
 router.put('/me/pin', authenticate, validate(schema.changePin), controller.changePinCtrl);
 
 router.get('/me', authenticate, controller.me);
+router.get('/avatar/:userId', controller.getAvatar);
 router.put('/me', authenticate, validate(schema.updateProfile), controller.updateProfile);
 router.put('/me/password', authenticate, validate(schema.changePassword), controller.changePassword);
 router.put('/me/push-token', authenticate, validate(schema.pushToken), controller.updatePushToken);
+router.put('/me/avatar', authenticate, avatarUpload.single('avatar'), controller.uploadAvatar);
 router.put(
   '/me/worker-status',
   authenticate,
