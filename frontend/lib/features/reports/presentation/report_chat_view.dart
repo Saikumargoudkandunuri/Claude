@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
+import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/reports_controller.dart';
 import 'report_form_sheet.dart';
@@ -22,8 +23,11 @@ class _Attachment {
 /// WhatsApp-style report timeline: message bubbles + a simple composer with
 /// text, image, video, file and voice attachments. Built for non-technical users.
 class ReportChatView extends ConsumerStatefulWidget {
-  const ReportChatView(
-      {super.key, required this.projectId, this.canCompose = true});
+  const ReportChatView({
+    super.key,
+    required this.projectId,
+    this.canCompose = true,
+  });
 
   final String projectId;
   final bool canCompose;
@@ -152,7 +156,11 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.sm, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.sm,
+          AppSpacing.sm,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -166,8 +174,10 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
                       Padding(
                         padding: const EdgeInsets.only(right: AppSpacing.xs),
                         child: Chip(
-                          avatar: Icon(_iconFor(_attachments[i].category),
-                              size: 16),
+                          avatar: Icon(
+                            _iconFor(_attachments[i].category),
+                            size: 16,
+                          ),
                           label: Text(
                             _attachments[i].name,
                             overflow: TextOverflow.ellipsis,
@@ -183,8 +193,10 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline,
-                      color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppColors.primary,
+                  ),
                   tooltip: 'Attach',
                   onPressed: _sending ? null : () => _showAttachMenu(role),
                 ),
@@ -217,8 +229,11 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
                     : CircleAvatar(
                         backgroundColor: AppColors.primary,
                         child: IconButton(
-                          icon: const Icon(Icons.send,
-                              color: Colors.white, size: 20),
+                          icon: const Icon(
+                            Icons.send,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           onPressed: () => _send(role),
                         ),
                       ),
@@ -264,10 +279,10 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
             ),
             ListTile(
               leading: const Icon(Icons.mic_none, color: AppColors.primary),
-              title: const Text('Voice / Audio'),
+              title: const Text('Record Voice Note'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pick('voice_note', FileType.audio);
+                _recordVoice();
               },
             ),
             ListTile(
@@ -280,8 +295,10 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.fact_check_outlined,
-                  color: AppColors.primary),
+              leading: const Icon(
+                Icons.fact_check_outlined,
+                color: AppColors.primary,
+              ),
               title: const Text('Detailed report (progress, materials...)'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -290,6 +307,16 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _recordVoice() async {
+    final recording = await VoiceRecorderSheet.show(context);
+    if (recording == null) return;
+    setState(
+      () => _attachments.add(
+        _Attachment('voice_note', recording.filename, recording.bytes),
       ),
     );
   }
@@ -303,7 +330,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
       if (picked != null) {
         final bytes = await picked.readAsBytes();
         setState(
-            () => _attachments.add(_Attachment('photo', picked.name, bytes)));
+          () => _attachments.add(_Attachment('photo', picked.name, bytes)),
+        );
       }
     } catch (e) {
       _snack('Camera not available');
@@ -388,8 +416,11 @@ class _Bubble extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.trending_up,
-                        size: 14, color: AppColors.success),
+                    const Icon(
+                      Icons.trending_up,
+                      size: 14,
+                      color: AppColors.success,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Progress $progress%',

@@ -234,6 +234,12 @@ class ProfileScreen extends ConsumerWidget {
           'avatar': MultipartFile.fromBytes(bytes, filename: picked.name),
         });
         await dio.put('/auth/me/avatar', data: formData);
+        // Evict cached avatar image so the new one loads
+        final user = ref.read(authControllerProvider).user;
+        if (user != null) {
+          await NetworkImage('${Env.apiBaseUrl}/auth/avatar/${user.id}')
+              .evict();
+        }
         await ref.read(authControllerProvider.notifier).refreshUser();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

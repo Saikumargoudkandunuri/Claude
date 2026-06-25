@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../application/reports_controller.dart';
 
 /// A media file queued for upload after the report is saved.
@@ -47,8 +48,11 @@ Future<void> showReportForm(
       ),
       child: StatefulBuilder(
         builder: (ctx, setState) {
-          Future<void> pick(String category, FileType type,
-              {List<String>? ext,}) async {
+          Future<void> pick(
+            String category,
+            FileType type, {
+            List<String>? ext,
+          }) async {
             try {
               final res = await FilePicker.platform.pickFiles(
                 type: type,
@@ -58,10 +62,18 @@ Future<void> showReportForm(
               if (res == null || res.files.isEmpty) return;
               final f = res.files.first;
               if (f.bytes == null) return;
-              setState(() => media.add(_PendingMedia(category, f.name, f.bytes!)));
+              setState(
+                  () => media.add(_PendingMedia(category, f.name, f.bytes!)));
             } catch (_) {
               // Fixes file-attachment error on some devices.
             }
+          }
+
+          Future<void> recordVoice() async {
+            final rec = await VoiceRecorderSheet.show(ctx);
+            if (rec == null) return;
+            setState(() => media
+                .add(_PendingMedia('voice_note', rec.filename, rec.bytes)));
           }
 
           return SingleChildScrollView(
@@ -70,15 +82,19 @@ Future<void> showReportForm(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  isSupervisor ? 'Supervisor Daily Report' : 'End-of-Day Report',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  isSupervisor
+                      ? 'Supervisor Daily Report'
+                      : 'End-of-Day Report',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
                 // Progress %
                 Row(
                   children: [
-                    const Text('Progress', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text('Progress',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     Expanded(
                       child: Slider(
                         value: progress,
@@ -91,9 +107,11 @@ Future<void> showReportForm(
                     ),
                     SizedBox(
                       width: 44,
-                      child: Text('${progress.round()}%',
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(fontWeight: FontWeight.w700),),
+                      child: Text(
+                        '${progress.round()}%',
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ],
                 ),
@@ -109,8 +127,10 @@ Future<void> showReportForm(
                 const SizedBox(height: AppSpacing.sm),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Attachments',
-                      style: TextStyle(fontWeight: FontWeight.w700),),
+                  child: Text(
+                    'Attachments',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
@@ -128,9 +148,9 @@ Future<void> showReportForm(
                       label: const Text('Video'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: () => pick('voice_note', FileType.audio),
-                      icon: const Icon(Icons.mic_none, size: 18),
-                      label: const Text('Voice'),
+                      onPressed: recordVoice,
+                      icon: const Icon(Icons.mic, size: 18),
+                      label: const Text('Record Voice'),
                     ),
                     OutlinedButton.icon(
                       onPressed: () => pick('photo', FileType.any),
@@ -141,25 +161,33 @@ Future<void> showReportForm(
                 ),
                 if (media.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
-                  ...media.asMap().entries.map((e) => Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Row(
-                          children: [
-                            Icon(_iconFor(e.value.category),
-                                size: 18, color: AppColors.primary,),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(e.value.name,
+                  ...media.asMap().entries.map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _iconFor(e.value.category),
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  e.value.name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13),),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => setState(() => media.removeAt(e.key)),
-                            ),
-                          ],
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () =>
+                                    setState(() => media.removeAt(e.key)),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),),
+                      ),
                 ],
 
                 const SizedBox(height: AppSpacing.lg),
@@ -180,11 +208,14 @@ Future<void> showReportForm(
                               'materialsNeeded': materialsNeeded.text,
                               'tomorrowNotes': tomorrow.text,
                               'progressPercent': progress.round(),
-                              if (isSupervisor) 'siteProgress': siteProgress.text,
+                              if (isSupervisor)
+                                'siteProgress': siteProgress.text,
                             });
                             final reportId = report['id'] as String;
                             for (final m in media) {
-                              await ref.read(reportsRepositoryProvider).addMedia(
+                              await ref
+                                  .read(reportsRepositoryProvider)
+                                  .addMedia(
                                     reportId: reportId,
                                     category: m.category,
                                     bytes: m.bytes,
@@ -195,15 +226,17 @@ Future<void> showReportForm(
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Report submitted')),
+                                const SnackBar(
+                                    content: Text('Report submitted')),
                               );
                             }
                           } catch (e) {
                             if (ctx.mounted) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 SnackBar(
-                                    content:
-                                        Text(DioClient.toApiException(e).message),),
+                                  content:
+                                      Text(DioClient.toApiException(e).message),
+                                ),
                               );
                             }
                           } finally {
@@ -215,7 +248,9 @@ Future<void> showReportForm(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white,),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Submit Report'),
                 ),

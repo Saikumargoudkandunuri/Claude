@@ -7,6 +7,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
+import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/reports_controller.dart';
 
@@ -156,13 +157,8 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
               color: Color(0xFF54656F),
               size: 24,
             ),
-            onPressed: _sending
-                ? null
-                : () {
-                    _snack(
-                        'Tap 📎 attach and select an audio file for voice notes');
-                  },
-            tooltip: 'Voice note',
+            onPressed: _sending ? null : () => _recordAndSendVoice(role),
+            tooltip: 'Record voice note',
           ),
           // Expanded text field
           Expanded(
@@ -234,6 +230,18 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
         ],
       ),
     );
+  }
+
+  /// Record a voice note in-app and add it as attachment, then auto-send.
+  Future<void> _recordAndSendVoice(String role) async {
+    final recording = await VoiceRecorderSheet.show(context);
+    if (recording == null) return;
+    setState(
+      () => _attachments.add(
+        _MediaAttachment('voice_note', recording.filename, recording.bytes),
+      ),
+    );
+    await _send(role);
   }
 
   /// Open device camera and capture a photo
