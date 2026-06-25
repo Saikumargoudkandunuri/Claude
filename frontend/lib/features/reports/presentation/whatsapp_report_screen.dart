@@ -50,8 +50,10 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
               loading: () =>
                   const Center(child: ShimmerLoader(count: 5, height: 60)),
               error: (e, _) => Center(
-                child: Text(e.toString(),
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                child: Text(
+                  e.toString(),
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
               ),
               data: (reports) {
                 if (reports.isEmpty) {
@@ -59,8 +61,11 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 64, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'No updates yet.\nSend the first site update.',
@@ -102,9 +107,11 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                       child: Chip(
                         avatar:
                             Icon(_iconFor(_attachments[i].category), size: 16),
-                        label: Text(_attachments[i].name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12)),
+                        label: Text(
+                          _attachments[i].name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         onDeleted: () =>
                             setState(() => _attachments.removeAt(i)),
                         visualDensity: VisualDensity.compact,
@@ -134,10 +141,28 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
         children: [
           // Camera button → opens device camera
           IconButton(
-            icon: const Icon(Icons.camera_alt,
-                color: Color(0xFF54656F), size: 24),
+            icon: const Icon(
+              Icons.camera_alt,
+              color: Color(0xFF54656F),
+              size: 24,
+            ),
             onPressed: _sending ? null : _captureCamera,
             tooltip: 'Camera',
+          ),
+          // Mic button → info message
+          IconButton(
+            icon: const Icon(
+              Icons.mic,
+              color: Color(0xFF54656F),
+              size: 24,
+            ),
+            onPressed: _sending
+                ? null
+                : () {
+                    _snack(
+                        'Tap 📎 attach and select an audio file for voice notes');
+                  },
+            tooltip: 'Voice note',
           ),
           // Expanded text field
           Expanded(
@@ -151,8 +176,11 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                 children: [
                   // Attach file
                   IconButton(
-                    icon: const Icon(Icons.attach_file,
-                        color: Color(0xFF54656F), size: 22),
+                    icon: const Icon(
+                      Icons.attach_file,
+                      color: Color(0xFF54656F),
+                      size: 22,
+                    ),
                     onPressed: _sending ? null : _pickFile,
                     tooltip: 'Attach',
                     visualDensity: VisualDensity.compact,
@@ -193,26 +221,13 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                   shape: const CircleBorder(),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () {
-                      if (_textCtrl.text.trim().isNotEmpty ||
-                          _attachments.isNotEmpty) {
-                        _send(role);
-                      } else {
-                        _recordVoice();
-                      }
-                    },
+                    onTap: () => _send(role),
                     child: Container(
                       width: 46,
                       height: 46,
                       alignment: Alignment.center,
-                      child: Icon(
-                        (_textCtrl.text.trim().isNotEmpty ||
-                                _attachments.isNotEmpty)
-                            ? Icons.send
-                            : Icons.mic,
-                        color: Colors.white,
-                        size: 22,
-                      ),
+                      child:
+                          const Icon(Icons.send, color: Colors.white, size: 22),
                     ),
                   ),
                 ),
@@ -230,8 +245,9 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
       );
       if (picked != null) {
         final bytes = await picked.readAsBytes();
-        setState(() =>
-            _attachments.add(_MediaAttachment('photo', picked.name, bytes)));
+        setState(
+          () => _attachments.add(_MediaAttachment('photo', picked.name, bytes)),
+        );
       }
     } catch (e) {
       _snack('Camera not available');
@@ -249,8 +265,10 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
         for (final f in res.files) {
           if (f.bytes != null) {
             final category = _categorize(f.name);
-            setState(() =>
-                _attachments.add(_MediaAttachment(category, f.name, f.bytes!)));
+            setState(
+              () => _attachments
+                  .add(_MediaAttachment(category, f.name, f.bytes!)),
+            );
           }
         }
       }
@@ -259,44 +277,15 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
     }
   }
 
-  /// Record voice note using ImagePicker (audio source)
-  /// Falls back to file picker if not supported
-  Future<void> _recordVoice() async {
-    try {
-      // Try to pick audio file (voice recordings from device recorder)
-      final res = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [
-          'mp3',
-          'wav',
-          'aac',
-          'm4a',
-          'ogg',
-          'opus',
-          'amr',
-          '3gp'
-        ],
-        withData: true,
-      );
-      if (res != null &&
-          res.files.isNotEmpty &&
-          res.files.first.bytes != null) {
-        setState(() => _attachments.add(_MediaAttachment(
-            'voice_note', res.files.first.name, res.files.first.bytes!)));
-      }
-    } catch (_) {
-      _snack(
-          'Voice recording not available. Use your phone recorder app and attach the file.');
-    }
-  }
-
   String _categorize(String filename) {
     final ext = filename.split('.').last.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext))
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext)) {
       return 'photo';
+    }
     if (['mp4', 'mov', 'avi', 'mkv'].contains(ext)) return 'video';
-    if (['mp3', 'wav', 'aac', 'm4a', 'ogg', 'opus', 'amr'].contains(ext))
+    if (['mp3', 'wav', 'aac', 'm4a', 'ogg', 'opus', 'amr'].contains(ext)) {
       return 'voice_note';
+    }
     return 'document';
   }
 
@@ -424,9 +413,10 @@ class _Bubble extends StatelessWidget {
                 child: Text(
                   '📈 $progress% complete',
                   style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF00A884)),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF00A884),
+                  ),
                 ),
               ),
             // Message text
@@ -450,7 +440,9 @@ class _Bubble extends StatelessWidget {
                     for (final m in media)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F2F5),
                           borderRadius: BorderRadius.circular(8),
@@ -458,8 +450,11 @@ class _Bubble extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(_attachIcon(m['category'] as String?),
-                                size: 14, color: const Color(0xFF54656F)),
+                            Icon(
+                              _attachIcon(m['category'] as String?),
+                              size: 14,
+                              color: const Color(0xFF54656F),
+                            ),
                             const SizedBox(width: 4),
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 120),
@@ -467,7 +462,9 @@ class _Bubble extends StatelessWidget {
                                 m['originalName']?.toString() ?? 'file',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF54656F)),
+                                  fontSize: 12,
+                                  color: Color(0xFF54656F),
+                                ),
                               ),
                             ),
                           ],
@@ -488,8 +485,11 @@ class _Bubble extends StatelessWidget {
                 ),
                 if (isMe) ...[
                   const SizedBox(width: 3),
-                  const Icon(Icons.done_all,
-                      size: 14, color: Color(0xFF53BDEB)),
+                  const Icon(
+                    Icons.done_all,
+                    size: 14,
+                    color: Color(0xFF53BDEB),
+                  ),
                 ],
               ],
             ),

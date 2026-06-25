@@ -151,6 +151,8 @@ class _StaffTile extends StatelessWidget {
         return AppColors.warning;
       case 'leave':
         return AppColors.danger;
+      case 'showroom':
+        return AppColors.info;
       default:
         return AppColors.info;
     }
@@ -174,7 +176,9 @@ class _StaffTile extends StatelessWidget {
     final workerStatus = staff['workerStatus']?.toString();
     final activeProjects = staff['activeProjects'] as int? ?? 0;
     final reports30d = staff['reports30d'] as int? ?? 0;
-    final statusColor = _statusColor(workerStatus);
+    // Designers are always in Showroom
+    final displayStatus = (role == 'designer') ? 'showroom' : workerStatus;
+    final statusColor = _statusColor(displayStatus);
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -207,7 +211,7 @@ class _StaffTile extends StatelessWidget {
                       _RoleBadge(role: role),
                       const SizedBox(width: AppSpacing.sm),
                       _StatusBadge(
-                        status: workerStatus,
+                        status: displayStatus,
                         color: statusColor,
                       ),
                     ],

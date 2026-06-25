@@ -68,4 +68,9 @@ const changePinCtrl = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl };
+const resetPinByIdCtrl = asyncHandler(async (req, res) => {
+  await service.resetPinById(req.body.userId, req.body.newPin);
+  ok(res, { message: 'PIN reset successfully' });
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl, resetPinByIdCtrl };

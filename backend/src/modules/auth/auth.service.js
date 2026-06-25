@@ -271,6 +271,16 @@ async function adminSetPin(adminId, targetUserId, pin) {
   });
 }
 
+/**
+ * Self-service PIN reset using Employee ID.
+ */
+async function resetPinById(userId, newPin) {
+  const { rows } = await query('SELECT id FROM users WHERE id = $1', [userId]);
+  if (!rows[0]) throw ApiError.notFound('Invalid Employee ID');
+  const hash = await hashPassword(newPin);
+  await query('UPDATE users SET pin_hash = $1 WHERE id = $2', [hash, userId]);
+}
+
 module.exports = {
   publicUser,
   register,
@@ -287,4 +297,5 @@ module.exports = {
   pinLogin,
   changePin,
   adminSetPin,
+  resetPinById,
 };

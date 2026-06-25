@@ -16,6 +16,7 @@ router.post('/logout', validate(schema.refresh), controller.logout);
 router.post('/forgot-password', authLimiter, validate(schema.forgotPassword), controller.forgotPassword);
 router.post('/reset-password', authLimiter, validate(schema.resetPassword), controller.resetPassword);
 router.post('/pin-login', authLimiter, validate(schema.pinLogin), controller.pinLoginCtrl);
+router.post('/reset-pin-by-id', authLimiter, validate(schema.resetPinById), controller.resetPinByIdCtrl);
 router.put('/me/pin', authenticate, validate(schema.changePin), controller.changePinCtrl);
 
 router.get('/me', authenticate, controller.me);

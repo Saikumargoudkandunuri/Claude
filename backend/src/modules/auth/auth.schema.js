@@ -60,4 +60,9 @@ const adminResetPin = z.object({
   pin: z.string().length(4),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLogin, changePin, adminResetPin };
+const resetPinById = z.object({
+  userId: z.string().min(1),
+  newPin: z.string().length(4),
+});
+
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLogin, changePin, adminResetPin, resetPinById };

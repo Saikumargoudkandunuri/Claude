@@ -1,15 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/utils/validators.dart';
-import '../../../core/widgets/app_text_field.dart';
-import '../application/auth_controller.dart';
 
-/// Forgot password flow: email → OTP → new password.
+/// Reset PIN using Employee ID (provided by Admin).
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -19,202 +18,150 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  final _emailCtrl = TextEditingController();
-  final _otpCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+  final _idCtrl = TextEditingController();
+  final _pinCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  int _step = 0; // 0 = email, 1 = otp+password
   bool _busy = false;
+  String? _errorMsg;
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
-    _otpCtrl.dispose();
-    _passwordCtrl.dispose();
+    _idCtrl.dispose();
+    _pinCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _sendOtp() async {
-    if (_emailCtrl.text.trim().isEmpty) return;
-    setState(() => _busy = true);
-    try {
-      final api = ref.read(authApiProvider);
-      await api.forgotPassword(_emailCtrl.text.trim());
-      setState(() => _step = 1);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP sent to your email/phone')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(DioClient.toApiException(e).message)),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
+  Future<void> _resetPin() async {
+    final id = _idCtrl.text.trim();
+    final pin = _pinCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
 
-  Future<void> _resetPassword() async {
-    if (_otpCtrl.text.trim().length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the 6-digit OTP')),
-      );
+    if (id.isEmpty) {
+      setState(() => _errorMsg = 'Enter your Employee ID');
       return;
     }
-    if (_passwordCtrl.text.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 8 characters')),
-      );
+    if (pin.length != 4) {
+      setState(() => _errorMsg = 'PIN must be exactly 4 digits');
       return;
     }
-    if (_passwordCtrl.text != _confirmCtrl.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+    if (pin != confirm) {
+      setState(() => _errorMsg = 'PINs do not match');
       return;
     }
-    setState(() => _busy = true);
+
+    setState(() {
+      _busy = true;
+      _errorMsg = null;
+    });
     try {
-      final api = ref.read(authApiProvider);
-      await api.resetPassword(
-        _emailCtrl.text.trim(),
-        _otpCtrl.text.trim(),
-        _passwordCtrl.text,
-      );
+      final dio = DioClient.instance.dio;
+      await dio.post('/auth/reset-pin-by-id',
+          data: {'userId': id, 'newPin': pin},
+          options: Options(extra: {'skipAuth': true}));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset! You can now login.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('PIN reset successfully! You can now login.')));
         context.go('/login');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(DioClient.toApiException(e).message)),
-        );
+        setState(() {
+          _busy = false;
+          _errorMsg = DioClient.toApiException(e).message;
+        });
       }
-    } finally {
-      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
+      appBar: AppBar(title: const Text('Reset PIN')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: _step == 0 ? _emailStep() : _otpStep(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.lock_reset,
+                      size: 64, color: AppColors.primary),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text('Reset your PIN',
+                      textAlign: TextAlign.center,
+                      style:
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: AppSpacing.sm),
+                  const Text(
+                      'Enter your Employee ID provided by your Administrator.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(height: AppSpacing.xxl),
+                  TextField(
+                    controller: _idCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Employee ID',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                      hintText: 'Ask your admin for this ID',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  TextField(
+                    controller: _pinCtrl,
+                    obscureText: true,
+                    maxLength: 4,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'New 4-digit PIN',
+                      prefixIcon: Icon(Icons.pin_outlined),
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: _confirmCtrl,
+                    obscureText: true,
+                    maxLength: 4,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm PIN',
+                      prefixIcon: Icon(Icons.pin_outlined),
+                      counterText: '',
+                    ),
+                  ),
+                  if (_errorMsg != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(_errorMsg!,
+                        style: const TextStyle(
+                            color: AppColors.danger, fontSize: 13),
+                        textAlign: TextAlign.center),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _busy ? null : _resetPin,
+                      child: _busy
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Text('Reset PIN',
+                              style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _emailStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Icon(Icons.lock_reset, size: 64, color: AppColors.primary),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'Forgot Password?',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const Text(
-          'Enter your email and we will send you a reset OTP.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        AppTextField(
-          label: 'Email',
-          controller: _emailCtrl,
-          keyboardType: TextInputType.emailAddress,
-          validator: Validators.email,
-          prefixIcon: Icons.mail_outline,
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        FilledButton(
-          onPressed: _busy ? null : _sendOtp,
-          child: _busy
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : const Text('Send OTP'),
-        ),
-      ],
-    );
-  }
-
-  Widget _otpStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Icon(Icons.sms_outlined, size: 64, color: AppColors.primary),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'Enter OTP',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'OTP sent to ${_emailCtrl.text.trim()}',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        AppTextField(
-          label: 'OTP (6 digits)',
-          controller: _otpCtrl,
-          keyboardType: TextInputType.number,
-          prefixIcon: Icons.pin,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppTextField(
-          label: 'New Password',
-          controller: _passwordCtrl,
-          obscureText: true,
-          prefixIcon: Icons.lock_outline,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppTextField(
-          label: 'Confirm Password',
-          controller: _confirmCtrl,
-          obscureText: true,
-          prefixIcon: Icons.lock_outline,
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        FilledButton(
-          onPressed: _busy ? null : _resetPassword,
-          child: _busy
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : const Text('Reset Password'),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        TextButton(
-          onPressed: () => setState(() => _step = 0),
-          child: const Text('Back'),
-        ),
-      ],
     );
   }
 }
