@@ -22,4 +22,8 @@ const assignableQuery = z.object({
   role: z.enum(['supervisor', 'designer', 'worker']),
 });
 
-module.exports = { approve, setRole, listQuery, assignableQuery };
+const resetPin = z.object({
+  pin: z.string().length(4),
+});
+
+module.exports = { approve, setRole, listQuery, assignableQuery, resetPin };

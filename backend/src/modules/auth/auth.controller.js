@@ -58,19 +58,14 @@ const resetPassword = asyncHandler(async (req, res) => {
   ok(res, { message: 'Password reset successfully. You can now login.' });
 });
 
-const requestOtp = asyncHandler(async (req, res) => {
-  const result = await service.requestLoginOtp(req.body.phone);
+const pinLoginCtrl = asyncHandler(async (req, res) => {
+  const result = await service.pinLogin(req.body.phone, req.body.pin);
   ok(res, result);
 });
 
-const verifyOtp = asyncHandler(async (req, res) => {
-  const result = await service.verifyLoginOtp(req.body.phone, req.body.otp);
-  ok(res, result);
+const changePinCtrl = asyncHandler(async (req, res) => {
+  await service.changePin(req.user.id, req.body.currentPin, req.body.newPin);
+  res.status(204).send();
 });
 
-const firebasePhoneLogin = asyncHandler(async (req, res) => {
-  const result = await service.firebasePhoneLogin(req.body.phone, req.body.firebaseUid);
-  ok(res, result);
-});
-
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp, firebasePhoneLogin };
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl };

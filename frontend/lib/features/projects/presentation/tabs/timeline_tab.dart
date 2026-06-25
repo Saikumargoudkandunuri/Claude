@@ -77,7 +77,7 @@ class TimelineTab extends ConsumerWidget {
         children: [
           Text('Project Progress',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  fontWeight: FontWeight.w800, color: AppColors.textPrimary,),),
           const SizedBox(height: AppSpacing.lg),
           // Responsive: horizontal on tablets, vertical on phones.
           LayoutBuilder(
@@ -95,7 +95,7 @@ class TimelineTab extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           Text('Activity History',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  fontWeight: FontWeight.w800, color: AppColors.textPrimary,),),
           const SizedBox(height: AppSpacing.sm),
           activityAsync.when(
             loading: () => const Padding(
@@ -117,7 +117,7 @@ class TimelineTab extends ConsumerWidget {
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                       leading: const Icon(Icons.fiber_manual_record,
-                          size: 12, color: AppColors.primary),
+                          size: 12, color: AppColors.primary,),
                       title: Text(
                         (e['description'] ?? e['action'] ?? 'Activity').toString(),
                         style: const TextStyle(fontSize: 13),

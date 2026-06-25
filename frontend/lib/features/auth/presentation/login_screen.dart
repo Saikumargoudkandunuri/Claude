@@ -94,9 +94,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: const Text('Forgot Password?'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: () => context.go('/otp-login'),
-                      icon: const Icon(Icons.sms_outlined, size: 18),
-                      label: const Text('Login with OTP'),
+                      onPressed: () => context.go('/pin-login'),
+                      icon: const Icon(Icons.pin_outlined, size: 18),
+                      label: const Text('Login with Mobile + PIN'),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(44),
                       ),

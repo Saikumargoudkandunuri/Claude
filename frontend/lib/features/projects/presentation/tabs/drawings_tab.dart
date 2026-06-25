@@ -6,7 +6,6 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/permissions/permissions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../drawings/application/drawings_controller.dart';
@@ -49,7 +48,9 @@ class DrawingsTab extends ConsumerWidget {
               projectId: projectId,
               category: kMeasurementCategory.key,
               title: kMeasurementCategory.value,
-              files: files.where((f) => f.category == kMeasurementCategory.key).toList(),
+              files: files
+                  .where((f) => f.category == kMeasurementCategory.key)
+                  .toList(),
               canUpload: canUpload,
             ),
             // Quotation is visible to admin/supervisor/designer, hidden from workers.
@@ -58,8 +59,9 @@ class DrawingsTab extends ConsumerWidget {
                 projectId: projectId,
                 category: kQuotationCategory,
                 title: 'Quotation',
-                files:
-                    files.where((f) => f.category == kQuotationCategory).toList(),
+                files: files
+                    .where((f) => f.category == kQuotationCategory)
+                    .toList(),
                 canUpload: canUpload,
               ),
             const SizedBox(height: AppSpacing.xl),

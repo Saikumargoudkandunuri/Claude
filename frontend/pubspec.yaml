@@ -36,7 +36,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   # Firebase push notifications
   firebase_core: ^3.8.1
-  firebase_auth: ^5.3.4
   firebase_messaging: ^15.1.6
   flutter_local_notifications: ^18.0.1
   # Media viewers + recording

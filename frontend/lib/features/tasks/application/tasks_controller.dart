@@ -11,14 +11,14 @@ class TasksRepository {
   /// Admin/supervisor task panel for a date.
   Future<Map<String, dynamic>> listAll({String? date}) async {
     final res = await _dio.get('/workplans',
-        queryParameters: {if (date != null) 'date': date});
+        queryParameters: {if (date != null) 'date': date},);
     return res.data['data'] as Map<String, dynamic>;
   }
 
   /// Tasks assigned to me for a date.
   Future<Map<String, dynamic>> forMe({String? date}) async {
     final res = await _dio.get('/workplans/me',
-        queryParameters: {if (date != null) 'date': date});
+        queryParameters: {if (date != null) 'date': date},);
     return res.data['data'] as Map<String, dynamic>;
   }
 
@@ -32,7 +32,7 @@ class TasksRepository {
       'planDate': planDate,
       'workerIds': workerIds,
       if (task != null) 'task': task,
-    });
+    },);
   }
 
   Future<void> updateStatus(String planId, String status) async {

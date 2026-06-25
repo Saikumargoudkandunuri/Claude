@@ -32,4 +32,10 @@ const assignable = asyncHandler(async (req, res) => {
   ok(res, await service.assignable(req.query.role));
 });
 
-module.exports = { list, listPending, approve, reject, setRole, disable, assignable };
+const resetPin = asyncHandler(async (req, res) => {
+  const authService = require('../auth/auth.service');
+  await authService.adminSetPin(req.user.id, req.params.id, req.body.pin);
+  res.status(204).send();
+});
+
+module.exports = { list, listPending, approve, reject, setRole, disable, assignable, resetPin };

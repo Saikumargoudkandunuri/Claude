@@ -41,8 +41,11 @@ class AssignmentEditorScreen extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text('Select ${roleToAssign[0].toUpperCase()}${roleToAssign.substring(1)}',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                child: Text(
+                  'Select ${roleToAssign[0].toUpperCase()}${roleToAssign.substring(1)}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 16),
+                ),
               ),
               if (options.isEmpty)
                 const Padding(
@@ -65,7 +68,8 @@ class AssignmentEditorScreen extends ConsumerWidget {
         if (roleToAssign == 'worker') {
           task = await _askTask(context);
         }
-        await repo.assign(projectId, selected['id'] as String, roleToAssign, task: task);
+        await repo.assign(projectId, selected['id'] as String, roleToAssign,
+            task: task);
         await refresh();
       } catch (e) {
         if (context.mounted) {
@@ -86,7 +90,8 @@ class AssignmentEditorScreen extends ConsumerWidget {
               assignments.where((a) => a['role'] == 'supervisor').toList();
           final designers =
               assignments.where((a) => a['role'] == 'designer').toList();
-          final workers = assignments.where((a) => a['role'] == 'worker').toList();
+          final workers =
+              assignments.where((a) => a['role'] == 'worker').toList();
 
           Future<void> remove(Map<String, dynamic> a) async {
             await repo.removeAssignment(projectId, a['id'] as String);
@@ -135,15 +140,18 @@ class AssignmentEditorScreen extends ConsumerWidget {
         title: const Text('Task (optional)'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(hintText: 'e.g. Kitchen Installation'),
+          decoration:
+              const InputDecoration(hintText: 'e.g. Kitchen Installation'),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Skip')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Skip'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: const Text('Assign')),
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Assign'),
+          ),
         ],
       ),
     );
@@ -177,9 +185,13 @@ class _RoleSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(title,
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700)),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               TextButton.icon(
                 onPressed: onAdd,
@@ -191,8 +203,10 @@ class _RoleSection extends StatelessWidget {
           if (members.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Text('Not assigned',
-                  style: TextStyle(color: AppColors.textMuted)),
+              child: Text(
+                'Not assigned',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
             )
           else
             for (final m in members)
@@ -201,13 +215,15 @@ class _RoleSection extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.person, color: AppColors.primary),
                   title: Text(m['fullName']?.toString() ?? ''),
-                  subtitle: (m['task'] != null &&
-                          m['task'].toString().isNotEmpty)
-                      ? Text(m['task'].toString())
-                      : null,
+                  subtitle:
+                      (m['task'] != null && m['task'].toString().isNotEmpty)
+                          ? Text(m['task'].toString())
+                          : null,
                   trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: AppColors.danger),
+                    icon: const Icon(
+                      Icons.remove_circle_outline,
+                      color: AppColors.danger,
+                    ),
                     onPressed: () => onRemove(m),
                   ),
                 ),

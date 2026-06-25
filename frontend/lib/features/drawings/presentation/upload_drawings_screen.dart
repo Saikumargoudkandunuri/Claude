@@ -55,7 +55,7 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
       );
       if (res != null) {
         setState(() => _selected.addAll(
-            res.files.where((f) => f.path != null).map((f) => XFile(f.path!))));
+            res.files.where((f) => f.path != null).map((f) => XFile(f.path!)),),);
       }
     } catch (_) {}
   }
@@ -76,7 +76,7 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('${_selected.length} file(s) uploaded')),
+              content: Text('${_selected.length} file(s) uploaded'),),
         );
         Navigator.pop(context);
       }
@@ -122,7 +122,7 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
                         decoration: BoxDecoration(
                           border: Border.all(
                               color: const Color(0xFF6C63FF).withValues(alpha: 0.5),
-                              width: 1.5),
+                              width: 1.5,),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Column(
@@ -132,7 +132,7 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
                             SizedBox(height: 4),
                             Text('Add',
                                 style: TextStyle(
-                                    color: Color(0xFF6C63FF), fontSize: 11)),
+                                    color: Color(0xFF6C63FF), fontSize: 11,),),
                           ],
                         ),
                       ),
@@ -151,10 +151,10 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
                         clipBehavior: Clip.hardEdge,
                         child: isImg
                             ? Image.file(File(file.path),
-                                fit: BoxFit.cover, width: 80, height: 110)
+                                fit: BoxFit.cover, width: 80, height: 110,)
                             : const Center(
                                 child: Icon(Icons.picture_as_pdf,
-                                    color: Color(0xFFEF4444), size: 32)),
+                                    color: Color(0xFFEF4444), size: 32,),),
                       ),
                       if (!_uploading)
                         Positioned(
@@ -171,7 +171,7 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.close,
-                                  size: 12, color: Colors.white),
+                                  size: 12, color: Colors.white,),
                             ),
                           ),
                         ),
@@ -192,15 +192,15 @@ class _UploadDrawingsScreenState extends ConsumerState<UploadDrawingsScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.cloud_upload,
-                          color: Color(0xFF6C63FF), size: 48),
+                          color: Color(0xFF6C63FF), size: 48,),
                       const SizedBox(height: 12),
-                      GradientText('Tap to select files',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      const GradientText('Tap to select files',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700,),),
                       const SizedBox(height: 4),
                       const Text('Images & PDFs • Up to 20 files',
                           style: TextStyle(
-                              color: AppGradients.textSecondary, fontSize: 12)),
+                              color: AppGradients.textSecondary, fontSize: 12,),),
                       const SizedBox(height: 16),
                       OutlinedButton.icon(
                         onPressed: _pickFiles,

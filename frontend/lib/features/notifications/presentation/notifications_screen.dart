@@ -65,7 +65,7 @@ class NotificationsScreen extends ConsumerWidget {
                   title: Text(
                     n['title']?.toString() ?? '',
                     style: TextStyle(
-                        fontWeight: isRead ? FontWeight.w500 : FontWeight.w700),
+                        fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

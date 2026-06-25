@@ -99,17 +99,17 @@ class _AttachmentTileState extends State<AttachmentTile> {
                     style: const TextStyle(
                         color: AppGradients.textPrimary,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis),
+                        fontWeight: FontWeight.w500,),
+                    overflow: TextOverflow.ellipsis,),
                 if (widget.sizeLabel.isNotEmpty)
                   Text(widget.sizeLabel,
                       style: const TextStyle(
-                          color: AppGradients.textSecondary, fontSize: 11)),
+                          color: AppGradients.textSecondary, fontSize: 11,),),
               ],
             ),
           ),
           const Icon(Icons.open_in_new, color: Color(0xFF6C63FF), size: 18),
-        ]),
+        ],),
       ),
     );
   }

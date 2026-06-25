@@ -33,7 +33,7 @@ class PaymentsRepository {
     await _dio.post('/projects/$projectId/payments/clear', data: {
       if (method != null) 'method': method,
       if (reference != null) 'referenceNumber': reference,
-    });
+    },);
   }
 
   Future<void> updateQuotation(String projectId, num amount) async {

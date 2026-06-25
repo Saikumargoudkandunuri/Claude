@@ -54,7 +54,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
           ? _PdfError(message: _error!)
           : _headers == null
               ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary))
+                  child: CircularProgressIndicator(color: AppColors.primary),)
               : SfPdfViewer.network(
                   widget.url,
                   headers: _headers,
@@ -63,7 +63,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
                   enableDoubleTapZooming: true,
                   onDocumentLoadFailed: (details) {
                     FileAccess.log(
-                        'PDF load failed: ${details.error} — ${details.description}');
+                        'PDF load failed: ${details.error} — ${details.description}',);
                     if (mounted) {
                       setState(() => _error = _friendly(details.description));
                     }
@@ -101,7 +101,7 @@ class _PdfError extends StatelessWidget {
             Text(message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 15)),
+                    color: AppColors.textSecondary, fontSize: 15,),),
           ],
         ),
       ),

@@ -77,14 +77,14 @@ class WorkerDashboard extends ConsumerWidget {
                 if (tomorrow.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.lg),
                   const Text("Tomorrow's Work",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                   const SizedBox(height: AppSpacing.sm),
                   for (final w in tomorrow.cast<Map<String, dynamic>>())
                     Card(
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: ListTile(
                         leading: const Icon(Icons.event_outlined,
-                            color: AppColors.info),
+                            color: AppColors.info,),
                         title: Text(w['projectName']?.toString() ?? 'Site'),
                         subtitle: Text(w['task']?.toString() ?? ''),
                       ),
@@ -110,7 +110,7 @@ class WorkerDashboard extends ConsumerWidget {
                 if ((d['contacts'] as List?)?.isNotEmpty == true) ...[
                   const SizedBox(height: AppSpacing.lg),
                   const Text('Contacts',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                   const SizedBox(height: AppSpacing.sm),
                   for (final c
                       in (d['contacts'] as List).cast<Map<String, dynamic>>())
@@ -124,7 +124,7 @@ class WorkerDashboard extends ConsumerWidget {
                           color: AppColors.primary,
                         ),
                         title: Text(c['name']?.toString() ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                            style: const TextStyle(fontWeight: FontWeight.w600),),
                         subtitle: Text(
                           '${Formatters.roleLabel(c['role'] as String?)} · ${c['phone'] ?? ''}',
                           overflow: TextOverflow.ellipsis,
@@ -136,7 +136,7 @@ class WorkerDashboard extends ConsumerWidget {
                 if ((d['recentWork'] as List?)?.isNotEmpty == true) ...[
                   const SizedBox(height: AppSpacing.lg),
                   const Text('Recent Work',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                   const SizedBox(height: AppSpacing.sm),
                   for (final h
                       in (d['recentWork'] as List).cast<Map<String, dynamic>>())
@@ -210,7 +210,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                 Expanded(
                   child: Text(w['projectName']?.toString() ?? 'Site',
                       style: const TextStyle(fontWeight: FontWeight.w700),
-                      overflow: TextOverflow.ellipsis),
+                      overflow: TextOverflow.ellipsis,),
                 ),
                 _StatusBadge(status: status),
               ],
@@ -219,7 +219,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(w['task'].toString(),
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                    style: const TextStyle(color: AppColors.textSecondary),),
               ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
@@ -241,7 +241,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                 if (status != 'completed')
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.success),
+                        backgroundColor: AppColors.success,),
                     onPressed: _busy ? null : () => _setStatus('completed'),
                     icon: const Icon(Icons.check, size: 18),
                     label: const Text('Complete'),

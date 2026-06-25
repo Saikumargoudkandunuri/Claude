@@ -28,7 +28,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             child: SwitchListTile(
               value: _pushEnabled,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               title: const Text('Push notifications'),
               subtitle: const Text('Task assignments, reports, payments, stages'),
               onChanged: (v) => setState(() => _pushEnabled = v),
@@ -48,7 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.logout, color: AppColors.danger),
                   title: const Text('Logout',
-                      style: TextStyle(color: AppColors.danger)),
+                      style: TextStyle(color: AppColors.danger),),
                   onTap: () => ref.read(authControllerProvider.notifier).logout(),
                 ),
               ],
@@ -56,18 +56,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           const _SectionLabel('About'),
-          Card(
+          const Card(
             child: Column(
               children: [
-                const ListTile(
+                ListTile(
                   leading: Icon(Icons.info_outline),
                   title: Text('Interior Manager'),
                   subtitle: Text('Version 1.0.0'),
                 ),
-                const Divider(height: 1),
+                Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.cloud_outlined),
-                  title: const Text('Server'),
+                  leading: Icon(Icons.cloud_outlined),
+                  title: Text('Server'),
                   subtitle: Text(Env.apiBaseUrl),
                 ),
               ],
@@ -91,7 +91,7 @@ class _SectionLabel extends StatelessWidget {
           style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary)),
+              color: AppColors.textSecondary,),),
     );
   }
 }

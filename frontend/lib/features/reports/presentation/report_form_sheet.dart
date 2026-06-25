@@ -48,7 +48,7 @@ Future<void> showReportForm(
       child: StatefulBuilder(
         builder: (ctx, setState) {
           Future<void> pick(String category, FileType type,
-              {List<String>? ext}) async {
+              {List<String>? ext,}) async {
             try {
               final res = await FilePicker.platform.pickFiles(
                 type: type,
@@ -93,7 +93,7 @@ Future<void> showReportForm(
                       width: 44,
                       child: Text('${progress.round()}%',
                           textAlign: TextAlign.end,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                          style: const TextStyle(fontWeight: FontWeight.w700),),
                     ),
                   ],
                 ),
@@ -110,7 +110,7 @@ Future<void> showReportForm(
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text('Attachments',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontWeight: FontWeight.w700),),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
@@ -146,12 +146,12 @@ Future<void> showReportForm(
                         child: Row(
                           children: [
                             Icon(_iconFor(e.value.category),
-                                size: 18, color: AppColors.primary),
+                                size: 18, color: AppColors.primary,),
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(e.value.name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13)),
+                                  style: const TextStyle(fontSize: 13),),
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, size: 18),
@@ -159,7 +159,7 @@ Future<void> showReportForm(
                             ),
                           ],
                         ),
-                      )),
+                      ),),
                 ],
 
                 const SizedBox(height: AppSpacing.lg),
@@ -203,7 +203,7 @@ Future<void> showReportForm(
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 SnackBar(
                                     content:
-                                        Text(DioClient.toApiException(e).message)),
+                                        Text(DioClient.toApiException(e).message),),
                               );
                             }
                           } finally {
@@ -215,7 +215,7 @@ Future<void> showReportForm(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2, color: Colors.white,),
                         )
                       : const Text('Submit Report'),
                 ),

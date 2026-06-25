@@ -148,7 +148,7 @@ class _StageTrackerState extends State<StageTracker>
 
   // ─────────────────────────── Vertical ───────────────────────────
   Widget _buildVertical() {
-    final rail = _node + 18; // width reserved for the node + glow
+    const rail = _node + 18; // width reserved for the node + glow
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,7 +241,7 @@ class _StageTrackerState extends State<StageTracker>
   Widget _horizontalTube(int i) {
     final fill = _fill(i);
     return Padding(
-      padding: EdgeInsets.only(top: (_node + 18) / 2 - _tube / 2),
+      padding: const EdgeInsets.only(top: (_node + 18) / 2 - _tube / 2),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_tube),
         child: Stack(
@@ -303,7 +303,7 @@ class _StageTrackerState extends State<StageTracker>
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
-                        fontWeight: FontWeight.w700)),
+                        fontWeight: FontWeight.w700,),),
               ),
             ),
           if (stage.dateLabel != null && !center)
@@ -312,7 +312,7 @@ class _StageTrackerState extends State<StageTracker>
               child: Text(
                 stage.dateLabel!,
                 style: const TextStyle(
-                    color: AppGradients.textSecondary, fontSize: 11),
+                    color: AppGradients.textSecondary, fontSize: 11,),
               ),
             ),
           if (stage.dateLabel != null && center)
@@ -322,7 +322,7 @@ class _StageTrackerState extends State<StageTracker>
                 stage.dateLabel!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: AppGradients.textSecondary, fontSize: 9),
+                    color: AppGradients.textSecondary, fontSize: 9,),
               ),
             ),
         ],

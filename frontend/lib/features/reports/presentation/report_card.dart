@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
-import '../../drawings/presentation/attachment_opener.dart';
 
 /// Reusable daily-report card (used in project Reports tab and All Reports).
 class ReportCard extends StatelessWidget {
@@ -16,7 +15,8 @@ class ReportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = report['type'] as String? ?? 'worker';
     final progress = report['progressPercent'];
-    final media = (report['media'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    final media =
+        (report['media'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -26,7 +26,9 @@ class ReportCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  type == 'supervisor' ? Icons.supervisor_account : Icons.engineering,
+                  type == 'supervisor'
+                      ? Icons.supervisor_account
+                      : Icons.engineering,
                   size: 18,
                   color: AppColors.primary,
                 ),
@@ -38,16 +40,23 @@ class ReportCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(Formatters.date(report['reportDate']),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                Text(
+                  Formatters.date(report['reportDate']),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
               ],
             ),
             if (showProject && report['projectName'] != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(report['projectName'].toString(),
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
+                child: Text(
+                  report['projectName'].toString(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             if (progress != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -65,9 +74,13 @@ class ReportCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  Text('$progress%',
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w700)),
+                  Text(
+                    '$progress%',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -81,29 +94,29 @@ class ReportCard extends StatelessWidget {
             _field('Tomorrow', report['tomorrowNotes']),
             if (media.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              const Text('Attachments',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary)),
+              const Text(
+                'Attachments',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.xs,
                 children: [
                   for (final m in media)
-                    ActionChip(
-                      avatar: Icon(_mediaIcon(m['category'] as String?),
-                          size: 16, color: AppColors.primary),
+                    Chip(
+                      avatar: Icon(
+                        _mediaIcon(m['category'] as String?),
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
                       label: Text(
                         m['originalName']?.toString() ?? 'file',
                         style: const TextStyle(fontSize: 12),
-                      ),
-                      onPressed: () => openAttachment(
-                        context,
-                        fileId: (m['id'] ?? '').toString(),
-                        name: m['originalName']?.toString() ?? 'file',
-                        mimeType: m['mimeType']?.toString(),
                       ),
                     ),
                 ],
@@ -137,9 +150,12 @@ class ReportCard extends StatelessWidget {
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
           children: [
             TextSpan(
-                text: '$label: ',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+              text: '$label: ',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             TextSpan(text: value.toString()),
           ],
         ),

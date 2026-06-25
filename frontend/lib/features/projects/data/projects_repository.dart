@@ -8,7 +8,7 @@ class ProjectsRepository {
   final Dio _dio;
 
   Future<List<Project>> list(
-      {String? stage, String? q, bool assignedToMe = false}) async {
+      {String? stage, String? q, bool assignedToMe = false,}) async {
     final res = await _dio.get(
       '/projects',
       queryParameters: {
@@ -40,7 +40,7 @@ class ProjectsRepository {
   Future<void> delete(String id) => _dio.delete('/projects/$id');
 
   Future<Project> setStage(String id, String stage,
-      {String status = 'in_progress', String? note}) async {
+      {String status = 'in_progress', String? note,}) async {
     final res = await _dio.put(
       '/projects/$id/stage',
       data: {
@@ -62,7 +62,7 @@ class ProjectsRepository {
       'userId': userId,
       'role': role,
       if (task != null) 'task': task,
-    });
+    },);
   }
 
   Future<void> assignWorker(String id, String userId, {String? task}) =>

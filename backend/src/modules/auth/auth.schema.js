@@ -46,18 +46,18 @@ const resetPassword = z.object({
   newPassword: z.string().min(8).max(100),
 });
 
-const requestOtp = z.object({
+const pinLogin = z.object({
   phone: z.string().min(6).max(20),
+  pin: z.string().length(4),
 });
 
-const verifyOtp = z.object({
-  phone: z.string().min(6).max(20),
-  otp: z.string().length(6),
+const changePin = z.object({
+  currentPin: z.string().length(4),
+  newPin: z.string().length(4),
 });
 
-const firebasePhoneLogin = z.object({
-  phone: z.string().min(6).max(20),
-  firebaseUid: z.string().min(1),
+const adminResetPin = z.object({
+  pin: z.string().length(4),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, requestOtp, verifyOtp, firebasePhoneLogin };
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLogin, changePin, adminResetPin };

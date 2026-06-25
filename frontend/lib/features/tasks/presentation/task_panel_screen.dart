@@ -31,7 +31,7 @@ class TaskPanelScreen extends ConsumerWidget {
           preferredSize: const Size.fromHeight(52),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm,),
             child: SegmentedButton<bool>(
               segments: const [
                 ButtonSegment(value: true, label: Text('Today')),
@@ -98,7 +98,7 @@ class TaskPanelScreen extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
               child: Text('Select project',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),),
             ),
             for (final p in projects)
               ListTile(
@@ -135,12 +135,12 @@ class TaskPanelScreen extends ConsumerWidget {
               children: [
                 Text('Assign workers — ${project.projectName}',
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700)),
+                        fontSize: 16, fontWeight: FontWeight.w700,),),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: taskController,
                   decoration: const InputDecoration(
-                      labelText: 'Task (e.g. Kitchen Installation)'),
+                      labelText: 'Task (e.g. Kitchen Installation)',),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (workers.isEmpty)
@@ -209,12 +209,12 @@ class _PlanCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(plan['projectName']?.toString() ?? 'Project',
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+                style: const TextStyle(fontWeight: FontWeight.w700),),
             if ((plan['task']?.toString() ?? '').isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(plan['task'].toString(),
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                    style: const TextStyle(color: AppColors.textSecondary),),
               ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(

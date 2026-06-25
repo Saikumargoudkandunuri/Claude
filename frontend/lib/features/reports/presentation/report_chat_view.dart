@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
@@ -8,7 +9,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../drawings/presentation/attachment_opener.dart';
 import '../application/reports_controller.dart';
 import 'report_form_sheet.dart';
 
@@ -22,7 +22,8 @@ class _Attachment {
 /// WhatsApp-style report timeline: message bubbles + a simple composer with
 /// text, image, video, file and voice attachments. Built for non-technical users.
 class ReportChatView extends ConsumerStatefulWidget {
-  const ReportChatView({super.key, required this.projectId, this.canCompose = true});
+  const ReportChatView(
+      {super.key, required this.projectId, this.canCompose = true});
 
   final String projectId;
   final bool canCompose;
@@ -44,7 +45,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
 
   Future<void> _pick(String category, FileType type) async {
     try {
-      final res = await FilePicker.platform.pickFiles(type: type, withData: true);
+      final res =
+          await FilePicker.platform.pickFiles(type: type, withData: true);
       if (res == null || res.files.isEmpty) return;
       final f = res.files.first;
       if (f.bytes == null) {
@@ -69,7 +71,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
     if (text.isEmpty && _attachments.isEmpty) return;
     setState(() => _sending = true);
     try {
-      final report = await ref.read(reportsRepositoryProvider).submit(widget.projectId, {
+      final report =
+          await ref.read(reportsRepositoryProvider).submit(widget.projectId, {
         'type': role == 'supervisor' ? 'supervisor' : 'worker',
         'workDone': text.isEmpty ? null : text,
       });
@@ -105,7 +108,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
             loading: () => const LoadingView(),
             error: (e, _) => ErrorView(
               message: e.toString(),
-              onRetry: () => ref.invalidate(projectReportsProvider(widget.projectId)),
+              onRetry: () =>
+                  ref.invalidate(projectReportsProvider(widget.projectId)),
             ),
             data: (reports) {
               if (reports.isEmpty) {
@@ -147,7 +151,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm, AppSpacing.sm, AppSpacing.sm, AppSpacing.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -161,12 +166,14 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
                       Padding(
                         padding: const EdgeInsets.only(right: AppSpacing.xs),
                         child: Chip(
-                          avatar: Icon(_iconFor(_attachments[i].category), size: 16),
+                          avatar: Icon(_iconFor(_attachments[i].category),
+                              size: 16),
                           label: Text(
                             _attachments[i].name,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          onDeleted: () => setState(() => _attachments.removeAt(i)),
+                          onDeleted: () =>
+                              setState(() => _attachments.removeAt(i)),
                         ),
                       ),
                   ],
@@ -176,7 +183,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                  icon: const Icon(Icons.add_circle_outline,
+                      color: AppColors.primary),
                   tooltip: 'Attach',
                   onPressed: _sending ? null : () => _showAttachMenu(role),
                 ),
@@ -209,7 +217,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
                     : CircleAvatar(
                         backgroundColor: AppColors.primary,
                         child: IconButton(
-                          icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                          icon: const Icon(Icons.send,
+                              color: Colors.white, size: 20),
                           onPressed: () => _send(role),
                         ),
                       ),
@@ -228,15 +237,25 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.image_outlined, color: AppColors.primary),
-              title: const Text('Photo'),
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _captureCamera();
+              },
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.image_outlined, color: AppColors.primary),
+              title: const Text('Gallery'),
               onTap: () {
                 Navigator.pop(ctx);
                 _pick('photo', FileType.image);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+              leading:
+                  const Icon(Icons.videocam_outlined, color: AppColors.primary),
               title: const Text('Video'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -261,7 +280,8 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.fact_check_outlined, color: AppColors.primary),
+              leading: const Icon(Icons.fact_check_outlined,
+                  color: AppColors.primary),
               title: const Text('Detailed report (progress, materials...)'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -272,6 +292,22 @@ class _ReportChatViewState extends ConsumerState<ReportChatView> {
         ),
       ),
     );
+  }
+
+  Future<void> _captureCamera() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(
+            () => _attachments.add(_Attachment('photo', picked.name, bytes)));
+      }
+    } catch (e) {
+      _snack('Camera not available');
+    }
   }
 
   static IconData _iconFor(String category) {
@@ -295,7 +331,8 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = (report['media'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    final media =
+        (report['media'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
     final lines = <String>[];
     void add(String label, dynamic v) {
       if (v != null && v.toString().trim().isNotEmpty) lines.add('$label: $v');
@@ -339,9 +376,10 @@ class _Bubble extends StatelessWidget {
                 child: Text(
                   '${report['authorName'] ?? 'User'} · ${Formatters.roleLabel(report['authorRole'] as String?)}',
                   style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryDark),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ),
             if (progress != null)
@@ -350,11 +388,16 @@ class _Bubble extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.trending_up, size: 14, color: AppColors.success),
+                    const Icon(Icons.trending_up,
+                        size: 14, color: AppColors.success),
                     const SizedBox(width: 4),
-                    Text('Progress $progress%',
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text(
+                      'Progress $progress%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -373,41 +416,36 @@ class _Bubble extends StatelessWidget {
                   runSpacing: AppSpacing.xs,
                   children: [
                     for (final m in media)
-                      InkWell(
-                        onTap: () => openAttachment(
-                          context,
-                          fileId: (m['id'] ?? '').toString(),
-                          name: m['originalName']?.toString() ?? 'file',
-                          mimeType: m['mimeType']?.toString(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(_ReportChatViewState._iconFor(
-                                  m['category'] as String? ?? 'document'),
-                                  size: 14, color: AppColors.primary),
-                              const SizedBox(width: 4),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 140),
-                                child: Text(
-                                  m['originalName']?.toString() ?? 'file',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _ReportChatViewState._iconFor(
+                                m['category'] as String? ?? 'document',
                               ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.open_in_new,
-                                  size: 12, color: AppColors.primary),
-                            ],
-                          ),
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 140),
+                              child: Text(
+                                m['originalName']?.toString() ?? 'file',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -417,7 +455,8 @@ class _Bubble extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 Formatters.dateTime(report['createdAt']),
-                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                style:
+                    const TextStyle(fontSize: 10, color: AppColors.textMuted),
               ),
             ),
           ],

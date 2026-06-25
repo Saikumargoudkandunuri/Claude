@@ -37,7 +37,7 @@ class _ImageViewerScreenState extends State<ImageViewerScreen> {
       ),
       body: _headers == null
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+              child: CircularProgressIndicator(color: AppColors.primary),)
           : InteractiveViewer(
               minScale: 0.8,
               maxScale: 5,
@@ -79,7 +79,7 @@ class _ViewerError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.broken_image_outlined,
-                color: Colors.white54, size: 56),
+                color: Colors.white54, size: 56,),
             const SizedBox(height: 16),
             Text(
               message,

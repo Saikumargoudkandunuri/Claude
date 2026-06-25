@@ -63,16 +63,21 @@ class _GradientButtonState extends State<GradientButton> {
                   const SizedBox(
                     height: 18,
                     width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 else if (widget.icon != null)
                   Icon(widget.icon, color: Colors.white, size: 18),
                 if (widget.label != null) ...[
-                  if (widget.icon != null || widget.busy) const SizedBox(width: 8),
+                  if (widget.icon != null || widget.busy)
+                    const SizedBox(width: 8),
                   Text(
                     widget.label!,
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ],
               ],

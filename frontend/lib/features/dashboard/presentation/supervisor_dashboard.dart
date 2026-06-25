@@ -93,7 +93,7 @@ class SupervisorDashboard extends ConsumerWidget {
                 // Workers assigned to supervisor
                 if ((d['workers'] as List?)?.isNotEmpty == true) ...[
                   const Text('My Workers',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
                   const SizedBox(height: AppSpacing.sm),
                   for (final w
                       in (d['workers'] as List).cast<Map<String, dynamic>>())
@@ -109,7 +109,7 @@ class SupervisorDashboard extends ConsumerWidget {
                           ),
                         ),
                         title: Text(w['fullName']?.toString() ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                            style: const TextStyle(fontWeight: FontWeight.w600),),
                         subtitle: Text(
                           '${w['projectName'] ?? ''}${w['task'] != null ? ' · ${w['task']}' : ''}',
                           overflow: TextOverflow.ellipsis,
