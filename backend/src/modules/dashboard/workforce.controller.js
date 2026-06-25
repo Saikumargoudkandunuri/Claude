@@ -8,7 +8,7 @@ const getWorkforceData = asyncHandler(async (req, res) => {
   const { rows: staff } = await query(`
     SELECT u.id, u.full_name, u.phone, u.role, u.status, u.worker_status, u.created_at,
            (SELECT COUNT(*) FROM project_assignments pa WHERE pa.user_id = u.id AND pa.active = true) AS active_projects,
-           (SELECT COUNT(*) FROM daily_reports dr WHERE dr.submitted_by = u.id AND dr.created_at > now() - interval '30 days') AS reports_30d
+           (SELECT COUNT(*) FROM daily_reports dr WHERE dr.author_id = u.id AND dr.created_at > now() - interval '30 days') AS reports_30d
     FROM users u
     WHERE u.status = 'approved' AND u.role IN ('worker', 'supervisor', 'designer')
     ORDER BY u.role, u.full_name
@@ -39,12 +39,12 @@ const getWorkforceData = asyncHandler(async (req, res) => {
 
   // Recent reports (last 7 days)
   const { rows: recentReports } = await query(`
-    SELECT dr.id, dr.work_done, dr.pending_work, dr.problems, dr.materials_used,
+    SELECT dr.id, dr.work_done, dr.pending_work, dr.problems,
            dr.progress_percent, dr.created_at, dr.type,
            u.full_name AS author_name, u.role AS author_role,
            p.project_name, p.customer_name
     FROM daily_reports dr
-    JOIN users u ON u.id = dr.submitted_by
+    JOIN users u ON u.id = dr.author_id
     JOIN projects p ON p.id = dr.project_id
     WHERE dr.created_at > now() - interval '7 days'
     ORDER BY dr.created_at DESC
@@ -92,7 +92,6 @@ const getWorkforceData = asyncHandler(async (req, res) => {
       workDone: r.work_done,
       pendingWork: r.pending_work,
       problems: r.problems,
-      materialsUsed: r.materials_used,
       progressPercent: r.progress_percent,
       createdAt: r.created_at,
       type: r.type,
