@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/stat_card.dart';
+import 'staff_detail_screen.dart';
 
 /// Provider that fetches workforce operations data.
 final workforceProvider =
@@ -171,6 +172,7 @@ class _StaffTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final id = staff['id']?.toString() ?? '';
     final name = staff['fullName']?.toString() ?? '';
     final role = staff['role']?.toString() ?? '';
     final workerStatus = staff['workerStatus']?.toString();
@@ -182,65 +184,60 @@ class _StaffTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor: statusColor.withValues(alpha: 0.12),
-              child: Icon(_roleIcon(role), color: statusColor, size: 20),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            // Name + Role
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => StaffDetailScreen(userId: id, userName: name),
+          ));
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: statusColor.withValues(alpha: 0.12),
+                child: Icon(_roleIcon(role), color: statusColor, size: 20),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        _RoleBadge(role: role),
+                        const SizedBox(width: AppSpacing.sm),
+                        _StatusBadge(status: displayStatus, color: statusColor),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('$activeProjects projects',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary)),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      _RoleBadge(role: role),
-                      const SizedBox(width: AppSpacing.sm),
-                      _StatusBadge(
-                        status: displayStatus,
-                        color: statusColor,
-                      ),
-                    ],
-                  ),
+                  Text('$reports30d reports',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
-            ),
-            // Stats
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$activeProjects projects',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$reports30d reports',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right,
+                  size: 18, color: AppColors.textMuted),
+            ],
+          ),
         ),
       ),
     );
