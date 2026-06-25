@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/config/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
@@ -33,16 +34,22 @@ class ProfileScreen extends ConsumerWidget {
                             radius: 48,
                             backgroundColor:
                                 AppColors.primary.withValues(alpha: 0.15),
-                            child: Text(
-                              user.fullName.isNotEmpty
-                                  ? user.fullName[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
+                            backgroundImage: user.avatarUrl != null
+                                ? NetworkImage(
+                                    '${Env.apiBaseUrl}/auth/avatar/${user.id}')
+                                : null,
+                            child: user.avatarUrl != null
+                                ? null
+                                : Text(
+                                    user.fullName.isNotEmpty
+                                        ? user.fullName[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
                           ),
                           Positioned(
                             bottom: 0,
