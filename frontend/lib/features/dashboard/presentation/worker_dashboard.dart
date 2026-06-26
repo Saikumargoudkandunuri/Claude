@@ -513,32 +513,43 @@ class _DrawingChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.picture_as_pdf, color: AppColors.danger, size: 20),
-          const SizedBox(height: 6),
-          Text(drawing['originalName']?.toString() ?? 'Drawing',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          Text(drawing['projectName']?.toString() ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 10, color: AppColors.textSecondary)),
-        ],
+    return GestureDetector(
+      onTap: () {
+        final fileId = drawing['id']?.toString() ?? '';
+        final name = drawing['originalName']?.toString() ?? 'Drawing';
+        if (fileId.isNotEmpty) {
+          final url =
+              '${DioClient.instance.dio.options.baseUrl}/files/$fileId/download';
+          context.push('/viewer', extra: {'url': url, 'name': name});
+        }
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.picture_as_pdf, color: AppColors.danger, size: 20),
+            const SizedBox(height: 6),
+            Text(drawing['originalName']?.toString() ?? 'Drawing',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            Text(drawing['projectName']?.toString() ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 10, color: AppColors.textSecondary)),
+          ],
+        ),
       ),
     );
   }
