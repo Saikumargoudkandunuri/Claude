@@ -1,6 +1,6 @@
 'use strict';
 
-const { asyncHandler, ok } = require('../../utils/http');
+const { asyncHandler, ok, ApiError } = require('../../utils/http');
 const service = require('./auth.service');
 
 const register = asyncHandler(async (req, res) => {

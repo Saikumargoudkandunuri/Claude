@@ -18,7 +18,13 @@ const listAll = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  ok(res, await service.create(req.user, req.params.projectId, req.body), 201);
+  const result = await service.create(req.user, req.params.projectId, req.body);
+  // Emit real-time event to all project members
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`project:${req.params.projectId}`).emit('new_message', result);
+  }
+  ok(res, result, 201);
 });
 
 const todayForMe = asyncHandler(async (req, res) => {

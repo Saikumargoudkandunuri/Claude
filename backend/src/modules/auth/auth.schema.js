@@ -65,4 +65,23 @@ const resetPinById = z.object({
   newPin: z.string().length(4),
 });
 
-module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLogin, changePin, adminResetPin, resetPinById };
+const setSecurityQuestion = z.object({
+  question: z.string().min(5).max(200),
+  answer: z.string().min(2).max(100),
+});
+
+const forgotPasswordQuestion = z.object({
+  email: z.string().email(),
+});
+
+const verifySecurityAnswer = z.object({
+  email: z.string().email(),
+  answer: z.string().min(1).max(100),
+});
+
+const resetPasswordWithToken = z.object({
+  resetToken: z.string().min(10),
+  newPassword: z.string().min(8).max(100),
+});
+
+module.exports = { register, login, refresh, pushToken, workerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLogin, changePin, adminResetPin, resetPinById, setSecurityQuestion, forgotPasswordQuestion, verifySecurityAnswer, resetPasswordWithToken };

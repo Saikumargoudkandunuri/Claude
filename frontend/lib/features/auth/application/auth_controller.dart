@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/push_notification_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../data/auth_api.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_user.dart';
@@ -10,7 +11,8 @@ import '../domain/auth_user.dart';
 final authApiProvider =
     Provider<AuthApi>((ref) => AuthApi(ref.watch(dioProvider)));
 final authRepositoryProvider = Provider<AuthRepository>(
-    (ref) => AuthRepository(ref.watch(authApiProvider)),);
+  (ref) => AuthRepository(ref.watch(authApiProvider)),
+);
 
 /// Auth state consumed by the router and screens.
 class AuthState {
@@ -22,11 +24,12 @@ class AuthState {
 
   bool get isAuthenticated => user != null;
 
-  AuthState copyWith(
-      {AuthUser? user,
-      bool? isLoading,
-      String? error,
-      bool clearUser = false,}) {
+  AuthState copyWith({
+    AuthUser? user,
+    bool? isLoading,
+    String? error,
+    bool clearUser = false,
+  }) {
     return AuthState(
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
@@ -54,6 +57,8 @@ class AuthController extends Notifier<AuthState> {
     if (user != null) {
       // Register FCM push token after successful session restore
       ref.read(pushNotificationServiceProvider).registerToken();
+      // Connect to real-time socket
+      ref.read(socketServiceProvider).connect();
     }
   }
 
@@ -70,6 +75,8 @@ class AuthController extends Notifier<AuthState> {
       state = AuthState(user: user, isLoading: false);
       // Register FCM push token after successful login
       ref.read(pushNotificationServiceProvider).registerToken();
+      // Connect to real-time socket
+      ref.read(socketServiceProvider).connect();
       return true;
     } catch (e) {
       state = AuthState(
@@ -109,6 +116,7 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    ref.read(socketServiceProvider).disconnect();
     await _repo.logout();
     state = const AuthState(user: null, isLoading: false);
   }

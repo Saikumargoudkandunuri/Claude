@@ -12,6 +12,9 @@ const {
 const { logActivity } = require('../../utils/activity');
 const { notifyAdmins } = require('../../utils/notify');
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_MINUTES = 30;
+
 function publicUser(u) {
   return {
     id: u.id,
@@ -77,16 +80,51 @@ async function register({ fullName, email, phone, password }) {
   return publicUser(user);
 }
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_MINUTES = 30;
+
 async function login({ email, password }) {
   const { rows } = await query('SELECT * FROM users WHERE email = $1', [email]);
   const user = rows[0];
   if (!user) throw ApiError.unauthorized('Invalid email or password');
 
+  // Account lockout: block while the lock window is active.
+  if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    const minutesLeft = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 60000);
+    throw ApiError.tooManyRequests(
+      `Too many failed attempts. Try again in ${minutesLeft} minute(s).`
+    );
+  }
+
   const valid = await comparePassword(password, user.password_hash);
-  if (!valid) throw ApiError.unauthorized('Invalid email or password');
+  if (!valid) {
+    // Increment failed attempts; lock after the threshold.
+    const attempts = (user.login_attempts || 0) + 1;
+    const shouldLock = attempts >= MAX_LOGIN_ATTEMPTS;
+    await query(
+      'UPDATE users SET login_attempts = $1, locked_until = $2 WHERE id = $3',
+      [
+        shouldLock ? 0 : attempts,
+        shouldLock ? new Date(Date.now() + LOCK_MINUTES * 60000) : null,
+        user.id,
+      ]
+    );
+    if (shouldLock) {
+      throw ApiError.tooManyRequests(
+        `Too many failed attempts. Account locked for ${LOCK_MINUTES} minutes.`
+      );
+    }
+    throw ApiError.unauthorized('Invalid email or password');
+  }
 
   if (user.status === 'rejected') throw ApiError.forbidden('Your registration was rejected');
   if (user.status === 'disabled') throw ApiError.forbidden('Your account is disabled');
+
+  // Successful login: clear lockout counters and record the timestamp.
+  await query(
+    'UPDATE users SET login_attempts = 0, locked_until = NULL, last_login_at = now() WHERE id = $1',
+    [user.id]
+  );
 
   const tokens = await issueTokens(user);
   return { ...tokens, user: publicUser(user) };
@@ -175,7 +213,139 @@ async function changePassword(userId, { currentPassword, newPassword }) {
   const valid = await comparePassword(currentPassword, rows[0].password_hash);
   if (!valid) throw ApiError.forbidden('Current password is incorrect');
   const hash = await hashPassword(newPassword);
-  await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+  await query(
+    'UPDATE users SET password_hash = $1, password_changed_at = now() WHERE id = $2',
+    [hash, userId]
+  );
+  // Invalidate all existing sessions after a password change.
+  await query('UPDATE refresh_tokens SET revoked = true WHERE user_id = $1', [userId]);
+}
+
+// ─── Security questions + password reset (no OTP, no email) ──────────────────
+
+const SECURITY_QUESTIONS = [
+  'What was the name of your first school?',
+  "What is your mother's maiden name?",
+  'What was the name of your first pet?',
+  'What city were you born in?',
+  "What is your oldest sibling's middle name?",
+];
+
+/** Set or replace the current user's security question + answer. */
+async function setSecurityQuestion(userId, { question, answer }) {
+  const answerHash = await hashPassword(answer.trim().toLowerCase());
+  await query(
+    `INSERT INTO user_security_questions (user_id, question, answer_hash)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id) DO UPDATE
+       SET question = EXCLUDED.question,
+           answer_hash = EXCLUDED.answer_hash,
+           set_at = now()`,
+    [userId, question.trim(), answerHash]
+  );
+}
+
+/** Whether the current user has a security question configured. */
+async function getSecurityQuestionStatus(userId) {
+  const { rows } = await query(
+    'SELECT question FROM user_security_questions WHERE user_id = $1',
+    [userId]
+  );
+  return { hasQuestion: !!rows[0], question: rows[0]?.question || null };
+}
+
+/**
+ * Forgot-password step 1: look up by email and return the security question.
+ * Returns a generic shape when the account/question is missing so we never
+ * reveal which emails exist.
+ */
+async function forgotPasswordQuestion(email) {
+  const { rows } = await query(
+    `SELECT u.id, sq.question
+       FROM users u
+       LEFT JOIN user_security_questions sq ON sq.user_id = u.id
+      WHERE u.email = $1 AND u.status NOT IN ('disabled', 'rejected')`,
+    [email]
+  );
+  const row = rows[0];
+  if (!row || !row.question) {
+    return {
+      hasQuestion: false,
+      question: null,
+      message:
+        'If that account exists and has a security question, you will be asked it. Otherwise contact your administrator.',
+    };
+  }
+  return { hasQuestion: true, question: row.question };
+}
+
+/** Forgot-password step 2: verify the answer and issue a one-time reset token. */
+async function verifySecurityAnswer({ email, answer }) {
+  const { rows } = await query(
+    `SELECT u.id, sq.answer_hash
+       FROM users u
+       JOIN user_security_questions sq ON sq.user_id = u.id
+      WHERE u.email = $1`,
+    [email]
+  );
+  const row = rows[0];
+  if (!row) throw ApiError.unauthorized('Incorrect answer');
+  const matches = await comparePassword(answer.trim().toLowerCase(), row.answer_hash);
+  if (!matches) throw ApiError.unauthorized('Incorrect answer');
+
+  const rawToken = generateRefreshToken();
+  await query(
+    'INSERT INTO password_reset_tokens (user_id, token_hash) VALUES ($1, $2)',
+    [row.id, hashToken(rawToken)]
+  );
+  return { resetToken: rawToken };
+}
+
+/** Forgot-password step 3: consume the token, set the new password, drop sessions. */
+async function resetPasswordWithToken({ resetToken, newPassword }) {
+  const tokenHash = hashToken(resetToken);
+  return withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT * FROM password_reset_tokens
+        WHERE token_hash = $1 AND used = false AND expires_at > now()
+        FOR UPDATE`,
+      [tokenHash]
+    );
+    const token = rows[0];
+    if (!token) throw ApiError.forbidden('Reset link is invalid or has expired');
+
+    const hash = await hashPassword(newPassword);
+    await client.query(
+      `UPDATE users
+          SET password_hash = $1, password_changed_at = now(),
+              login_attempts = 0, locked_until = NULL
+        WHERE id = $2`,
+      [hash, token.user_id]
+    );
+    await client.query('UPDATE password_reset_tokens SET used = true WHERE id = $1', [token.id]);
+    await client.query('UPDATE refresh_tokens SET revoked = true WHERE user_id = $1', [
+      token.user_id,
+    ]);
+  });
+}
+
+/** Admin issues a reset token for any user (handed over in person). */
+async function adminIssueReset(adminId, targetUserId) {
+  const { rows } = await query('SELECT id FROM users WHERE id = $1', [targetUserId]);
+  if (!rows[0]) throw ApiError.notFound('User not found');
+  const rawToken = generateRefreshToken();
+  await query(
+    'INSERT INTO password_reset_tokens (user_id, token_hash, created_by) VALUES ($1, $2, $3)',
+    [targetUserId, hashToken(rawToken), adminId]
+  );
+  await logActivity({
+    userId: adminId,
+    action: 'user.password_reset_issued',
+    entityType: 'user',
+    entityId: targetUserId,
+    description: 'Admin issued a password reset token',
+  });
+  return { resetToken: rawToken, expiresInMinutes: 60 };
 }
 
 async function forgotPassword(email) {
@@ -320,4 +490,11 @@ module.exports = {
   adminSetPin,
   resetPinById,
   uploadAvatar,
+  SECURITY_QUESTIONS,
+  setSecurityQuestion,
+  getSecurityQuestionStatus,
+  forgotPasswordQuestion,
+  verifySecurityAnswer,
+  resetPasswordWithToken,
+  adminIssueReset,
 };

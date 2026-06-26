@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
 import '../../../shared/widgets/voice_note_player.dart';
 import '../../../shared/widgets/voice_recorder_sheet.dart';
@@ -27,11 +28,48 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
   final _scrollCtrl = ScrollController();
   final _attachments = <_MediaAttachment>[];
   bool _sending = false;
+  String? _typingUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupSocket();
+  }
+
+  void _setupSocket() {
+    final socket = ref.read(socketServiceProvider);
+    // Listen for new messages in this project
+    socket.onNewMessage((data) {
+      if (mounted && data['projectId'] == widget.projectId) {
+        ref.invalidate(projectReportsProvider(widget.projectId));
+      }
+    });
+    // Listen for typing indicators
+    socket.onTyping((data) {
+      if (mounted && data['projectId'] == widget.projectId) {
+        final userId = ref.read(authControllerProvider).user?.id;
+        if (data['userId'] != userId) {
+          setState(
+              () => _typingUser = data['isTyping'] == true ? 'Someone' : null);
+          if (_typingUser != null) {
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) setState(() => _typingUser = null);
+            });
+          }
+        }
+      }
+    });
+    // Listen for read receipts
+    socket.onMessageRead((_) {
+      if (mounted) ref.invalidate(projectReportsProvider(widget.projectId));
+    });
+  }
 
   @override
   void dispose() {
     _textCtrl.dispose();
     _scrollCtrl.dispose();
+    ref.read(socketServiceProvider).removeAllListeners();
     super.dispose();
   }
 
@@ -93,6 +131,19 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
               },
             ),
           ),
+          // Typing indicator
+          if (_typingUser != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              color: const Color(0xFFECE5DD),
+              child: Text(
+                '$_typingUser is typing...',
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF667781),
+                    fontStyle: FontStyle.italic),
+              ),
+            ),
           // Attachment preview
           if (_attachments.isNotEmpty)
             Container(
@@ -196,6 +247,11 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                       minLines: 1,
                       keyboardType: TextInputType.multiline,
                       textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) {
+                        ref
+                            .read(socketServiceProvider)
+                            .sendTyping(widget.projectId);
+                      },
                     ),
                   ),
                 ],
