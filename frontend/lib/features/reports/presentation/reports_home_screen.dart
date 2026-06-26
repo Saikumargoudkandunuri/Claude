@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../projects/application/projects_controller.dart';
@@ -59,9 +58,28 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
           ),
           data: (projects) {
             if (projects.isEmpty) {
-              return const EmptyState(
-                message: 'No sites assigned',
-                icon: Icons.assignment_outlined,
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.assignment_outlined,
+                          size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: AppSpacing.lg),
+                      const Text('No projects assigned yet',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Text(
+                        'Your administrator needs to assign you to a project.\n'
+                        'Once assigned, your project reports and chat will appear here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
             return ListView.separated(

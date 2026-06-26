@@ -96,6 +96,30 @@ class _WorkerBody extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _ProjectCard(site: assigned.first),
           const SizedBox(height: AppSpacing.lg),
+        ] else ...[
+          Card(
+            color: AppColors.info.withValues(alpha: 0.08),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: AppColors.info, size: 32),
+                  const SizedBox(height: AppSpacing.sm),
+                  const Text('No project assigned',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Ask your administrator to assign you to a project.',
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
         ],
 
         // ═══ Today's Tasks ═══
