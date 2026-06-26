@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -41,7 +41,7 @@ class VoiceRecorderSheet extends StatefulWidget {
 }
 
 class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final AudioRecorder _recorder = AudioRecorder();
   Timer? _timer;
   int _seconds = 0;
   bool _isRecording = false;
@@ -68,8 +68,6 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
     }
 
     try {
-      await _recorder.openRecorder();
-      // Start recording immediately
       await _startRecording();
     } catch (e) {
       setState(() {
@@ -82,11 +80,15 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
   Future<void> _startRecording() async {
     final dir = await getTemporaryDirectory();
     _filePath =
-        '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.aac';
+        '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-    await _recorder.startRecorder(
-      toFile: _filePath,
-      codec: Codec.aacADTS,
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        bitRate: 128000,
+        sampleRate: 44100,
+      ),
+      path: _filePath!,
     );
 
     setState(() {
@@ -104,20 +106,19 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
   }
 
   Future<void> _pauseRecording() async {
-    await _recorder.pauseRecorder();
+    await _recorder.pause();
     setState(() => _isPaused = true);
   }
 
   Future<void> _resumeRecording() async {
-    await _recorder.resumeRecorder();
+    await _recorder.resume();
     setState(() => _isPaused = false);
   }
 
   Future<void> _cancel() async {
     _timer?.cancel();
     try {
-      if (_isRecording) await _recorder.stopRecorder();
-      await _recorder.closeRecorder();
+      if (_isRecording) await _recorder.stop();
     } catch (_) {}
     // Delete temp file
     if (_filePath != null) {
@@ -130,24 +131,25 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
 
   Future<void> _send() async {
     _timer?.cancel();
+    String? path;
     try {
-      await _recorder.stopRecorder();
-      await _recorder.closeRecorder();
+      path = await _recorder.stop();
     } catch (_) {}
 
-    if (_filePath == null) {
+    final filePath = path ?? _filePath;
+    if (filePath == null) {
       if (mounted) Navigator.pop(context);
       return;
     }
 
-    final file = File(_filePath!);
+    final file = File(filePath);
     if (!await file.exists()) {
       if (mounted) Navigator.pop(context);
       return;
     }
 
     final bytes = await file.readAsBytes();
-    final filename = 'voice_note_${DateTime.now().millisecondsSinceEpoch}.aac';
+    final filename = 'voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     if (mounted) {
       Navigator.pop(context, VoiceRecording(bytes, filename, _seconds));
@@ -157,9 +159,7 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
   @override
   void dispose() {
     _timer?.cancel();
-    try {
-      _recorder.closeRecorder();
-    } catch (_) {}
+    _recorder.dispose();
     super.dispose();
   }
 
@@ -184,9 +184,11 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
           if (_error != null) ...[
             const Icon(Icons.mic_off, size: 56, color: AppColors.danger),
             const SizedBox(height: AppSpacing.md),
-            Text(_error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.danger),),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.danger),
+            ),
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
               onPressed: () => Navigator.pop(context),
@@ -207,8 +209,8 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _isPaused
-                    ? AppColors.warning.withValues(alpha: 0.15)
-                    : AppColors.danger.withValues(alpha: 0.15),
+                    ? AppColors.warning.withOpacity(0.15)
+                    : AppColors.danger.withOpacity(0.15),
               ),
               child: Icon(
                 _isPaused ? Icons.pause : Icons.mic,
@@ -301,7 +303,7 @@ class _ControlButton extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: filled ? color : color.withValues(alpha: 0.12),
+                color: filled ? color : color.withOpacity(0.12),
               ),
               child: Icon(icon, color: filled ? Colors.white : color, size: 28),
             ),

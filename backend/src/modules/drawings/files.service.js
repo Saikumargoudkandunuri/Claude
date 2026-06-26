@@ -72,6 +72,10 @@ async function listForProject(user, projectId, category) {
     params.push(category);
     sql += ` AND category = $2`;
   }
+  // Workers can only see approved drawings
+  if (user.role === 'worker') {
+    sql += ` AND (approval_status = 'approved' OR approval_status IS NULL)`;
+  }
   sql += ' ORDER BY created_at DESC';
   const { rows } = await query(sql, params);
   return rows;

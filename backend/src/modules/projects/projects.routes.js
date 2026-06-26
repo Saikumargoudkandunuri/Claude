@@ -100,4 +100,8 @@ router.get('/:id/stage-timeline', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PDF export — admin only
+const { generateProjectPDF } = require('../reports/pdf_report.controller');
+router.get('/:id/export-pdf', require('../../middleware/rbac').requireRole('admin'), generateProjectPDF);
+
 module.exports = router;

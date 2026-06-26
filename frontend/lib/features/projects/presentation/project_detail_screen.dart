@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/permissions/permissions.dart';
@@ -23,6 +24,8 @@ import 'tabs/payments_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'widgets/stage_timeline_widget.dart';
 import 'weekly_status_history_screen.dart';
+import 'site_photos_screen.dart';
+import 'snag_list_screen.dart';
 
 final _weeklyStatusProvider =
     FutureProvider.family<Map<String, dynamic>?, String>(
@@ -88,7 +91,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                                 project: project,
                                 onUpdated: () {
                                   ref.invalidate(
-                                      projectDetailProvider(projectId));
+                                    projectDetailProvider(projectId),
+                                  );
                                   ref.invalidate(projectsListProvider);
                                 },
                               ),
@@ -143,8 +147,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                              DioClient.toApiException(e)
-                                                  .message),
+                                            DioClient.toApiException(e).message,
+                                          ),
                                         ),
                                       );
                                     }
@@ -157,8 +161,11 @@ class ProjectDetailScreen extends ConsumerWidget {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline,
-                                        color: Colors.red, size: 20),
+                                    Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       'Delete Project',
@@ -270,6 +277,79 @@ class ProjectDetailScreen extends ConsumerWidget {
                 ),
                 SliverToBoxAdapter(
                   child: StageTimelineWidget(projectId: projectId),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (role != 'worker')
+                          ActionChip(
+                            avatar: const Icon(Icons.photo_library_outlined,
+                                size: 18, color: Color(0xFF00D1DC)),
+                            label: const Text('Photos'),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SitePhotosScreen(
+                                  projectId: project.id,
+                                  projectName: project.projectName,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ActionChip(
+                          avatar: const Icon(Icons.checklist_rounded,
+                              size: 18, color: Color(0xFF00D1DC)),
+                          label: const Text('Snag List'),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SnagListScreen(
+                                projectId: project.id,
+                                projectName: project.projectName,
+                                userRole: role ?? 'worker',
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isAdmin)
+                          ActionChip(
+                            avatar: const Icon(Icons.picture_as_pdf_rounded,
+                                size: 18, color: Color(0xFF00D1DC)),
+                            label: const Text('Export PDF'),
+                            onPressed: () async {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Generating PDF...'),
+                                      duration: Duration(seconds: 2)));
+                              try {
+                                final res = await DioClient.instance.dio.get(
+                                  '/projects/${project.id}/export-pdf',
+                                  options:
+                                      Options(responseType: ResponseType.bytes),
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('✅ PDF downloaded'),
+                                          backgroundColor: Color(0xFF00D1DC)));
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text('Export failed: $e'),
+                                          backgroundColor: Colors.red));
+                                }
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
               body: TabBarView(children: views),

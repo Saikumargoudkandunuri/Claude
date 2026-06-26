@@ -35,4 +35,52 @@ router.get('/reports/today/me', controller.todayForMe);
 router.patch('/reports/:id/read', controller.markRead);
 router.post('/reports/:id/media', upload.single('file'), controller.addMedia);
 
+// Site photo timeline gallery — collect photos from files table
+router.get(
+  '/projects/:projectId/photos',
+  requireRole('admin', 'supervisor', 'designer'),
+  async (req, res, next) => {
+    try {
+      const { query: dbQuery } = require('../../db/pool');
+      const limit = parseInt(req.query.limit) || 50;
+      const offset = parseInt(req.query.offset) || 0;
+
+      // Fetch photos from files table (media categories)
+      const base = process.env.PUBLIC_BASE_URL
+        ? `${process.env.PUBLIC_BASE_URL.replace(/\/$/, '')}${process.env.API_PREFIX || '/api/v1'}`
+        : `${req.protocol}://${req.get('host')}${process.env.API_PREFIX || '/api/v1'}`;
+
+      const filesResult = await dbQuery(
+        `SELECT
+           f.id,
+           f.original_name,
+           f.category,
+           f.created_at,
+           f.uploaded_by,
+           u.full_name as uploader_name
+         FROM files f
+         JOIN users u ON u.id = f.uploaded_by
+         WHERE f.project_id = $1
+           AND f.category IN ('photo', 'video', 'voice_note', 'document', '3d_design')
+           AND f.mime_type LIKE 'image/%'
+         ORDER BY f.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [req.params.projectId, limit, offset]
+      );
+
+      const photos = filesResult.rows.map(f => ({
+        ...f,
+        url: `${base}/files/${f.id}/download`,
+      }));
+
+      res.json({
+        data: {
+          file_photos: photos,
+          total: photos.length,
+        },
+      });
+    } catch (err) { next(err); }
+  }
+);
+
 module.exports = router;
