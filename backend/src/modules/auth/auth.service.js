@@ -36,19 +36,26 @@ async function issueTokens(user) {
   return { accessToken, refreshToken };
 }
 
-async function register({ fullName, email, phone, password }) {
-  const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+async function register({ fullName, email, phone, password, pin, role }) {
+  // Check for existing user by phone (primary) or email (legacy)
+  const existing = await query(
+    'SELECT id FROM users WHERE phone = $1 OR ($2 IS NOT NULL AND email = $2)',
+    [phone, email || null]
+  );
   if (existing.rows.length > 0) {
-    throw ApiError.conflict('An account with this email already exists');
+    throw ApiError.conflict('An account with this mobile number already exists');
   }
 
-  const passwordHash = await hashPassword(password);
+  const passwordHash = password ? await hashPassword(password) : null;
+  const pinHash = pin ? await hashPassword(pin) : null;
+  const userEmail = email || `${phone.replace(/[^0-9]/g, '')}@placeholder.local`;
+
   const user = await withTransaction(async (client) => {
     const { rows } = await client.query(
-      `INSERT INTO users (full_name, email, phone, password_hash, status)
-       VALUES ($1,$2,$3,$4,'pending')
+      `INSERT INTO users (full_name, email, phone, password_hash, pin_hash, role, status)
+       VALUES ($1,$2,$3,$4,$5,$6,'pending')
        RETURNING *`,
-      [fullName, email, phone, passwordHash]
+      [fullName, userEmail, phone, passwordHash, pinHash, role || null]
     );
     const created = rows[0];
     await logActivity(
@@ -61,12 +68,11 @@ async function register({ fullName, email, phone, password }) {
       },
       client
     );
-    // Notify admins of the new registration request.
     await notifyAdmins(
       {
         type: 'user.registration',
         title: 'New registration request',
-        body: `${fullName} (${email}) is awaiting approval`,
+        body: `${fullName} (${phone}) is awaiting approval`,
         data: { route: 'icms://approvals', userId: created.id },
       },
       client

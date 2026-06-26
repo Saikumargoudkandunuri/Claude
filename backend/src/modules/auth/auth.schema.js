@@ -4,9 +4,12 @@ const { z } = require('zod');
 
 const register = z.object({
   fullName: z.string().min(2).max(120),
-  email: z.string().email(),
   phone: z.string().min(6).max(20),
-  password: z.string().min(8).max(100),
+  role: z.enum(['supervisor', 'designer', 'worker']).optional(),
+  pin: z.string().length(4).optional(),
+  // Legacy fields (kept for backward compat)
+  email: z.string().email().optional(),
+  password: z.string().min(8).max(100).optional(),
 });
 
 const login = z.object({

@@ -1,12 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../core/storage/secure_store.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/utils/validators.dart';
-import '../../../core/widgets/app_text_field.dart';
 import '../application/auth_controller.dart';
+
+const _navy = Color(0xFF1A237E);
+const _blue = Color(0xFF1565C0);
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -16,31 +20,66 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  bool _submitting = false;
+  final _phoneCtrl = TextEditingController();
+  final _pinCtrl = TextEditingController();
+  final _phoneFocus = FocusNode();
+  final _pinFocus = FocusNode();
+
+  bool _busy = false;
+  bool _obscurePin = true;
+  String? _errorMsg;
 
   @override
   void dispose() {
-    _email.dispose();
-    _password.dispose();
+    _phoneCtrl.dispose();
+    _pinCtrl.dispose();
+    _phoneFocus.dispose();
+    _pinFocus.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _submitting = true);
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .login(_email.text.trim(), _password.text);
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    if (!ok) {
-      final err = ref.read(authControllerProvider).error ?? 'Login failed';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+  Future<void> _login() async {
+    final digits = _phoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 10) {
+      setState(() => _errorMsg = 'Enter a valid 10-digit mobile number');
+      return;
     }
-    // On success, GoRouter redirect handles navigation.
+    final pin = _pinCtrl.text.trim();
+    if (pin.length != 4) {
+      setState(() => _errorMsg = 'Enter your 4-digit PIN');
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final dio = DioClient.instance.dio;
+      final res = await dio.post(
+        '/auth/pin-login',
+        data: {'phone': '+91$digits', 'pin': pin},
+        options: Options(extra: {'skipAuth': true}),
+      );
+      final data = res.data['data'] as Map<String, dynamic>;
+
+      await SecureStore.instance.saveTokens(
+        accessToken: data['accessToken'] as String,
+        refreshToken: data['refreshToken'] as String,
+      );
+
+      if (mounted) {
+        await ref.read(authControllerProvider.notifier).refreshUser();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _errorMsg = DioClient.toApiException(e).message;
+        });
+      }
+    }
   }
 
   @override
@@ -52,32 +91,120 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _Brand(),
-                    const SizedBox(height: AppSpacing.xxl),
-                    AppTextField(
-                      label: 'Email',
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: Validators.email,
-                      prefixIcon: Icons.mail_outline,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Brand
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset('assets/icon/app_icon.png', height: 80),
+                        const SizedBox(height: AppSpacing.md),
+                        const Text(
+                          'Metal & More Interiors',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: _navy,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    AppTextField(
-                      label: 'Password',
-                      controller: _password,
-                      obscureText: true,
-                      validator: Validators.password,
-                      prefixIcon: Icons.lock_outline,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // Phone field
+                  TextField(
+                    controller: _phoneCtrl,
+                    focusNode: _phoneFocus,
+                    keyboardType: TextInputType.number,
+                    maxLength: 10,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    FilledButton(
-                      onPressed: _submitting ? null : _submit,
-                      child: _submitting
+                    decoration: InputDecoration(
+                      labelText: 'Mobile Number',
+                      prefixIcon: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.center,
+                        width: 70,
+                        child: const Text(
+                          '+91',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      hintText: '9876543210',
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) => _pinFocus.requestFocus(),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // PIN field
+                  TextField(
+                    controller: _pinCtrl,
+                    focusNode: _pinFocus,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    obscureText: _obscurePin,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 8,
+                    ),
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      labelText: '4-digit PIN',
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePin ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscurePin = !_obscurePin),
+                      ),
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _login(),
+                  ),
+
+                  if (_errorMsg != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _errorMsg!,
+                      style: const TextStyle(
+                        color: Color(0xFFD32F2F),
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Login button
+                  SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _busy ? null : _login,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _blue,
+                        minimumSize: const Size.fromHeight(50),
+                      ),
+                      child: _busy
                           ? const SizedBox(
                               height: 20,
                               width: 20,
@@ -86,69 +213,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Sign In'),
+                          : const Text(
+                              'Login',
+                              style: TextStyle(fontSize: 16),
+                            ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    TextButton(
-                      onPressed: () => context.go('/forgot-password'),
-                      child: const Text('Forgot Password?'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/pin-login'),
-                      icon: const Icon(Icons.pin_outlined, size: 18),
-                      label: const Text('Login with Mobile + PIN'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextButton(
-                      onPressed: () => context.go('/register'),
-                      child: const Text("Don't have an account? Register"),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Forgot PIN
+                  TextButton(
+                    onPressed: () => context.go('/forgot-password'),
+                    child: const Text('Forgot PIN?'),
+                  ),
+
+                  // Register
+                  TextButton(
+                    onPressed: () => context.go('/register'),
+                    child: const Text('New employee? Register'),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Brand extends StatelessWidget {
-  const _Brand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 64,
-          width: 64,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          ),
-          child: const Icon(
-            Icons.chair_alt_rounded,
-            color: Colors.white,
-            size: 34,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'Work Management',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        const Text(
-          'Metal & More Interiors',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      ],
     );
   }
 }
