@@ -94,4 +94,37 @@ const getAvatar = asyncHandler(async (req, res) => {
   storage.createReadStream(storageKey).pipe(res);
 });
 
-module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl, resetPinByIdCtrl, uploadAvatar, getAvatar };
+// ─── Security question / password reset (no OTP, no email) ───────────────────
+
+const forgotPasswordQuestionCtrl = asyncHandler(async (req, res) => {
+  const result = await service.forgotPasswordQuestion(req.body.email);
+  ok(res, result);
+});
+
+const verifySecurityAnswerCtrl = asyncHandler(async (req, res) => {
+  const result = await service.verifySecurityAnswer(req.body);
+  ok(res, result);
+});
+
+const resetPasswordWithTokenCtrl = asyncHandler(async (req, res) => {
+  await service.resetPasswordWithToken(req.body);
+  ok(res, { message: 'Password reset successfully. Please log in.' });
+});
+
+const getSecurityQuestionCtrl = asyncHandler(async (req, res) => {
+  const result = await service.getSecurityQuestionStatus(req.user.id);
+  ok(res, { ...result, options: service.SECURITY_QUESTIONS });
+});
+
+const setSecurityQuestionCtrl = asyncHandler(async (req, res) => {
+  await service.setSecurityQuestion(req.user.id, req.body);
+  res.status(204).send();
+});
+
+const adminIssueResetCtrl = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'admin') throw ApiError.forbidden('Admins only');
+  const result = await service.adminIssueReset(req.user.id, req.params.userId);
+  ok(res, result);
+});
+
+module.exports = { register, login, refresh, logout, me, updatePushToken, updateWorkerStatus, updateProfile, changePassword, forgotPassword, resetPassword, pinLoginCtrl, changePinCtrl, resetPinByIdCtrl, uploadAvatar, getAvatar, forgotPasswordQuestionCtrl, verifySecurityAnswerCtrl, resetPasswordWithTokenCtrl, getSecurityQuestionCtrl, setSecurityQuestionCtrl, adminIssueResetCtrl };

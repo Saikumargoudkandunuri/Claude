@@ -1,12 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/services/offline_sync_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/services/socket_service.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
 import '../../../shared/widgets/voice_note_player.dart';
 import '../../../shared/widgets/voice_recorder_sheet.dart';
@@ -85,6 +87,26 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
+          // Offline banner
+          Consumer(builder: (context, ref, _) {
+            final connectivity = ref.watch(connectivityProvider);
+            return connectivity.when(
+              data: (online) => online
+                  ? const SizedBox.shrink()
+                  : Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      color: Colors.orange.shade100,
+                      child: const Text(
+                        '📡 You\'re offline. Messages will be sent when connected.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.brown),
+                      ),
+                    ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            );
+          }),
           Expanded(
             child: async.when(
               loading: () =>
@@ -96,6 +118,11 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
                 ),
               ),
               data: (reports) {
+                // Cache messages for offline access
+                ref.read(offlineSyncServiceProvider).cacheMessages(
+                      widget.projectId,
+                      reports,
+                    );
                 if (reports.isEmpty) {
                   return Center(
                     child: Column(
@@ -358,11 +385,27 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
     final text = _textCtrl.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
     setState(() => _sending = true);
+
+    final type = role == 'supervisor' ? 'supervisor' : 'worker';
+    final body = {'type': type, 'workDone': text};
+
+    // Check if online
+    final syncService = ref.read(offlineSyncServiceProvider);
+    final online = await syncService.isOnline;
+
+    if (!online && _attachments.isEmpty) {
+      // Queue for offline sync (text only, no attachments offline)
+      await syncService.queueMessage(projectId: widget.projectId, body: body);
+      _textCtrl.clear();
+      setState(() => _sending = false);
+      _snack('Message queued. Will be sent when online.');
+      return;
+    }
+
     try {
-      final type = role == 'supervisor' ? 'supervisor' : 'worker';
       final report = await ref
           .read(reportsRepositoryProvider)
-          .submit(widget.projectId, {'type': type, 'workDone': text});
+          .submit(widget.projectId, body);
       final reportId = report['id'] as String;
       for (final a in _attachments) {
         await ref.read(reportsRepositoryProvider).addMedia(
@@ -374,9 +417,18 @@ class _WhatsAppReportScreenState extends ConsumerState<WhatsAppReportScreen> {
       }
       _textCtrl.clear();
       setState(() => _attachments.clear());
+      // Stop typing indicator
+      ref
+          .read(socketServiceProvider)
+          .sendTyping(widget.projectId, isTyping: false);
       ref.invalidate(projectReportsProvider(widget.projectId));
     } catch (e) {
-      if (mounted) {
+      // If network error, queue the message
+      if (e is DioException && e.type == DioExceptionType.connectionError) {
+        await syncService.queueMessage(projectId: widget.projectId, body: body);
+        _textCtrl.clear();
+        _snack('Network error. Message queued for later.');
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(DioClient.toApiException(e).message)),
         );

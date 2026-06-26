@@ -91,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     TextButton(
                       onPressed: () => context.go('/forgot-password'),
-                      child: const Text('Forgot PIN?'),
+                      child: const Text('Forgot Password?'),
                     ),
                     OutlinedButton.icon(
                       onPressed: () => context.go('/pin-login'),

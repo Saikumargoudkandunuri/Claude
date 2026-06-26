@@ -148,6 +148,20 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: 'Update your 4-digit login PIN',
                   onTap: () => _showChangePin(context, ref),
                 ),
+                _actionTile(
+                  context,
+                  icon: Icons.lock_outline,
+                  title: 'Change Password',
+                  subtitle: 'Update your account password',
+                  onTap: () => _showChangePassword(context, ref),
+                ),
+                _actionTile(
+                  context,
+                  icon: Icons.help_outline,
+                  title: 'Security Question',
+                  subtitle: 'Used to reset your password if forgotten',
+                  onTap: () => _showSecurityQuestion(context, ref),
+                ),
                 const SizedBox(height: AppSpacing.xl),
 
                 // Logout
@@ -374,7 +388,8 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text('Change PIN',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800),),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: currentCtrl,
@@ -382,7 +397,7 @@ class ProfileScreen extends ConsumerWidget {
                   maxLength: 4,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Current PIN', counterText: ''),
+                      labelText: 'Current PIN', counterText: '',),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
@@ -391,7 +406,7 @@ class ProfileScreen extends ConsumerWidget {
                   maxLength: 4,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'New PIN', counterText: ''),
+                      labelText: 'New PIN', counterText: '',),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
@@ -400,7 +415,7 @@ class ProfileScreen extends ConsumerWidget {
                   maxLength: 4,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Confirm New PIN', counterText: ''),
+                      labelText: 'Confirm New PIN', counterText: '',),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SizedBox(
@@ -411,14 +426,14 @@ class ProfileScreen extends ConsumerWidget {
                         : () async {
                             if (newCtrl.text.length != 4) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
-                                    content: Text('PIN must be 4 digits')));
+                                  const SnackBar(
+                                      content: Text('PIN must be 4 digits'),),);
                               return;
                             }
                             if (newCtrl.text != confirmCtrl.text) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
-                                    content: Text('PINs do not match')));
+                                  const SnackBar(
+                                      content: Text('PINs do not match'),),);
                               return;
                             }
                             setSheetState(() => busy = true);
@@ -427,28 +442,29 @@ class ProfileScreen extends ConsumerWidget {
                               await dio.put('/auth/me/pin', data: {
                                 'currentPin': currentCtrl.text,
                                 'newPin': newCtrl.text,
-                              });
+                              },);
                               if (ctx.mounted) {
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('PIN changed successfully')));
+                                    const SnackBar(
+                                        content:
+                                            Text('PIN changed successfully'),),);
                               }
                             } catch (e) {
                               if (ctx.mounted) {
                                 setSheetState(() => busy = false);
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          DioClient.toApiException(e).message)));
+                                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                                    content: Text(
+                                        DioClient.toApiException(e).message,),),);
                               }
                             }
                           },
                     child: busy
                         ? const SizedBox(
-                            height: 20, width: 20,
+                            height: 20,
+                            width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                                strokeWidth: 2, color: Colors.white,),)
                         : const Text('Change PIN'),
                   ),
                 ),
@@ -460,5 +476,253 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
+  void _showChangePassword(BuildContext context, WidgetRef ref) {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    bool busy = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('Change Password',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800),),
+                const SizedBox(height: AppSpacing.lg),
+                TextField(
+                  controller: currentCtrl,
+                  obscureText: true,
+                  decoration:
+                      const InputDecoration(labelText: 'Current password'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: newCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                      labelText: 'New password (min 8 chars)',),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: confirmCtrl,
+                  obscureText: true,
+                  decoration:
+                      const InputDecoration(labelText: 'Confirm new password'),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            if (newCtrl.text.length < 8) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Password must be at least 8 characters',),),
+                              );
+                              return;
+                            }
+                            if (newCtrl.text != confirmCtrl.text) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Passwords do not match'),),
+                              );
+                              return;
+                            }
+                            setSheetState(() => busy = true);
+                            try {
+                              await ref.read(authApiProvider).changePassword(
+                                  currentCtrl.text, newCtrl.text,);
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Password changed. Please log in again.',),),
+                                );
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .logout();
+                              }
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                setSheetState(() => busy = false);
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          DioClient.toApiException(e).message,),),
+                                );
+                              }
+                            }
+                          },
+                    child: busy
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white,),)
+                        : const Text('Change Password'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSecurityQuestion(BuildContext context, WidgetRef ref) {
+    final answerCtrl = TextEditingController();
+    List<String> options = const [];
+    String? selected;
+    bool busy = false;
+    bool loading = true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          if (loading) {
+            loading = false;
+            ref.read(authApiProvider).securityQuestionStatus().then((data) {
+              final opts = (data['options'] as List?)?.cast<String>() ??
+                  const <String>[];
+              if (ctx.mounted) {
+                setSheetState(() {
+                  options = opts;
+                  selected = (data['question'] as String?) ??
+                      (opts.isNotEmpty ? opts.first : null);
+                });
+              }
+            }).catchError((_) {
+              if (ctx.mounted) setSheetState(() {});
+            });
+          }
+          return Padding(
+            padding: EdgeInsets.only(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('Security Question',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w800),),
+                  const SizedBox(height: 4),
+                  const Text('Used to reset your password if you forget it.',
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary,),),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (options.isEmpty)
+                    const Center(
+                        child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: CircularProgressIndicator(),
+                    ),)
+                  else ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: selected,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Question'),
+                      items: options
+                          .map((q) => DropdownMenuItem(
+                                value: q,
+                                child: Text(q,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,),
+                              ),)
+                          .toList(),
+                      onChanged: (v) => setSheetState(() => selected = v),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: answerCtrl,
+                      decoration:
+                          const InputDecoration(labelText: 'Your answer'),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                if (selected == null) return;
+                                if (answerCtrl.text.trim().length < 2) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Answer must be at least 2 characters',),),
+                                  );
+                                  return;
+                                }
+                                setSheetState(() => busy = true);
+                                try {
+                                  await ref
+                                      .read(authApiProvider)
+                                      .setSecurityQuestion(
+                                          selected!, answerCtrl.text.trim(),);
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content:
+                                              Text('Security question saved'),),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (ctx.mounted) {
+                                    setSheetState(() => busy = false);
+                                    ScaffoldMessenger.of(ctx).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              DioClient.toApiException(e)
+                                                  .message,),),
+                                    );
+                                  }
+                                }
+                              },
+                        child: busy
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white,),)
+                            : const Text('Save Question'),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

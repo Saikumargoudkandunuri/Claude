@@ -21,11 +21,17 @@ router.post('/refresh', authLimiter, validate(schema.refresh), controller.refres
 router.post('/logout', validate(schema.refresh), controller.logout);
 router.post('/forgot-password', authLimiter, validate(schema.forgotPassword), controller.forgotPassword);
 router.post('/reset-password', authLimiter, validate(schema.resetPassword), controller.resetPassword);
+router.post('/forgot-password-question', authLimiter, validate(schema.forgotPasswordQuestion), controller.forgotPasswordQuestionCtrl);
+router.post('/verify-security-answer', authLimiter, validate(schema.verifySecurityAnswer), controller.verifySecurityAnswerCtrl);
+router.post('/reset-password-token', authLimiter, validate(schema.resetPasswordWithToken), controller.resetPasswordWithTokenCtrl);
 router.post('/pin-login', authLimiter, validate(schema.pinLogin), controller.pinLoginCtrl);
 router.post('/reset-pin-by-id', authLimiter, validate(schema.resetPinById), controller.resetPinByIdCtrl);
 router.put('/me/pin', authenticate, validate(schema.changePin), controller.changePinCtrl);
 
 router.get('/me', authenticate, controller.me);
+router.get('/me/security-question', authenticate, controller.getSecurityQuestionCtrl);
+router.put('/me/security-question', authenticate, validate(schema.setSecurityQuestion), controller.setSecurityQuestionCtrl);
+router.post('/admin-reset/:userId', authenticate, controller.adminIssueResetCtrl);
 router.get('/avatar/:userId', controller.getAvatar);
 router.put('/me', authenticate, validate(schema.updateProfile), controller.updateProfile);
 router.put('/me/password', authenticate, validate(schema.changePassword), controller.changePassword);

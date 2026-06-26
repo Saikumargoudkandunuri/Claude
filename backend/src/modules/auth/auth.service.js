@@ -12,9 +12,6 @@ const {
 const { logActivity } = require('../../utils/activity');
 const { notifyAdmins } = require('../../utils/notify');
 
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCK_MINUTES = 30;
-
 function publicUser(u) {
   return {
     id: u.id,
