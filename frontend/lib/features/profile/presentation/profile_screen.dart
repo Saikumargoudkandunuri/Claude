@@ -36,7 +36,8 @@ class ProfileScreen extends ConsumerWidget {
                                 AppColors.primary.withValues(alpha: 0.15),
                             backgroundImage: user.avatarUrl != null
                                 ? NetworkImage(
-                                    '${Env.apiBaseUrl}/auth/avatar/${user.id}',)
+                                    '${Env.apiBaseUrl}/auth/avatar/${user.id}',
+                                  )
                                 : null,
                             child: user.avatarUrl != null
                                 ? null
@@ -142,17 +143,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 _actionTile(
                   context,
-                  icon: Icons.lock_outline,
-                  title: 'Change Password',
-                  subtitle: 'Update using current password',
-                  onTap: () => _showChangePassword(context, ref),
-                ),
-                _actionTile(
-                  context,
-                  icon: Icons.sms_outlined,
-                  title: 'Reset Password via OTP',
-                  subtitle: 'Verify with OTP sent to email',
-                  onTap: () => _showOtpPasswordChange(context, ref, user.email),
+                  icon: Icons.pin_outlined,
+                  title: 'Change PIN',
+                  subtitle: 'Update your 4-digit login PIN',
+                  onTap: () => _showChangePin(context, ref),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -357,7 +351,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showChangePassword(BuildContext context, WidgetRef ref) {
+  void _showChangePin(BuildContext context, WidgetRef ref) {
     final currentCtrl = TextEditingController();
     final newCtrl = TextEditingController();
     final confirmCtrl = TextEditingController();
@@ -379,29 +373,34 @@ class ProfileScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Change Password',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
+                const Text('Change PIN',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: currentCtrl,
                   obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'Current Password'),
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Current PIN', counterText: ''),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: newCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'New Password'),
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'New PIN', counterText: ''),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: confirmCtrl,
                   obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirm New Password'),
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Confirm New PIN', counterText: ''),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SizedBox(
@@ -410,247 +409,49 @@ class ProfileScreen extends ConsumerWidget {
                     onPressed: busy
                         ? null
                         : () async {
+                            if (newCtrl.text.length != 4) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                    content: Text('PIN must be 4 digits')));
+                              return;
+                            }
                             if (newCtrl.text != confirmCtrl.text) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Passwords do not match'),
-                                ),
-                              );
-                              return;
-                            }
-                            if (newCtrl.text.length < 8) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Password must be at least 8 characters',
-                                  ),
-                                ),
-                              );
+                                    content: Text('PINs do not match')));
                               return;
                             }
                             setSheetState(() => busy = true);
                             try {
-                              final api = ref.read(authApiProvider);
-                              await api.changePassword(
-                                currentCtrl.text,
-                                newCtrl.text,
-                              );
+                              final dio = DioClient.instance.dio;
+                              await dio.put('/auth/me/pin', data: {
+                                'currentPin': currentCtrl.text,
+                                'newPin': newCtrl.text,
+                              });
                               if (ctx.mounted) {
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
-                                      'Password changed successfully',
-                                    ),
-                                  ),
-                                );
+                                      content: Text('PIN changed successfully')));
                               }
                             } catch (e) {
                               if (ctx.mounted) {
                                 setSheetState(() => busy = false);
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   SnackBar(
-                                    content: Text(
-                                      DioClient.toApiException(e).message,
-                                    ),
-                                  ),
-                                );
+                                      content: Text(
+                                          DioClient.toApiException(e).message)));
                               }
                             }
                           },
                     child: busy
                         ? const SizedBox(
-                            height: 20,
-                            width: 20,
+                            height: 20, width: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Change Password'),
+                                strokeWidth: 2, color: Colors.white))
+                        : const Text('Change PIN'),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showOtpPasswordChange(
-    BuildContext context,
-    WidgetRef ref,
-    String email,
-  ) {
-    final otpCtrl = TextEditingController();
-    final newCtrl = TextEditingController();
-    final confirmCtrl = TextEditingController();
-    bool otpSent = false;
-    bool busy = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Reset via OTP',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'OTP will be sent to $email',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (!otpSent) ...[
-                  SizedBox(
-                    height: 48,
-                    child: FilledButton(
-                      onPressed: busy
-                          ? null
-                          : () async {
-                              setSheetState(() => busy = true);
-                              try {
-                                final api = ref.read(authApiProvider);
-                                await api.forgotPassword(email);
-                                setSheetState(() {
-                                  otpSent = true;
-                                  busy = false;
-                                });
-                                if (ctx.mounted) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    const SnackBar(content: Text('OTP sent!')),
-                                  );
-                                }
-                              } catch (e) {
-                                if (ctx.mounted) {
-                                  setSheetState(() => busy = false);
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        DioClient.toApiException(e).message,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      child: busy
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Send OTP'),
-                    ),
-                  ),
-                ] else ...[
-                  TextField(
-                    controller: otpCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Enter OTP'),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextField(
-                    controller: newCtrl,
-                    obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: 'New Password'),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextField(
-                    controller: confirmCtrl,
-                    obscureText: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Confirm Password'),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  SizedBox(
-                    height: 48,
-                    child: FilledButton(
-                      onPressed: busy
-                          ? null
-                          : () async {
-                              if (newCtrl.text != confirmCtrl.text) {
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Passwords do not match'),
-                                  ),
-                                );
-                                return;
-                              }
-                              if (newCtrl.text.length < 8) {
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Minimum 8 characters'),
-                                  ),
-                                );
-                                return;
-                              }
-                              setSheetState(() => busy = true);
-                              try {
-                                final api = ref.read(authApiProvider);
-                                await api.resetPassword(
-                                  email,
-                                  otpCtrl.text.trim(),
-                                  newCtrl.text,
-                                );
-                                if (ctx.mounted) {
-                                  Navigator.pop(ctx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Password reset successfully',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (ctx.mounted) {
-                                  setSheetState(() => busy = false);
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        DioClient.toApiException(e).message,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      child: busy
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Reset Password'),
-                    ),
-                  ),
-                ],
                 const SizedBox(height: AppSpacing.md),
               ],
             ),
@@ -660,3 +461,4 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 }
+

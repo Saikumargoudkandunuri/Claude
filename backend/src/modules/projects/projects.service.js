@@ -9,15 +9,15 @@ const { STAGES } = require('./projects.schema');
 const DESIGN_STAGES = ['discussion', '3d_design', 'drawing'];
 const EXECUTION_STAGES = STAGES.filter((s) => !DESIGN_STAGES.includes(s));
 
-/** Serialize a project row to API shape; strips staff contacts for workers. */
+/** Serialize a project row to API shape; strips sensitive data for workers. */
 function serializeProject(row, viewerRole) {
   const isWorker = viewerRole === 'worker';
   const base = {
     id: row.id,
     projectNumber: row.project_number,
     customerName: row.customer_name,
-    // Workers must NOT see customer phone numbers / sensitive contact details.
-    phone: isWorker ? null : row.phone,
+    // Workers CAN see customer phone (to call for access/directions)
+    phone: row.phone,
     altPhone: isWorker ? null : row.alt_phone,
     address: row.address,
     siteLocation: row.site_location,
@@ -29,7 +29,8 @@ function serializeProject(row, viewerRole) {
     currentStage: row.current_stage,
     supervisorId: row.supervisor_id,
     designerId: row.designer_id,
-    remarks: row.remarks,
+    // Workers must NOT see internal admin remarks or financial data
+    remarks: isWorker ? null : row.remarks,
     isArchived: row.is_archived,
     createdAt: row.created_at,
     progress: stageProgress(row.current_stage),
