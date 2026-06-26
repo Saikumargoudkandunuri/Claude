@@ -47,13 +47,13 @@ async function notifyAdmins(payload, client) {
 }
 
 /**
- * Fire-and-forget FCM push with NATIVE banner support (BUG-02).
+ * Fire-and-forget FCM push with NATIVE banner support.
+ * Uses FCM V1 HTTP API with service account authentication.
  * Sends both a `notification` block (so Android/iOS show a native banner even
  * when the app is backgrounded/closed) and a `data` block (for in-app routing
- * when the notification is tapped). No-ops if no server key / token.
+ * when the notification is tapped). No-ops if no service account / token.
  */
 async function sendPush(userId, title, body, data) {
-  if (!config.fcm.serverKey) return;
   const { rows } = await query('SELECT push_token FROM users WHERE id = $1', [userId]);
   const token = rows[0]?.push_token;
   if (!token) return;
@@ -65,31 +65,77 @@ async function sendPush(userId, title, body, data) {
   }
 
   try {
-    await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `key=${config.fcm.serverKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: token,
-        priority: 'high',
-        notification: {
-          title,
-          body: body || '',
-          sound: 'default',
-          color: '#6C63FF',
-          android_channel_id: 'icms_default',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    // Try FCM V1 API with service account
+    const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccount) {
+      const { GoogleAuth } = require('google-auth-library');
+      const credentials = JSON.parse(serviceAccount);
+      const auth = new GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+      });
+      const client = await auth.getClient();
+      const accessToken = (await client.getAccessToken()).token;
+      const projectId = credentials.project_id;
+
+      await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-        data: dataPayload,
-        android: { priority: 'high' },
-        apns: {
-          headers: { 'apns-priority': '10' },
-          payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: {
+              title,
+              body: body || '',
+            },
+            android: {
+              priority: 'high',
+              notification: {
+                sound: 'default',
+                color: '#00D1DC',
+                channel_id: 'icms_default',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+              },
+            },
+            apns: {
+              headers: { 'apns-priority': '10' },
+              payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+            },
+            data: dataPayload,
+          },
+        }),
+      });
+    } else if (config.fcm.serverKey) {
+      // Fallback to legacy API if server key is provided
+      await fetch('https://fcm.googleapis.com/fcm/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `key=${config.fcm.serverKey}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          to: token,
+          priority: 'high',
+          notification: {
+            title,
+            body: body || '',
+            sound: 'default',
+            color: '#00D1DC',
+            android_channel_id: 'icms_default',
+            click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          },
+          data: dataPayload,
+          android: { priority: 'high' },
+          apns: {
+            headers: { 'apns-priority': '10' },
+            payload: { aps: { sound: 'default', badge: 1, 'content-available': 1 } },
+          },
+        }),
+      });
+    }
   } catch (_) {
     /* swallow push errors */
   }

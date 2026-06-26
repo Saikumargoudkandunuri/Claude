@@ -10,6 +10,8 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../shared/widgets/voice_recorder_sheet.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../payroll/presentation/worker_attendance_card.dart';
+import '../../payroll/presentation/my_salary_screen.dart';
 import '../../tasks/application/tasks_controller.dart';
 import '../application/dashboard_controller.dart';
 import 'widgets/app_overflow_menu.dart';
@@ -29,12 +31,17 @@ class WorkerDashboard extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hi, ${user?.fullName.split(' ').first ?? 'there'} 👋',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(DateFormat('EEEE, d MMM yyyy').format(DateTime.now()),
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary)),
+            Text(
+              'Hi, ${user?.fullName.split(' ').first ?? 'there'} 👋',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              DateFormat('EEEE, d MMM yyyy').format(DateTime.now()),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -81,6 +88,10 @@ class _WorkerBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        // ═══ Payroll Attendance ═══
+        const WorkerAttendanceCard(),
+        const SizedBox(height: AppSpacing.lg),
+
         // ═══ Report Status Banner ═══
         if (reportDue)
           _ReportBanner(onTap: () => context.go('/worker/reports')),
@@ -95,26 +106,50 @@ class _WorkerBody extends StatelessWidget {
         _QuickActions(ref: ref),
         const SizedBox(height: AppSpacing.lg),
 
+        // ═══ My Salary Tile ═══
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0x1A185FA5),
+              child: Icon(Icons.payments_rounded,
+                  color: Color(0xFF185FA5), size: 20),
+            ),
+            title: const Text('My Salary',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            subtitle: const Text('View breakdown & payment history',
+                style: TextStyle(fontSize: 11)),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const MySalaryScreen())),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
         // ═══ Today's Project ═══
         if (assigned.isNotEmpty) ...[
-          _SectionTitle(title: "Today's Site"),
+          const _SectionTitle(title: "Today's Site"),
           const SizedBox(height: AppSpacing.sm),
           _ProjectCard(site: assigned.first),
           const SizedBox(height: AppSpacing.lg),
         ] else ...[
           Card(
             color: AppColors.info.withValues(alpha: 0.08),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+            child: const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: AppColors.info, size: 32),
-                  const SizedBox(height: AppSpacing.sm),
-                  const Text('No project assigned',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  const Text(
+                  Icon(
+                    Icons.info_outline,
+                    color: AppColors.info,
+                    size: 32,
+                  ),
+                  SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'No project assigned',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
                     'Ask your administrator to assign you to a project.',
                     textAlign: TextAlign.center,
                     style:
@@ -128,17 +163,18 @@ class _WorkerBody extends StatelessWidget {
         ],
 
         // ═══ Today's Tasks ═══
-        _SectionTitle(title: "Today's Tasks"),
+        const _SectionTitle(title: "Today's Tasks"),
         const SizedBox(height: AppSpacing.sm),
         if (todays.isEmpty)
-          _EmptyCard(icon: Icons.task_alt, message: 'No tasks assigned today')
+          const _EmptyCard(
+              icon: Icons.task_alt, message: 'No tasks assigned today')
         else
           ...todays.map((t) => _TaskTile(task: t, ref: ref)),
         const SizedBox(height: AppSpacing.lg),
 
         // ═══ Drawings ═══
         if (drawings.isNotEmpty) ...[
-          _SectionTitle(title: 'Recent Drawings'),
+          const _SectionTitle(title: 'Recent Drawings'),
           const SizedBox(height: AppSpacing.sm),
           SizedBox(
             height: 90,
@@ -160,7 +196,7 @@ class _WorkerBody extends StatelessWidget {
 
         // ═══ Contacts ═══
         if (contacts.isNotEmpty) ...[
-          _SectionTitle(title: 'Contacts'),
+          const _SectionTitle(title: 'Contacts'),
           const SizedBox(height: AppSpacing.sm),
           ...contacts.map((c) => _ContactTile(contact: c)),
         ],
@@ -195,20 +231,31 @@ class _ReportBanner extends StatelessWidget {
                   color: AppColors.warning.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.assignment_late,
-                    color: AppColors.warning, size: 24),
+                child: const Icon(
+                  Icons.assignment_late,
+                  color: AppColors.warning,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Daily Report Pending',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
-                    Text('Submit your end-of-day report',
-                        style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      'Daily Report Pending',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'Submit your end-of-day report',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -232,9 +279,13 @@ class _ReportSubmittedBanner extends StatelessWidget {
           children: [
             Icon(Icons.check_circle, color: AppColors.success),
             SizedBox(width: AppSpacing.md),
-            Text("Today's report submitted ✓",
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, color: AppColors.success)),
+            Text(
+              "Today's report submitted ✓",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.success,
+              ),
+            ),
           ],
         ),
       ),
@@ -259,8 +310,8 @@ class _QuickActions extends StatelessWidget {
             if (recording != null && context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content:
-                        Text('Voice note recorded. Open Reports to send.')),
+                  content: Text('Voice note recorded. Open Reports to send.'),
+                ),
               );
             }
           },
@@ -328,9 +379,14 @@ class _ActionButton extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 24),
               const SizedBox(height: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
@@ -362,22 +418,32 @@ class _ProjectCard extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.home_work,
-                        color: AppColors.primary, size: 20),
+                    child: const Icon(
+                      Icons.home_work,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(site['projectName']?.toString() ?? '',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 16)),
+                        Text(
+                          site['projectName']?.toString() ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
                         if (site['siteLocation'] != null)
-                          Text(site['siteLocation'].toString(),
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12)),
+                          Text(
+                            site['siteLocation'].toString(),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -396,15 +462,21 @@ class _ProjectCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.assignment_outlined,
-                          size: 14, color: AppColors.info),
+                      const Icon(
+                        Icons.assignment_outlined,
+                        size: 14,
+                        color: AppColors.info,
+                      ),
                       const SizedBox(width: 6),
                       Flexible(
-                        child: Text(site['task'].toString(),
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.info,
-                                fontWeight: FontWeight.w600)),
+                        child: Text(
+                          site['task'].toString(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.info,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -414,15 +486,20 @@ class _ProjectCard extends StatelessWidget {
               Row(
                 children: [
                   _Chip(
-                      label: Formatters.stageLabel(
-                          site['currentStage'] as String?),
-                      color: AppColors.primary),
+                    label: Formatters.stageLabel(
+                      site['currentStage'] as String?,
+                    ),
+                    color: AppColors.primary,
+                  ),
                   const Spacer(),
-                  const Text('View Details →',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
+                  const Text(
+                    'View Details →',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -515,9 +592,13 @@ class _TaskTileState extends ConsumerState<_TaskTile> {
                           : AppColors.textPrimary,
                     ),
                   ),
-                  Text(w['projectName']?.toString() ?? '',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary)),
+                  Text(
+                    w['projectName']?.toString() ?? '',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -567,16 +648,21 @@ class _DrawingChip extends StatelessWidget {
           children: [
             const Icon(Icons.picture_as_pdf, color: AppColors.danger, size: 20),
             const SizedBox(height: 6),
-            Text(drawing['originalName']?.toString() ?? 'Drawing',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            Text(drawing['projectName']?.toString() ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 10, color: AppColors.textSecondary)),
+            Text(
+              drawing['originalName']?.toString() ?? 'Drawing',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              drawing['projectName']?.toString() ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -595,12 +681,15 @@ class _SiteTile extends StatelessWidget {
       child: ListTile(
         leading:
             const Icon(Icons.location_on_outlined, color: AppColors.primary),
-        title: Text(site['projectName']?.toString() ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          site['projectName']?.toString() ?? '',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
-            site['task']?.toString() ??
-                Formatters.stageLabel(site['currentStage'] as String?),
-            overflow: TextOverflow.ellipsis),
+          site['task']?.toString() ??
+              Formatters.stageLabel(site['currentStage'] as String?),
+          overflow: TextOverflow.ellipsis,
+        ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
         onTap: () => context.go('/worker/sites/${site['id']}'),
       ),
@@ -627,10 +716,13 @@ class _ContactTile extends StatelessWidget {
             size: 20,
           ),
         ),
-        title: Text(contact['name']?.toString() ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          contact['name']?.toString() ?? '',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
-            '${Formatters.roleLabel(contact['role'] as String?)} · ${contact['phone'] ?? ''}'),
+          '${Formatters.roleLabel(contact['role'] as String?)} · ${contact['phone'] ?? ''}',
+        ),
       ),
     );
   }
@@ -651,8 +743,10 @@ class _EmptyCard extends StatelessWidget {
             children: [
               Icon(icon, size: 36, color: AppColors.textMuted),
               const SizedBox(height: 8),
-              Text(message,
-                  style: const TextStyle(color: AppColors.textSecondary)),
+              Text(
+                message,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
             ],
           ),
         ),
@@ -667,8 +761,10 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700));
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    );
   }
 }
 
@@ -685,9 +781,14 @@ class _Chip extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -731,9 +832,14 @@ class _StatusChip extends ConsumerWidget {
           children: [
             Icon(Icons.circle, size: 8, color: _color),
             const SizedBox(width: 4),
-            Text(_options[current] ?? 'Status',
-                style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600, color: _color)),
+            Text(
+              _options[current] ?? 'Status',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _color,
+              ),
+            ),
           ],
         ),
       ),

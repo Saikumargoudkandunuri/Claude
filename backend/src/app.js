@@ -31,6 +31,7 @@ const assignmentsRoutes = require('./modules/assignments/assignments.routes');
 const attendanceRoutes = require('./modules/attendance/attendance.routes');
 const weeklyStatusRoutes = require('./modules/weekly_status/weekly_status.routes');
 const snagRoutes = require('./modules/snag/snag.routes');
+const payrollRoutes = require('./modules/payroll/payroll.routes');
 
 function createApp() {
   const app = express();
@@ -97,6 +98,7 @@ function createApp() {
   api.use('/', attendanceRoutes);
   api.use('/', weeklyStatusRoutes);
   api.use('/', snagRoutes);
+  api.use('/', payrollRoutes);
 
   app.use(config.apiPrefix, api);
 

@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/stat_card.dart';
+import '../../payroll/presentation/admin_payroll_screen.dart';
 import 'staff_detail_screen.dart';
 
 /// Provider that fetches workforce operations data.
@@ -26,7 +27,17 @@ class WorkersScreen extends ConsumerWidget {
     final async = ref.watch(workforceProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workforce Operations')),
+      appBar: AppBar(
+        title: const Text('Workforce Operations'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.payments_rounded),
+            tooltip: 'Worker Payroll',
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AdminPayrollScreen())),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(workforceProvider),
         child: async.when(
@@ -187,9 +198,11 @@ class _StaffTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => StaffDetailScreen(userId: id, userName: name),
-          ),);
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => StaffDetailScreen(userId: id, userName: name),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -207,7 +220,9 @@ class _StaffTile extends StatelessWidget {
                     Text(
                       name,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14,),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
@@ -224,18 +239,29 @@ class _StaffTile extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('$activeProjects projects',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary,),),
+                  Text(
+                    '$activeProjects projects',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text('$reports30d reports',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary,),),
+                  Text(
+                    '$reports30d reports',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right,
-                  size: 18, color: AppColors.textMuted,),
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
             ],
           ),
         ),
