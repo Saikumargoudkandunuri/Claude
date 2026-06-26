@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/loading_view.dart';
-import '../../auth/application/auth_controller.dart';
 import '../../projects/application/projects_controller.dart';
-import 'report_chat_view.dart';
+import 'whatsapp_report_screen.dart';
 
-/// Nav tab for workers/supervisors: pick a site → open WhatsApp-style report chat.
+/// Nav tab for workers/supervisors: WhatsApp-style project chat rooms.
 class ReportsHomeScreen extends ConsumerStatefulWidget {
   const ReportsHomeScreen({super.key});
 
@@ -23,9 +22,8 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(projectsListProvider);
-    final role = ref.watch(authControllerProvider).user?.role ?? 'worker';
 
-    // If a project is selected, show the chat view.
+    // If a project is selected, show the WhatsApp-style chat.
     if (_selectedProjectId != null) {
       return Scaffold(
         appBar: AppBar(
@@ -36,18 +34,27 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
               _selectedProjectName = null;
             }),
           ),
-          title: Text(_selectedProjectName ?? 'Reports'),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_selectedProjectName ?? 'Chat',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text('Project Chat',
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            ],
+          ),
         ),
-        body: ReportChatView(
-          projectId: _selectedProjectId!,
-          canCompose: role == 'worker' || role == 'supervisor',
-        ),
+        body: WhatsAppReportScreen(projectId: _selectedProjectId!),
       );
     }
 
-    // Otherwise show site list.
+    // Chat room list
     return Scaffold(
-      appBar: AppBar(title: const Text('Site Reports')),
+      appBar: AppBar(
+        title: const Text('Project Chats'),
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(projectsListProvider),
         child: async.when(
@@ -64,16 +71,16 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.assignment_outlined,
+                      Icon(Icons.chat_outlined,
                           size: 64, color: Colors.grey.shade400),
                       const SizedBox(height: AppSpacing.lg),
-                      const Text('No projects assigned yet',
+                      const Text('No project chats yet',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w700)),
                       const SizedBox(height: AppSpacing.sm),
                       const Text(
-                        'Your administrator needs to assign you to a project.\n'
-                        'Once assigned, your project reports and chat will appear here.',
+                        'Once you are assigned to a project, your chat room will appear here.\n'
+                        'You can message your supervisor and team.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
@@ -82,34 +89,35 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
                 ),
               );
             }
-            return ListView.separated(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 4),
               itemCount: projects.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final p = projects[i];
-                return Card(
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: AppColors.surfaceAlt,
-                      child:
-                          Icon(Icons.chat_outlined, color: AppColors.primary),
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                    child: Text(
+                      p.customerName.isNotEmpty
+                          ? p.customerName[0].toUpperCase()
+                          : 'P',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary),
                     ),
-                    title: Text(
-                      p.customerName,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Text(
-                      '${p.projectNumber} · ${p.projectName}',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => setState(() {
-                      _selectedProjectId = p.id;
-                      _selectedProjectName = p.customerName;
-                    }),
                   ),
+                  title: Text(p.customerName,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(p.projectName,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textSecondary)),
+                  trailing: const Icon(Icons.chevron_right,
+                      size: 18, color: AppColors.textMuted),
+                  onTap: () => setState(() {
+                    _selectedProjectId = p.id;
+                    _selectedProjectName = p.customerName;
+                  }),
                 );
               },
             );
