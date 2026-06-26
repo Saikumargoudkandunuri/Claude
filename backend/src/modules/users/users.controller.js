@@ -38,4 +38,9 @@ const resetPin = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { list, listPending, approve, reject, setRole, disable, assignable, resetPin };
+const deleteUser = asyncHandler(async (req, res) => {
+  await service.deleteUser(req.user.id, req.params.id);
+  res.status(204).send();
+});
+
+module.exports = { list, listPending, approve, reject, setRole, disable, assignable, resetPin, deleteUser };

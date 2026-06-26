@@ -159,6 +159,21 @@ async function disable(adminId, targetId) {
   return publicUser(rows[0]);
 }
 
+async function deleteUser(adminId, targetId) {
+  const target = await getById(targetId);
+  if (target.role === 'admin') {
+    throw ApiError.forbidden('Cannot delete admin accounts');
+  }
+  await query('DELETE FROM users WHERE id = $1', [targetId]);
+  await logActivity({
+    userId: adminId,
+    action: 'user.delete',
+    entityType: 'user',
+    entityId: targetId,
+    description: `Permanently deleted user ${target.full_name}`,
+  });
+}
+
 /** Minimal list for assignment pickers (no sensitive data beyond name/role). */
 async function assignable(role) {
   const { rows } = await query(
@@ -177,5 +192,6 @@ module.exports = {
   reject,
   setRole,
   disable,
+  deleteUser,
   assignable,
 };

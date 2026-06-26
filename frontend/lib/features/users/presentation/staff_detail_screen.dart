@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/dio_client.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -34,8 +35,11 @@ final staffDetailProvider = FutureProvider.autoDispose
 
 /// Staff detail screen showing Employee ID, contact info, assignments, report history.
 class StaffDetailScreen extends ConsumerWidget {
-  const StaffDetailScreen(
-      {super.key, required this.userId, required this.userName,});
+  const StaffDetailScreen({
+    super.key,
+    required this.userId,
+    required this.userName,
+  });
   final String userId;
   final String userName;
 
@@ -75,115 +79,301 @@ class StaffDetailScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
 
               // Current Assignments
-              const Text('Current Assignments',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
+              const Text(
+                'Current Assignments',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (assignments.isEmpty)
-                const Text('No active assignments',
-                    style: TextStyle(color: AppColors.textSecondary),)
+                const Text(
+                  'No active assignments',
+                  style: TextStyle(color: AppColors.textSecondary),
+                )
               else
-                ...assignments.map((a) => Card(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: ListTile(
-                        leading: const Icon(Icons.home_work_outlined,
-                            color: AppColors.primary,),
-                        title: Text(
-                            a['customerName']?.toString() ??
-                                a['projectName']?.toString() ??
-                                '',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700),),
-                        subtitle: Text(
-                          '${a['projectName'] ?? ''} · ${Formatters.stageLabel(a['currentStage']?.toString())}',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: a['task'] != null
-                            ? Chip(
-                                label: Text(a['task'].toString(),
-                                    style: const TextStyle(fontSize: 11),),)
-                            : null,
+                ...assignments.map(
+                  (a) => Card(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.home_work_outlined,
+                        color: AppColors.primary,
                       ),
-                    ),),
+                      title: Text(
+                        a['customerName']?.toString() ??
+                            a['projectName']?.toString() ??
+                            '',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        '${a['projectName'] ?? ''} · ${Formatters.stageLabel(a['currentStage']?.toString())}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: a['task'] != null
+                          ? Chip(
+                              label: Text(
+                                a['task'].toString(),
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
               const SizedBox(height: AppSpacing.xl),
 
               // Report History
-              const Text('Report History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
+              const Text(
+                'Report History',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (reports.isEmpty)
-                const Text('No recent reports',
-                    style: TextStyle(color: AppColors.textSecondary),)
+                const Text(
+                  'No recent reports',
+                  style: TextStyle(color: AppColors.textSecondary),
+                )
               else
-                ...reports.map((r) => Card(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          // Navigate to the project's report chat
-                          // Reports don't have a direct deep-link yet
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Report on ${r['projectName']}'),),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.assignment,
-                                      size: 16, color: AppColors.primary,),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      r['projectName']?.toString() ?? '',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Text(
-                                    Formatters.date(r['createdAt']),
-                                    style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textSecondary,),
-                                  ),
-                                ],
-                              ),
-                              if (r['workDone'] != null &&
-                                  r['workDone'].toString().isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  r['workDone'].toString(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ],
-                              if (r['progressPercent'] != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Progress: ${r['progressPercent']}%',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.w600,),
-                                ),
-                              ],
-                            ],
+                ...reports.map(
+                  (r) => Card(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        // Navigate to the project's report chat
+                        // Reports don't have a direct deep-link yet
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Report on ${r['projectName']}'),
                           ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.assignment,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    r['projectName']?.toString() ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  Formatters.date(r['createdAt']),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (r['workDone'] != null &&
+                                r['workDone'].toString().isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                r['workDone'].toString(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ],
+                            if (r['progressPercent'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Progress: ${r['progressPercent']}%',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Admin Actions
+              const Text('Admin Actions',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const SizedBox(height: AppSpacing.sm),
+              Card(
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.pin_outlined,
+                          color: AppColors.primary),
+                      title: const Text('Reset PIN'),
+                      subtitle:
+                          const Text('Set a new 4-digit PIN for this user'),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppColors.textMuted),
+                      onTap: () => _resetPin(context, ref, userId),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading:
+                          const Icon(Icons.block, color: AppColors.warning),
+                      title: const Text('Disable Account'),
+                      subtitle: const Text('User will not be able to login'),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppColors.textMuted),
+                      onTap: () => _disableUser(context, ref, userId, userName),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.delete_forever,
+                          color: AppColors.danger),
+                      title: const Text('Delete User',
+                          style: TextStyle(color: AppColors.danger)),
+                      subtitle: const Text('Permanently remove this user'),
+                      trailing: const Icon(Icons.chevron_right,
+                          color: AppColors.textMuted),
+                      onTap: () => _deleteUser(context, ref, userId, userName),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: AppSpacing.lg),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _resetPin(
+      BuildContext context, WidgetRef ref, String userId) async {
+    final pinCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Reset PIN'),
+        content: TextField(
+          controller: pinCtrl,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          decoration: const InputDecoration(labelText: 'New 4-digit PIN'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Set PIN')),
+        ],
+      ),
+    );
+    if (ok != true || pinCtrl.text.length != 4) return;
+    try {
+      final dio = DioClient.instance.dio;
+      await dio.put('/users/$userId/pin', data: {'pin': pinCtrl.text});
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PIN reset successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DioClient.toApiException(e).message)),
+        );
+      }
+    }
+  }
+
+  Future<void> _disableUser(
+      BuildContext context, WidgetRef ref, String userId, String name) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Disable Account?'),
+        content:
+            Text('$name will not be able to login. You can re-enable later.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Disable'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final dio = DioClient.instance.dio;
+      await dio.put('/users/$userId/disable');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User disabled')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DioClient.toApiException(e).message)),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteUser(
+      BuildContext context, WidgetRef ref, String userId, String name) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete User Permanently?'),
+        content: Text(
+            'This will permanently remove $name and all their data. This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final dio = DioClient.instance.dio;
+      await dio.delete('/users/$userId');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User deleted')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(DioClient.toApiException(e).message)),
+        );
+      }
+    }
   }
 }
 
@@ -206,15 +396,17 @@ class _ProfileHeader extends StatelessWidget {
             child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
               style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark,),
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(name,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),),
+          Text(
+            name,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -225,9 +417,10 @@ class _ProfileHeader extends StatelessWidget {
             child: Text(
               Formatters.roleLabel(role),
               style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,),
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -249,11 +442,14 @@ class _EmployeeIdCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Employee ID',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,),),
+            const Text(
+              'Employee ID',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -261,14 +457,18 @@ class _EmployeeIdCard extends StatelessWidget {
                   child: SelectableText(
                     userId,
                     style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'monospace',),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.copy,
-                      size: 18, color: AppColors.primary,),
+                  icon: const Icon(
+                    Icons.copy,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                   tooltip: 'Copy ID',
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: userId));
@@ -300,20 +500,35 @@ class _InfoSection extends StatelessWidget {
     return Card(
       child: Column(
         children: [
-          _infoTile(Icons.phone_outlined, 'Phone',
-              user['phone']?.toString() ?? 'N/A',),
+          _infoTile(
+            Icons.phone_outlined,
+            'Phone',
+            user['phone']?.toString() ?? 'N/A',
+          ),
           const Divider(height: 1),
-          _infoTile(Icons.work_outline, 'Status',
-              Formatters.stageLabel(user['workerStatus']?.toString()),),
+          _infoTile(
+            Icons.work_outline,
+            'Status',
+            Formatters.stageLabel(user['workerStatus']?.toString()),
+          ),
           const Divider(height: 1),
-          _infoTile(Icons.folder_outlined, 'Active Projects',
-              '${user['activeProjects'] ?? 0}',),
+          _infoTile(
+            Icons.folder_outlined,
+            'Active Projects',
+            '${user['activeProjects'] ?? 0}',
+          ),
           const Divider(height: 1),
-          _infoTile(Icons.assignment_outlined, 'Reports (30 days)',
-              '${user['reports30d'] ?? 0}',),
+          _infoTile(
+            Icons.assignment_outlined,
+            'Reports (30 days)',
+            '${user['reports30d'] ?? 0}',
+          ),
           const Divider(height: 1),
-          _infoTile(Icons.calendar_today_outlined, 'Joined',
-              Formatters.date(user['joinedAt']),),
+          _infoTile(
+            Icons.calendar_today_outlined,
+            'Joined',
+            Formatters.date(user['joinedAt']),
+          ),
         ],
       ),
     );
@@ -322,10 +537,14 @@ class _InfoSection extends StatelessWidget {
   Widget _infoTile(IconData icon, String label, String value) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary, size: 20),
-      title: Text(label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),),
-      trailing: Text(value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),
+      title: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      ),
+      trailing: Text(
+        value,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

@@ -25,6 +25,7 @@ router.post('/:id/approve', requirePermission('users:approve'), validate(schema.
 router.post('/:id/reject', requirePermission('users:approve'), controller.reject);
 router.put('/:id/role', requirePermission('users:assign-role'), validate(schema.setRole), controller.setRole);
 router.put('/:id/disable', requirePermission('users:assign-role'), controller.disable);
+router.delete('/:id', requirePermission('users:assign-role'), controller.deleteUser);
 router.put('/:id/pin', requirePermission('users:assign-role'), validate(schema.resetPin), controller.resetPin);
 
 module.exports = router;
