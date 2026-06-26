@@ -60,6 +60,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.14.3
+  msix: ^3.16.8
 
 flutter_launcher_icons:
   android: true
@@ -70,3 +71,12 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+msix_config:
+  display_name: ICMS
+  publisher_display_name: Metal & More Interiors
+  identity_name: com.metalandmore.icms
+  msix_version: 1.0.0.0
+  logo_path: assets/icon/app_icon.png
+  capabilities: internetClient, internetClientServer
+  languages: en-us

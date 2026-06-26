@@ -13,6 +13,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../tasks/application/tasks_controller.dart';
 import '../application/dashboard_controller.dart';
 import 'widgets/app_overflow_menu.dart';
+import 'widgets/attendance_card.dart';
 
 /// Complete Worker Dashboard — personal work assistant for field workers.
 class WorkerDashboard extends ConsumerWidget {
@@ -84,6 +85,10 @@ class _WorkerBody extends StatelessWidget {
         if (reportDue)
           _ReportBanner(onTap: () => context.go('/worker/reports')),
         if (!reportDue) _ReportSubmittedBanner(),
+        const SizedBox(height: AppSpacing.lg),
+
+        // ═══ Attendance Check-In ═══
+        const AttendanceCard(),
         const SizedBox(height: AppSpacing.lg),
 
         // ═══ Quick Actions ═══

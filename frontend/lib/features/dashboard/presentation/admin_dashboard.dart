@@ -11,9 +11,15 @@ import '../../../core/widgets/simple_bar_chart.dart';
 import '../../../core/widgets/stage_chip.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../projects/data/weekly_status_api.dart';
 import '../application/dashboard_controller.dart';
 import 'widgets/app_overflow_menu.dart';
 import 'widgets/recent_updates_list.dart';
+
+final _needsReviewProvider = FutureProvider<List<dynamic>>((ref) async {
+  final api = WeeklyStatusApi();
+  return await api.getNeedsReview();
+});
 
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key});
@@ -120,8 +126,94 @@ class AdminDashboard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               _StageGraph(
-                  distribution: (d['stageDistribution'] as Map?) ?? const {},),
+                distribution: (d['stageDistribution'] as Map?) ?? const {},
+              ),
               const SizedBox(height: AppSpacing.xl),
+              // Needs Review This Week section
+              Builder(builder: (context) {
+                final needsReview =
+                    ref.watch(_needsReviewProvider).valueOrNull ?? [];
+                if (needsReview.isEmpty) {
+                  return Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Card(
+                      color: const Color(0xFFE8F5E9),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Color(0xFF4CAF50), size: 20),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                '✅ All projects reviewed this week',
+                                style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('⚠️ Needs Review This Week',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      height: 72,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: needsReview.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, i) {
+                          final p = needsReview[i] as Map<String, dynamic>;
+                          return GestureDetector(
+                            onTap: () =>
+                                context.go('/admin/projects/${p['id']}'),
+                            child: Container(
+                              width: 180,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: const Color(0xFFF44336), width: 1.5),
+                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFFF44336)
+                                    .withValues(alpha: 0.05),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    p['project_name']?.toString() ?? 'Project',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text('No weekly status set',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFFF44336))),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              const SizedBox(height: AppSpacing.lg),
               _SectionHeader(
                 title: 'Projects',
                 actionLabel: 'View all',
@@ -136,7 +228,8 @@ class AdminDashboard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               RecentUpdatesList(
-                  updates: (d['recentUpdates'] as List?) ?? const [],),
+                updates: (d['recentUpdates'] as List?) ?? const [],
+              ),
             ],
           ),
         ),
@@ -239,13 +332,15 @@ class _ProjectCards extends StatelessWidget {
                           child: Text(
                             p['customerName']?.toString() ?? '',
                             style: const TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 15,),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         StageChip(
-                            stage:
-                                p['currentStage']?.toString() ?? 'discussion',),
+                          stage: p['currentStage']?.toString() ?? 'discussion',
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),

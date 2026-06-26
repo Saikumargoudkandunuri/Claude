@@ -15,6 +15,12 @@ router.post('/attendance/check-out', controller.checkOut);
 // Get today's attendance status for current user
 router.get('/attendance/me/today', controller.myToday);
 
+// Worker: enhanced today status with hours
+router.get('/attendance/me/status', controller.todayStatus);
+
+// Worker: attendance history (last 30 days)
+router.get('/attendance/me/history', controller.workerHistory);
+
 // Admin/supervisor: get attendance list
 router.get('/attendance', requireRole('admin', 'supervisor'), controller.listAttendance);
 

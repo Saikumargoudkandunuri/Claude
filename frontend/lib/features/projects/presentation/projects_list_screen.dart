@@ -7,8 +7,16 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/stage_chip.dart';
+import '../../../shared/widgets/weekly_status_chip.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/projects_controller.dart';
+import '../data/weekly_status_api.dart';
+
+final _weeklyOverviewProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
+  final api = WeeklyStatusApi();
+  return await api.getWeeklyOverview();
+});
 
 /// Shared project list for admin / supervisor / designer.
 /// [basePath] is the role route prefix (e.g. '/admin').
@@ -20,6 +28,9 @@ class ProjectsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(projectsListProvider);
     final role = ref.watch(authControllerProvider).user?.role;
+    final weeklyOverview = (role == 'admin')
+        ? (ref.watch(_weeklyOverviewProvider).valueOrNull ?? {})
+        : <String, dynamic>{};
 
     return Scaffold(
       appBar: AppBar(
@@ -105,6 +116,16 @@ class ProjectsListScreen extends ConsumerWidget {
                             style:
                                 const TextStyle(color: AppColors.textSecondary),
                           ),
+                          if (role != 'worker' && weeklyOverview[p.id] != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: WeeklyStatusChip(
+                                status: (weeklyOverview[p.id]
+                                        as Map<String, dynamic>?)?['status']
+                                    as String?,
+                                compact: true,
+                              ),
+                            ),
                           const SizedBox(height: AppSpacing.md),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),

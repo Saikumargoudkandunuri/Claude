@@ -25,4 +25,12 @@ const monthlySummary = asyncHandler(async (req, res) => {
   ok(res, await service.monthlySummary(req.params.userId, req.query.month));
 });
 
-module.exports = { checkIn, checkOut, myToday, listAttendance, monthlySummary };
+const todayStatus = asyncHandler(async (req, res) => {
+  ok(res, await service.getTodayStatus(req.user.id));
+});
+
+const workerHistory = asyncHandler(async (req, res) => {
+  ok(res, await service.getWorkerHistory(req.user.id));
+});
+
+module.exports = { checkIn, checkOut, myToday, todayStatus, workerHistory, listAttendance, monthlySummary };

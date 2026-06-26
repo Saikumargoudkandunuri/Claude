@@ -159,4 +159,59 @@ async function monthlySummary(targetUserId, month) {
   return rows[0];
 }
 
-module.exports = { checkIn, checkOut, myToday, listAttendance, monthlySummary };
+async function getWorkerHistory(userId, days = 30) {
+  const { rows } = await query(
+    `SELECT 
+       check_in_at::date AS date,
+       check_in_at,
+       check_out_at,
+       CASE WHEN check_out_at IS NOT NULL 
+         THEN EXTRACT(EPOCH FROM (check_out_at - check_in_at)) / 3600
+         ELSE NULL 
+       END AS hours_worked,
+       location_type,
+       is_within_geofence,
+       p.project_name
+     FROM attendance_records a
+     LEFT JOIN projects p ON p.id = a.project_id
+     WHERE a.user_id = $1 AND a.check_in_at >= CURRENT_DATE - $2::int
+     ORDER BY a.check_in_at DESC`,
+    [userId, days]
+  );
+  return rows;
+}
+
+async function getTodayStatus(userId) {
+  const { rows } = await query(
+    `SELECT * FROM attendance_records
+     WHERE user_id = $1 AND check_in_at::date = CURRENT_DATE
+     ORDER BY check_in_at DESC`,
+    [userId]
+  );
+  
+  if (rows.length === 0) {
+    return { checked_in: false, hours_today: 0, record: null };
+  }
+
+  const latest = rows[0];
+  const checkedIn = !latest.check_out_at;
+  
+  // Calculate total hours today
+  let hoursToday = 0;
+  for (const r of rows) {
+    if (r.check_out_at) {
+      hoursToday += (new Date(r.check_out_at) - new Date(r.check_in_at)) / (1000 * 60 * 60);
+    } else {
+      // Still checked in — count time since check-in
+      hoursToday += (Date.now() - new Date(r.check_in_at)) / (1000 * 60 * 60);
+    }
+  }
+
+  return {
+    checked_in: checkedIn,
+    hours_today: Math.round(hoursToday * 10) / 10,
+    record: latest,
+  };
+}
+
+module.exports = { checkIn, checkOut, myToday, getTodayStatus, getWorkerHistory, listAttendance, monthlySummary };

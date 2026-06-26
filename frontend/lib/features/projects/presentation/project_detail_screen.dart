@@ -7,14 +7,26 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
 import '../../../core/widgets/stage_chip.dart';
+import '../../../shared/widgets/weekly_status_chip.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../reports/presentation/reports_tab.dart';
 import '../application/projects_controller.dart';
+import '../data/weekly_status_api.dart';
 import '../domain/project.dart';
+import 'set_weekly_status_sheet.dart';
 import 'tabs/details_tab.dart';
 import 'tabs/drawings_tab.dart';
 import 'tabs/payments_tab.dart';
 import 'tabs/timeline_tab.dart';
+import 'widgets/stage_timeline_widget.dart';
+import 'weekly_status_history_screen.dart';
+
+final _weeklyStatusProvider =
+    FutureProvider.family<Map<String, dynamic>?, String>(
+        (ref, projectId) async {
+  final api = WeeklyStatusApi();
+  return await api.getCurrentStatus(projectId);
+});
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -36,6 +48,8 @@ class ProjectDetailScreen extends ConsumerWidget {
         ),
       ),
       data: (project) {
+        final weeklyStatus =
+            ref.watch(_weeklyStatusProvider(projectId)).valueOrNull;
         final tabs = <Tab>[
           const Tab(text: 'Details'),
           const Tab(text: 'Drawings'),
@@ -60,7 +74,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                   pinned: true,
                   title: Text(project.projectName),
                   bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(96),
+                    preferredSize: const Size.fromHeight(132),
                     child: Column(
                       children: [
                         Padding(
@@ -84,6 +98,68 @@ class ProjectDetailScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        if (role != 'worker')
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.xs,
+                              AppSpacing.lg,
+                              AppSpacing.xs,
+                            ),
+                            child: Row(
+                              children: [
+                                WeeklyStatusChip(
+                                  status: weeklyStatus?['status'] as String?,
+                                ),
+                                const Spacer(),
+                                if (role == 'admin' || role == 'supervisor')
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon:
+                                            const Icon(Icons.history, size: 20),
+                                        tooltip: 'Status History',
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                WeeklyStatusHistoryScreen(
+                                              projectId: project.id,
+                                              projectName: project.projectName,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.bar_chart_rounded,
+                                          size: 20,
+                                          color: Color(0xFF00D1DC),
+                                        ),
+                                        tooltip: 'Set Weekly Status',
+                                        onPressed: () => showModalBottomSheet(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          builder: (_) => SetWeeklyStatusSheet(
+                                            projectId: project.id,
+                                            projectName: project.projectName,
+                                            currentStatus:
+                                                weeklyStatus?['status']
+                                                    as String?,
+                                            currentNotes: weeklyStatus?['notes']
+                                                as String?,
+                                            onUpdated: () => ref.invalidate(
+                                              _weeklyStatusProvider(projectId),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
                         TabBar(
                           isScrollable: true,
                           labelColor: AppColors.primaryDark,
@@ -93,6 +169,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                ),
+                SliverToBoxAdapter(
+                  child: StageTimelineWidget(projectId: projectId),
                 ),
               ],
               body: TabBarView(children: views),
@@ -105,7 +184,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                 return AnimatedBuilder(
                   animation: controller,
                   builder: (_, __) {
-                    final reportsIndex = tabs.indexWhere((t) => t.text == 'Reports');
+                    final reportsIndex =
+                        tabs.indexWhere((t) => t.text == 'Reports');
                     if (controller.index == reportsIndex) {
                       return const SizedBox.shrink();
                     }
