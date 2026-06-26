@@ -27,4 +27,16 @@ router.get('/attendance', requireRole('admin', 'supervisor'), controller.listAtt
 // Admin: get monthly summary for a worker
 router.get('/attendance/summary/:userId', requireRole('admin'), controller.monthlySummary);
 
+// Worker reports GPS location (geofence check)
+router.post('/attendance/report-location', controller.reportLocation);
+
+// Worker checks if they have a pending geofence alert
+router.get('/attendance/me/geofence-alert', controller.getPendingAlert);
+
+// Admin: get all pending geofence alerts
+router.get('/attendance/geofence-alerts', requireRole('admin'), controller.getPendingAlerts);
+
+// Admin: resolve (approve/decline) a geofence alert
+router.put('/attendance/geofence-alerts/:alertId', requireRole('admin'), controller.resolveAlert);
+
 module.exports = router;

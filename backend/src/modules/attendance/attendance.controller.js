@@ -33,4 +33,20 @@ const workerHistory = asyncHandler(async (req, res) => {
   ok(res, await service.getWorkerHistory(req.user.id));
 });
 
-module.exports = { checkIn, checkOut, myToday, todayStatus, workerHistory, listAttendance, monthlySummary };
+const reportLocation = asyncHandler(async (req, res) => {
+  ok(res, await service.reportLocation(req.user.id, req.body));
+});
+
+const getPendingAlert = asyncHandler(async (req, res) => {
+  ok(res, await service.getPendingAlert(req.user.id));
+});
+
+const resolveAlert = asyncHandler(async (req, res) => {
+  ok(res, await service.resolveAlert(req.user.id, req.params.alertId, req.body.action));
+});
+
+const getPendingAlerts = asyncHandler(async (req, res) => {
+  ok(res, await service.getPendingAlerts());
+});
+
+module.exports = { checkIn, checkOut, myToday, todayStatus, workerHistory, listAttendance, monthlySummary, reportLocation, getPendingAlert, resolveAlert, getPendingAlerts };

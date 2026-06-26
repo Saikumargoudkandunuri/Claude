@@ -214,4 +214,162 @@ async function getTodayStatus(userId) {
   };
 }
 
-module.exports = { checkIn, checkOut, myToday, getTodayStatus, getWorkerHistory, listAttendance, monthlySummary };
+module.exports = { checkIn, checkOut, myToday, getTodayStatus, getWorkerHistory, listAttendance, monthlySummary, reportLocation, getPendingAlert, resolveAlert, getPendingAlerts };
+
+/**
+ * Worker reports their current location periodically.
+ * If outside geofence, creates an alert for admin.
+ */
+async function reportLocation(userId, { latitude, longitude, projectId }) {
+  if (!latitude || !longitude || !projectId) {
+    return { withinGeofence: true, alert: null };
+  }
+
+  const { rows: projects } = await query(
+    'SELECT site_latitude, site_longitude, site_radius_meters, project_name FROM projects WHERE id = $1',
+    [projectId]
+  );
+  const project = projects[0];
+  if (!project || !project.site_latitude || !project.site_longitude) {
+    return { withinGeofence: true, alert: null };
+  }
+
+  const distance = haversineMeters(latitude, longitude, project.site_latitude, project.site_longitude);
+  const radius = project.site_radius_meters || 300;
+  const withinGeofence = distance <= radius;
+
+  if (withinGeofence) {
+    // Worker is back in range — auto-resolve any pending declined alerts
+    await query(
+      `UPDATE geofence_alerts SET status = 'resolved', resolved_at = now()
+       WHERE user_id = $1 AND project_id = $2 AND status = 'declined'`,
+      [userId, projectId]
+    );
+    return { withinGeofence: true, alert: null };
+  }
+
+  // Worker is outside geofence — check if there's already a pending alert
+  const { rows: existing } = await query(
+    `SELECT id, status FROM geofence_alerts
+     WHERE user_id = $1 AND project_id = $2 AND status IN ('pending', 'declined')
+     ORDER BY created_at DESC LIMIT 1`,
+    [userId, projectId]
+  );
+
+  if (existing.length > 0) {
+    // Alert already exists
+    return { withinGeofence: false, alert: existing[0], distanceMeters: Math.round(distance) };
+  }
+
+  // Get active attendance record
+  const { rows: attendance } = await query(
+    `SELECT id FROM attendance_records
+     WHERE user_id = $1 AND check_out_at IS NULL
+     ORDER BY check_in_at DESC LIMIT 1`,
+    [userId]
+  );
+
+  // Create new geofence alert
+  const { rows: alerts } = await query(
+    `INSERT INTO geofence_alerts (user_id, project_id, attendance_id, latitude, longitude, distance_meters)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [userId, projectId, attendance[0]?.id || null, latitude, longitude, Math.round(distance)]
+  );
+
+  // Notify admin via socket and push
+  const { notifyAdmins } = require('../../utils/notify');
+  const { rows: users } = await query('SELECT full_name FROM users WHERE id = $1', [userId]);
+  const workerName = users[0]?.full_name || 'Worker';
+
+  await notifyAdmins({
+    type: 'geofence.violation',
+    title: '⚠️ Worker left site',
+    body: `${workerName} is ${Math.round(distance)}m from ${project.project_name}`,
+    data: {
+      route: 'icms://geofence-alert',
+      alertId: alerts[0].id,
+      userId,
+      projectId,
+      workerName,
+      distance: Math.round(distance),
+    },
+  });
+
+  // Socket emit for real-time admin notification
+  const io = global.__io;
+  if (io) {
+    io.to('admin_room').emit('geofence_alert', {
+      alertId: alerts[0].id,
+      userId,
+      workerName,
+      projectId,
+      projectName: project.project_name,
+      distance: Math.round(distance),
+      latitude,
+      longitude,
+    });
+  }
+
+  return { withinGeofence: false, alert: alerts[0], distanceMeters: Math.round(distance) };
+}
+
+/** Worker checks if they have any pending/declined geofence alert. */
+async function getPendingAlert(userId) {
+  const { rows } = await query(
+    `SELECT ga.*, p.project_name
+     FROM geofence_alerts ga
+     JOIN projects p ON p.id = ga.project_id
+     WHERE ga.user_id = $1 AND ga.status IN ('pending', 'declined')
+     ORDER BY ga.created_at DESC LIMIT 1`,
+    [userId]
+  );
+  return rows[0] || null;
+}
+
+/** Admin resolves a geofence alert (approve/decline). */
+async function resolveAlert(adminId, alertId, action) {
+  const { rows } = await query(
+    'SELECT * FROM geofence_alerts WHERE id = $1', [alertId]
+  );
+  if (!rows[0]) throw ApiError.notFound('Alert not found');
+  const alert = rows[0];
+
+  const newStatus = action === 'approve' ? 'approved' : 'declined';
+  await query(
+    `UPDATE geofence_alerts SET status = $1, admin_id = $2, resolved_at = $3 WHERE id = $4`,
+    [newStatus, adminId, action === 'approve' ? new Date() : null, alertId]
+  );
+
+  // Socket emit to worker
+  const io = global.__io;
+  if (io) {
+    io.to(`user_${alert.user_id}`).emit('geofence_resolved', {
+      alertId,
+      status: newStatus,
+      action,
+    });
+  }
+
+  await logActivity({
+    userId: adminId,
+    action: `geofence.${action}`,
+    entityType: 'geofence_alert',
+    entityId: alertId,
+    description: `Admin ${action}d geofence alert for worker`,
+  });
+
+  return { alertId, status: newStatus };
+}
+
+/** Admin gets all pending geofence alerts. */
+async function getPendingAlerts() {
+  const { rows } = await query(
+    `SELECT ga.*, u.full_name AS worker_name, u.phone AS worker_phone, p.project_name
+     FROM geofence_alerts ga
+     JOIN users u ON u.id = ga.user_id
+     JOIN projects p ON p.id = ga.project_id
+     WHERE ga.status = 'pending'
+     ORDER BY ga.created_at DESC`
+  );
+  return rows;
+}

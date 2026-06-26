@@ -14,6 +14,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../projects/data/weekly_status_api.dart';
 import '../application/dashboard_controller.dart';
 import 'widgets/app_overflow_menu.dart';
+import 'widgets/geofence_alerts_card.dart';
 import 'widgets/recent_updates_list.dart';
 
 final _needsReviewProvider = FutureProvider<List<dynamic>>((ref) async {
@@ -58,6 +59,9 @@ class AdminDashboard extends ConsumerWidget {
           data: (d) => ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
+              // Geofence alerts (shown at top if any)
+              const GeofenceAlertsCard(),
+              const SizedBox(height: AppSpacing.md),
               ResponsiveGrid(
                 minItemWidth: 150,
                 children: [
@@ -130,89 +134,106 @@ class AdminDashboard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xl),
               // Needs Review This Week section
-              Builder(builder: (context) {
-                final needsReview =
-                    ref.watch(_needsReviewProvider).valueOrNull ?? [];
-                if (needsReview.isEmpty) {
-                  return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    child: Card(
-                      color: const Color(0xFFE8F5E9),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle,
-                                color: Color(0xFF4CAF50), size: 20),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                '✅ All projects reviewed this week',
-                                style: TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w600),
+              Builder(
+                builder: (context) {
+                  final needsReview =
+                      ref.watch(_needsReviewProvider).valueOrNull ?? [];
+                  if (needsReview.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      child: Card(
+                        color: Color(0xFFE8F5E9),
+                        child: Padding(
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF4CAF50),
+                                size: 20,
                               ),
-                            ),
-                          ],
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '✅ All projects reviewed this week',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('⚠️ Needs Review This Week',
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '⚠️ Needs Review This Week',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: AppSpacing.sm),
-                    SizedBox(
-                      height: 72,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: needsReview.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, i) {
-                          final p = needsReview[i] as Map<String, dynamic>;
-                          return GestureDetector(
-                            onTap: () =>
-                                context.go('/admin/projects/${p['id']}'),
-                            child: Container(
-                              width: 180,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: const Color(0xFFF44336), width: 1.5),
-                                borderRadius: BorderRadius.circular(10),
-                                color: const Color(0xFFF44336)
-                                    .withValues(alpha: 0.05),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    p['project_name']?.toString() ?? 'Project',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text('No weekly status set',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFFF44336))),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              }),
+                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        height: 72,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: needsReview.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, i) {
+                            final p = needsReview[i] as Map<String, dynamic>;
+                            return GestureDetector(
+                              onTap: () =>
+                                  context.go('/admin/projects/${p['id']}'),
+                              child: Container(
+                                width: 180,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: const Color(0xFFF44336),
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: const Color(0xFFF44336)
+                                      .withValues(alpha: 0.05),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      p['project_name']?.toString() ??
+                                          'Project',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'No weekly status set',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFFF44336),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
               const SizedBox(height: AppSpacing.lg),
               _SectionHeader(
                 title: 'Projects',
