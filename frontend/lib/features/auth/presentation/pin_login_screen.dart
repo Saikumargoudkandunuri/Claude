@@ -114,7 +114,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Icon(Icons.phone_android,
-                      size: 64, color: AppColors.primary),
+                      size: 64, color: AppColors.primary,),
                   const SizedBox(height: AppSpacing.lg),
                   const Text(
                     'Enter your mobile number & PIN',
@@ -138,7 +138,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                     style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 1),
+                        letterSpacing: 1,),
                     decoration: InputDecoration(
                       prefixIcon: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -146,12 +146,12 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                         width: 70,
                         child: const Text('+91',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w700)),
+                                fontSize: 18, fontWeight: FontWeight.w700,),),
                       ),
                       hintText: '9876543210',
                       counterText: '',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),),
                     ),
                     textInputAction: TextInputAction.next,
                     onSubmitted: (_) => _pinFocus.requestFocus(),
@@ -168,17 +168,17 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                     style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 8),
+                        letterSpacing: 8,),
                     textAlign: TextAlign.center,
                     decoration: InputDecoration(
                       labelText: '4-digit PIN',
                       counterText: '',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePin
                             ? Icons.visibility_off
-                            : Icons.visibility),
+                            : Icons.visibility,),
                         onPressed: () =>
                             setState(() => _obscurePin = !_obscurePin),
                       ),
@@ -190,8 +190,8 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(_errorMsg!,
                         style: const TextStyle(
-                            color: AppColors.danger, fontSize: 13),
-                        textAlign: TextAlign.center),
+                            color: AppColors.danger, fontSize: 13,),
+                        textAlign: TextAlign.center,),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   SizedBox(
@@ -203,7 +203,7 @@ class _PinLoginScreenState extends ConsumerState<PinLoginScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2, color: Colors.white,),)
                           : const Text('Login', style: TextStyle(fontSize: 16)),
                     ),
                   ),

@@ -170,7 +170,7 @@ class PaymentsTab extends ConsumerWidget {
                   Text(
                     '${history.length} entries',
                     style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12),
+                        color: AppColors.textSecondary, fontSize: 12,),
                   ),
                 ],
               ),
@@ -202,7 +202,7 @@ class PaymentsTab extends ConsumerWidget {
   }
 
   Future<void> _editContract(
-      BuildContext context, WidgetRef ref, num current) async {
+      BuildContext context, WidgetRef ref, num current,) async {
     final controller = TextEditingController(text: current.toString());
     final ok = await showDialog<bool>(
       context: context,
@@ -216,10 +216,10 @@ class PaymentsTab extends ConsumerWidget {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Save')),
+              child: const Text('Save'),),
         ],
       ),
     );
@@ -232,7 +232,7 @@ class PaymentsTab extends ConsumerWidget {
   }
 
   Future<void> _deleteHistory(
-      BuildContext context, WidgetRef ref, String id) async {
+      BuildContext context, WidgetRef ref, String id,) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -241,7 +241,7 @@ class PaymentsTab extends ConsumerWidget {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: const Text('Cancel'),),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),
@@ -256,7 +256,7 @@ class PaymentsTab extends ConsumerWidget {
   }
 
   void _showAddPayment(BuildContext context, WidgetRef ref,
-      {Map<String, dynamic>? existing}) {
+      {Map<String, dynamic>? existing,}) {
     final isEdit = existing != null;
     final amount =
         TextEditingController(text: isEdit ? '${existing['amount']}' : '');
@@ -288,11 +288,11 @@ class PaymentsTab extends ConsumerWidget {
                 Text(
                   isEdit ? 'Edit Payment' : 'Record Payment',
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800),
+                      fontSize: 18, fontWeight: FontWeight.w800,),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 DropdownButtonFormField<String>(
-                  value: kind,
+                  initialValue: kind,
                   decoration: const InputDecoration(labelText: 'Payment Type'),
                   items: const [
                     DropdownMenuItem(value: 'advance', child: Text('Advance')),
@@ -314,13 +314,13 @@ class PaymentsTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<String>(
-                  value: mode,
+                  initialValue: mode,
                   decoration: const InputDecoration(labelText: 'Payment Mode'),
                   items: const [
                     DropdownMenuItem(value: 'cash', child: Text('Cash')),
                     DropdownMenuItem(value: 'upi', child: Text('UPI')),
                     DropdownMenuItem(
-                        value: 'bank_transfer', child: Text('Bank Transfer')),
+                        value: 'bank_transfer', child: Text('Bank Transfer'),),
                     DropdownMenuItem(value: 'cheque', child: Text('Cheque')),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
                   ],
@@ -330,7 +330,7 @@ class PaymentsTab extends ConsumerWidget {
                 TextField(
                   controller: reference,
                   decoration: const InputDecoration(
-                      labelText: 'Reference / Transaction ID (optional)'),
+                      labelText: 'Reference / Transaction ID (optional)',),
                 ),
                 if (!isEdit) ...[
                   const SizedBox(height: AppSpacing.md),
@@ -351,7 +351,7 @@ class PaymentsTab extends ConsumerWidget {
                             if (value <= 0) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Enter a valid amount')),
+                                    content: Text('Enter a valid amount'),),
                               );
                               return;
                             }
@@ -392,7 +392,7 @@ class PaymentsTab extends ConsumerWidget {
                                   SnackBar(
                                     content: Text(isEdit
                                         ? 'Payment updated successfully'
-                                        : 'Payment recorded successfully'),
+                                        : 'Payment recorded successfully',),
                                     backgroundColor: AppColors.success,
                                   ),
                                 );
@@ -403,7 +403,7 @@ class PaymentsTab extends ConsumerWidget {
                                 ScaffoldMessenger.of(ctx).showSnackBar(
                                   SnackBar(
                                       content: Text(
-                                          DioClient.toApiException(e).message)),
+                                          DioClient.toApiException(e).message,),),
                                 );
                               }
                             }
@@ -413,7 +413,7 @@ class PaymentsTab extends ConsumerWidget {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                                strokeWidth: 2, color: Colors.white,),)
                         : Text(isEdit ? 'Save Changes' : 'Add Payment'),
                   ),
                 ),
@@ -462,7 +462,7 @@ class _HistoryTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.arrow_downward,
-                  color: AppColors.success, size: 20),
+                  color: AppColors.success, size: 20,),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -472,7 +472,7 @@ class _HistoryTile extends StatelessWidget {
                   Text(
                     Formatters.currency(amount),
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 16),
+                        fontWeight: FontWeight.w800, fontSize: 16,),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -480,7 +480,7 @@ class _HistoryTile extends StatelessWidget {
                     '${method != null ? ' • $method' : ''}'
                     '${ref != null && ref.isNotEmpty ? ' • #$ref' : ''}',
                     style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                        fontSize: 12, color: AppColors.textSecondary,),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
@@ -491,7 +491,7 @@ class _HistoryTile extends StatelessWidget {
                             ? Formatters.dateTime(createdAt)
                             : ''),
                     style: const TextStyle(
-                        fontSize: 11, color: AppColors.textMuted),
+                        fontSize: 11, color: AppColors.textMuted,),
                   ),
                 ],
               ),

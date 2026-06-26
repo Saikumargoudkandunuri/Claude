@@ -58,10 +58,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       final dio = DioClient.instance.dio;
       await dio.post('/auth/reset-pin-by-id',
           data: {'userId': id, 'newPin': pin},
-          options: Options(extra: {'skipAuth': true}));
+          options: Options(extra: {'skipAuth': true}),);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('PIN reset successfully! You can now login.')));
+            content: Text('PIN reset successfully! You can now login.'),),);
         context.go('/login');
       }
     } catch (e) {
@@ -88,17 +88,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Icon(Icons.lock_reset,
-                      size: 64, color: AppColors.primary),
+                      size: 64, color: AppColors.primary,),
                   const SizedBox(height: AppSpacing.lg),
                   const Text('Reset your PIN',
                       textAlign: TextAlign.center,
                       style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.w800),),
                   const SizedBox(height: AppSpacing.sm),
                   const Text(
                       'Enter your Employee ID provided by your Administrator.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: AppColors.textSecondary),),
                   const SizedBox(height: AppSpacing.xxl),
                   TextField(
                     controller: _idCtrl,
@@ -138,8 +138,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(_errorMsg!,
                         style: const TextStyle(
-                            color: AppColors.danger, fontSize: 13),
-                        textAlign: TextAlign.center),
+                            color: AppColors.danger, fontSize: 13,),
+                        textAlign: TextAlign.center,),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   SizedBox(
@@ -151,9 +151,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                                  strokeWidth: 2, color: Colors.white,),)
                           : const Text('Reset PIN',
-                              style: TextStyle(fontSize: 16)),
+                              style: TextStyle(fontSize: 16),),
                     ),
                   ),
                 ],

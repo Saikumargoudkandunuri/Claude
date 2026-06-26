@@ -60,31 +60,31 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> updateProfile(
-      {String? fullName, String? phone}) async {
+      {String? fullName, String? phone,}) async {
     final res = await _dio.put('/auth/me', data: {
       if (fullName != null) 'fullName': fullName,
       if (phone != null) 'phone': phone,
-    });
+    },);
     return res.data['data'] as Map<String, dynamic>;
   }
 
   Future<void> changePassword(
-      String currentPassword, String newPassword) async {
+      String currentPassword, String newPassword,) async {
     await _dio.put('/auth/me/password', data: {
       'currentPassword': currentPassword,
       'newPassword': newPassword,
-    });
+    },);
   }
 
   Future<void> forgotPassword(String email) async {
     await _dio.post('/auth/forgot-password',
-        data: {'email': email}, options: Options(extra: {'skipAuth': true}));
+        data: {'email': email}, options: Options(extra: {'skipAuth': true}),);
   }
 
   Future<void> resetPassword(
-      String email, String otp, String newPassword) async {
+      String email, String otp, String newPassword,) async {
     await _dio.post('/auth/reset-password',
         data: {'email': email, 'otp': otp, 'newPassword': newPassword},
-        options: Options(extra: {'skipAuth': true}));
+        options: Options(extra: {'skipAuth': true}),);
   }
 }

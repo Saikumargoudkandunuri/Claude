@@ -63,7 +63,7 @@ Future<void> showReportForm(
               final f = res.files.first;
               if (f.bytes == null) return;
               setState(
-                  () => media.add(_PendingMedia(category, f.name, f.bytes!)));
+                  () => media.add(_PendingMedia(category, f.name, f.bytes!)),);
             } catch (_) {
               // Fixes file-attachment error on some devices.
             }
@@ -73,7 +73,7 @@ Future<void> showReportForm(
             final rec = await VoiceRecorderSheet.show(ctx);
             if (rec == null) return;
             setState(() => media
-                .add(_PendingMedia('voice_note', rec.filename, rec.bytes)));
+                .add(_PendingMedia('voice_note', rec.filename, rec.bytes)),);
           }
 
           return SingleChildScrollView(
@@ -86,7 +86,7 @@ Future<void> showReportForm(
                       ? 'Supervisor Daily Report'
                       : 'End-of-Day Report',
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800),
+                      fontSize: 18, fontWeight: FontWeight.w800,),
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -94,7 +94,7 @@ Future<void> showReportForm(
                 Row(
                   children: [
                     const Text('Progress',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                        style: TextStyle(fontWeight: FontWeight.w600),),
                     Expanded(
                       child: Slider(
                         value: progress,
@@ -227,7 +227,7 @@ Future<void> showReportForm(
                               Navigator.pop(ctx);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Report submitted')),
+                                    content: Text('Report submitted'),),
                               );
                             }
                           } catch (e) {

@@ -10,7 +10,7 @@ import '../domain/auth_user.dart';
 final authApiProvider =
     Provider<AuthApi>((ref) => AuthApi(ref.watch(dioProvider)));
 final authRepositoryProvider = Provider<AuthRepository>(
-    (ref) => AuthRepository(ref.watch(authApiProvider)));
+    (ref) => AuthRepository(ref.watch(authApiProvider)),);
 
 /// Auth state consumed by the router and screens.
 class AuthState {
@@ -26,7 +26,7 @@ class AuthState {
       {AuthUser? user,
       bool? isLoading,
       String? error,
-      bool clearUser = false}) {
+      bool clearUser = false,}) {
     return AuthState(
       user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,

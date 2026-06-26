@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
                                 AppColors.primary.withValues(alpha: 0.15),
                             backgroundImage: user.avatarUrl != null
                                 ? NetworkImage(
-                                    '${Env.apiBaseUrl}/auth/avatar/${user.id}')
+                                    '${Env.apiBaseUrl}/auth/avatar/${user.id}',)
                                 : null,
                             child: user.avatarUrl != null
                                 ? null

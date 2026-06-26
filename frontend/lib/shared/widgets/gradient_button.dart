@@ -64,7 +64,7 @@ class _GradientButtonState extends State<GradientButton> {
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: Colors.white,),
                   )
                 else if (widget.icon != null)
                   Icon(widget.icon, color: Colors.white, size: 18),

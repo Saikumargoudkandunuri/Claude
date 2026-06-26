@@ -69,10 +69,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(
           path: '/forgot-password',
-          builder: (_, __) => const ForgotPasswordScreen()),
+          builder: (_, __) => const ForgotPasswordScreen(),),
       GoRoute(path: '/pin-login', builder: (_, __) => const PinLoginScreen()),
       GoRoute(
-          path: '/pending', builder: (_, __) => const PendingApprovalScreen()),
+          path: '/pending', builder: (_, __) => const PendingApprovalScreen(),),
 
       // Full-screen routes (no bottom nav) — wrapped in BackGuard so the
       // system/AppBar back never closes the app from an inner screen.
@@ -147,7 +147,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/projects/:id',
         builder: (_, s) => BackGuard(
-            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!),),
       ),
 
       // ===== Supervisor shell =====
@@ -160,7 +160,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
               path: '/supervisor',
-              builder: (_, __) => const SupervisorDashboard()),
+              builder: (_, __) => const SupervisorDashboard(),),
           GoRoute(
             path: '/supervisor/projects',
             builder: (_, __) =>
@@ -195,7 +195,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/supervisor/projects/:id',
         builder: (_, s) => BackGuard(
-            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!),),
       ),
 
       // ===== Designer shell =====
@@ -207,7 +207,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         routes: [
           GoRoute(
-              path: '/designer', builder: (_, __) => const DesignerDashboard()),
+              path: '/designer', builder: (_, __) => const DesignerDashboard(),),
           GoRoute(
             path: '/designer/projects',
             builder: (_, __) => const ProjectsListScreen(basePath: '/designer'),
@@ -221,7 +221,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/designer/projects/:id',
         builder: (_, s) => BackGuard(
-            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!),),
       ),
 
       // ===== Worker shell =====
@@ -246,7 +246,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/worker/sites/:id',
         builder: (_, s) => BackGuard(
-            child: ProjectDetailScreen(projectId: s.pathParameters['id']!)),
+            child: ProjectDetailScreen(projectId: s.pathParameters['id']!),),
       ),
     ],
   );

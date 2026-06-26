@@ -189,7 +189,7 @@ class _StaffTile extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => StaffDetailScreen(userId: id, userName: name),
-          ));
+          ),);
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -207,7 +207,7 @@ class _StaffTile extends StatelessWidget {
                     Text(
                       name,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14),
+                          fontWeight: FontWeight.w700, fontSize: 14,),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
@@ -226,16 +226,16 @@ class _StaffTile extends StatelessWidget {
                 children: [
                   Text('$activeProjects projects',
                       style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary)),
+                          fontSize: 11, color: AppColors.textSecondary,),),
                   const SizedBox(height: 2),
                   Text('$reports30d reports',
                       style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary)),
+                          fontSize: 11, color: AppColors.textSecondary,),),
                 ],
               ),
               const SizedBox(width: 4),
               const Icon(Icons.chevron_right,
-                  size: 18, color: AppColors.textMuted),
+                  size: 18, color: AppColors.textMuted,),
             ],
           ),
         ),

@@ -44,7 +44,7 @@ class AssignmentEditorScreen extends ConsumerWidget {
                 child: Text(
                   'Select ${roleToAssign[0].toUpperCase()}${roleToAssign.substring(1)}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 16),
+                      fontWeight: FontWeight.w700, fontSize: 16,),
                 ),
               ),
               if (options.isEmpty)
@@ -69,7 +69,7 @@ class AssignmentEditorScreen extends ConsumerWidget {
           task = await _askTask(context);
         }
         await repo.assign(projectId, selected['id'] as String, roleToAssign,
-            task: task);
+            task: task,);
         await refresh();
       } catch (e) {
         if (context.mounted) {

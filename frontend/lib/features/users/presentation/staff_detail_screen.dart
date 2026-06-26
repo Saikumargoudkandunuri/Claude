@@ -35,7 +35,7 @@ final staffDetailProvider = FutureProvider.autoDispose
 /// Staff detail screen showing Employee ID, contact info, assignments, report history.
 class StaffDetailScreen extends ConsumerWidget {
   const StaffDetailScreen(
-      {super.key, required this.userId, required this.userName});
+      {super.key, required this.userId, required this.userName,});
   final String userId;
   final String userName;
 
@@ -76,23 +76,23 @@ class StaffDetailScreen extends ConsumerWidget {
 
               // Current Assignments
               const Text('Current Assignments',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
               const SizedBox(height: AppSpacing.sm),
               if (assignments.isEmpty)
                 const Text('No active assignments',
-                    style: TextStyle(color: AppColors.textSecondary))
+                    style: TextStyle(color: AppColors.textSecondary),)
               else
                 ...assignments.map((a) => Card(
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: ListTile(
                         leading: const Icon(Icons.home_work_outlined,
-                            color: AppColors.primary),
+                            color: AppColors.primary,),
                         title: Text(
                             a['customerName']?.toString() ??
                                 a['projectName']?.toString() ??
                                 '',
                             style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
+                                const TextStyle(fontWeight: FontWeight.w700),),
                         subtitle: Text(
                           '${a['projectName'] ?? ''} · ${Formatters.stageLabel(a['currentStage']?.toString())}',
                           overflow: TextOverflow.ellipsis,
@@ -100,19 +100,19 @@ class StaffDetailScreen extends ConsumerWidget {
                         trailing: a['task'] != null
                             ? Chip(
                                 label: Text(a['task'].toString(),
-                                    style: const TextStyle(fontSize: 11)))
+                                    style: const TextStyle(fontSize: 11),),)
                             : null,
                       ),
-                    )),
+                    ),),
               const SizedBox(height: AppSpacing.xl),
 
               // Report History
               const Text('Report History',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),),
               const SizedBox(height: AppSpacing.sm),
               if (reports.isEmpty)
                 const Text('No recent reports',
-                    style: TextStyle(color: AppColors.textSecondary))
+                    style: TextStyle(color: AppColors.textSecondary),)
               else
                 ...reports.map((r) => Card(
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -123,7 +123,7 @@ class StaffDetailScreen extends ConsumerWidget {
                           // Reports don't have a direct deep-link yet
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text('Report on ${r['projectName']}')),
+                                content: Text('Report on ${r['projectName']}'),),
                           );
                         },
                         child: Padding(
@@ -134,14 +134,14 @@ class StaffDetailScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   const Icon(Icons.assignment,
-                                      size: 16, color: AppColors.primary),
+                                      size: 16, color: AppColors.primary,),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       r['projectName']?.toString() ?? '',
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w600,
-                                          fontSize: 13),
+                                          fontSize: 13,),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -149,7 +149,7 @@ class StaffDetailScreen extends ConsumerWidget {
                                     Formatters.date(r['createdAt']),
                                     style: const TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.textSecondary),
+                                        color: AppColors.textSecondary,),
                                   ),
                                 ],
                               ),
@@ -170,14 +170,14 @@ class StaffDetailScreen extends ConsumerWidget {
                                   style: const TextStyle(
                                       fontSize: 12,
                                       color: AppColors.success,
-                                      fontWeight: FontWeight.w600),
+                                      fontWeight: FontWeight.w600,),
                                 ),
                               ],
                             ],
                           ),
                         ),
                       ),
-                    )),
+                    ),),
               const SizedBox(height: AppSpacing.lg),
             ],
           );
@@ -208,13 +208,13 @@ class _ProfileHeader extends StatelessWidget {
               style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primaryDark),
+                  color: AppColors.primaryDark,),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(name,
               style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -227,7 +227,7 @@ class _ProfileHeader extends StatelessWidget {
               style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12),
+                  fontSize: 12,),
             ),
           ),
         ],
@@ -253,7 +253,7 @@ class _EmployeeIdCard extends StatelessWidget {
                 style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600)),
+                    fontWeight: FontWeight.w600,),),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -263,12 +263,12 @@ class _EmployeeIdCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'monospace'),
+                        fontFamily: 'monospace',),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy,
-                      size: 18, color: AppColors.primary),
+                      size: 18, color: AppColors.primary,),
                   tooltip: 'Copy ID',
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: userId));
@@ -301,19 +301,19 @@ class _InfoSection extends StatelessWidget {
       child: Column(
         children: [
           _infoTile(Icons.phone_outlined, 'Phone',
-              user['phone']?.toString() ?? 'N/A'),
+              user['phone']?.toString() ?? 'N/A',),
           const Divider(height: 1),
           _infoTile(Icons.work_outline, 'Status',
-              Formatters.stageLabel(user['workerStatus']?.toString())),
+              Formatters.stageLabel(user['workerStatus']?.toString()),),
           const Divider(height: 1),
           _infoTile(Icons.folder_outlined, 'Active Projects',
-              '${user['activeProjects'] ?? 0}'),
+              '${user['activeProjects'] ?? 0}',),
           const Divider(height: 1),
           _infoTile(Icons.assignment_outlined, 'Reports (30 days)',
-              '${user['reports30d'] ?? 0}'),
+              '${user['reports30d'] ?? 0}',),
           const Divider(height: 1),
           _infoTile(Icons.calendar_today_outlined, 'Joined',
-              Formatters.date(user['joinedAt'])),
+              Formatters.date(user['joinedAt']),),
         ],
       ),
     );
@@ -323,9 +323,9 @@ class _InfoSection extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary, size: 20),
       title: Text(label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),),
       trailing: Text(value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),),
     );
   }
 }

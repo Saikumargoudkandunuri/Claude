@@ -120,7 +120,7 @@ class AdminDashboard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               _StageGraph(
-                  distribution: (d['stageDistribution'] as Map?) ?? const {}),
+                  distribution: (d['stageDistribution'] as Map?) ?? const {},),
               const SizedBox(height: AppSpacing.xl),
               _SectionHeader(
                 title: 'Projects',
@@ -136,7 +136,7 @@ class AdminDashboard extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               RecentUpdatesList(
-                  updates: (d['recentUpdates'] as List?) ?? const []),
+                  updates: (d['recentUpdates'] as List?) ?? const [],),
             ],
           ),
         ),
@@ -239,13 +239,13 @@ class _ProjectCards extends StatelessWidget {
                           child: Text(
                             p['customerName']?.toString() ?? '',
                             style: const TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 15),
+                                fontWeight: FontWeight.w800, fontSize: 15,),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         StageChip(
                             stage:
-                                p['currentStage']?.toString() ?? 'discussion'),
+                                p['currentStage']?.toString() ?? 'discussion',),
                       ],
                     ),
                     const SizedBox(height: 2),

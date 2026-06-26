@@ -186,7 +186,7 @@ class _VoiceRecorderSheetState extends State<VoiceRecorderSheet> {
             const SizedBox(height: AppSpacing.md),
             Text(_error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.danger)),
+                style: const TextStyle(color: AppColors.danger),),
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
               onPressed: () => Navigator.pop(context),
