@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/network/dio_client.dart';
 import '../../../core/permissions/permissions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -13,6 +15,7 @@ import '../../reports/presentation/reports_tab.dart';
 import '../application/projects_controller.dart';
 import '../data/weekly_status_api.dart';
 import '../domain/project.dart';
+import 'edit_project_sheet.dart';
 import 'set_weekly_status_sheet.dart';
 import 'tabs/details_tab.dart';
 import 'tabs/drawings_tab.dart';
@@ -73,6 +76,101 @@ class ProjectDetailScreen extends ConsumerWidget {
                 SliverAppBar(
                   pinned: true,
                   title: Text(project.projectName),
+                  actions: isAdmin
+                      ? [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            tooltip: 'Edit Project',
+                            onPressed: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => EditProjectSheet(
+                                project: project,
+                                onUpdated: () {
+                                  ref.invalidate(
+                                      projectDetailProvider(projectId));
+                                  ref.invalidate(projectsListProvider);
+                                },
+                              ),
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'delete') {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Delete Project'),
+                                    content: const Text(
+                                      'Are you sure you want to delete this project? '
+                                      'It will be archived and can be restored later.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true && context.mounted) {
+                                  try {
+                                    final repo =
+                                        ref.read(projectsRepositoryProvider);
+                                    await repo.delete(project.id);
+                                    ref.invalidate(projectsListProvider);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Project deleted'),
+                                        ),
+                                      );
+                                      context.pop();
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              DioClient.toApiException(e)
+                                                  .message),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline,
+                                        color: Colors.red, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Delete Project',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ]
+                      : null,
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(132),
                     child: Column(
