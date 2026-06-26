@@ -1,4 +1,4 @@
-# Work Management — Full Application Documentation
+# ICMS — Full Application Documentation
 
 > **For:** Future AI sessions (Claude / Kiro) and developers picking up this codebase.
 > **Read this first** before making changes. It explains the whole app: what it does,
@@ -7,34 +7,39 @@
 
 ---
 
-## 1. What this app is
+## 1. What This App Is
 
-**Work Management** (internal codename **ICMS — Interior Company Management System**),
-branded for **Metal & More Interiors**. It is a construction / interior-fit-out site
-management app used by an interior company to run projects end-to-end: from design,
-to on-site execution, daily reporting, drawings, payments, and team coordination.
+**ICMS — Interior Company Management System**, branded for **Metal & More Interiors**.
+A construction / interior-fit-out site management application used to run projects
+end-to-end: design, execution, daily reporting, drawings, payments, workforce payroll,
+attendance tracking, snag lists, and team coordination.
 
-- **Frontend:** Flutter (Android primary, Web as Windows fallback). Riverpod + GoRouter + Dio.
-- **Backend:** Node.js + Express + PostgreSQL. JWT auth. Socket.IO for real-time chat.
-- **Hosting:** Render (`https://icms-backend-s2va.onrender.com`). Branch deployed: `main`.
-- **Repo:** `https://github.com/Saikumargoudkandunuri/Claude`
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | Flutter 3.19+ (Android primary, Web as desktop fallback). Riverpod · GoRouter · Dio · Hive (offline). |
+| **Backend** | Node.js 18+ · Express · PostgreSQL. JWT auth. Socket.IO real-time. |
+| **Hosting** | Render — `https://icms-backend-s2va.onrender.com`. Branch: `main`. |
+| **Repo** | `https://github.com/Saikumargoudkandunuri/Claude` |
 
-### Repo layout
+### Repo Layout
+
 ```
 c:\Users\Admin\Claude\
-├── backend\          Node/Express API + PostgreSQL migrations
-├── frontend\         Flutter app
-├── .claude\          Claude agent/spec config (not app code)
-└── PROJECT_OVERVIEW.md  (this file)
+├── backend/            Node/Express API + PostgreSQL migrations
+├── frontend/           Flutter app (Android + Web)
+├── .claude/            Claude agent/spec config (not app code)
+├── .kiro/              Kiro steering + specs
+└── PROJECT_OVERVIEW.md (this file)
 ```
 
-### The 4 roles
+### The 4 Roles
+
 | Role | Purpose |
 |------|---------|
-| **admin** | Full control: projects, users, payments, assignments, workforce, reports. Only ONE admin allowed. |
-| **supervisor** | Runs assigned sites: workers, work plans, supervisor reports, site progress. |
+| **admin** | Full control: projects, users, payments, assignments, workforce, payroll, reports. Only ONE admin allowed. |
+| **supervisor** | Runs assigned sites: workers, work plans, supervisor reports, weekly status, site progress. |
 | **designer** | Design stage: uploads 3D designs / working drawings / quotations. Always shown as "Showroom". |
-| **worker** | On-site field worker: sees only ASSIGNED projects, submits reports, chats, opens drawings. Heavily privacy-restricted. |
+| **worker** | On-site field worker: sees only ASSIGNED projects, submits reports, chats, checks in/out. Heavily privacy-restricted. |
 
 ---
 
@@ -42,77 +47,111 @@ c:\Users\Admin\Claude\
 
 **Path:** `backend/src`
 
-### 2.1 Entry / wiring
-- `app.js` — builds the Express app, mounts all routers under the API prefix (`/api/v1`).
-  - `/auth` is public (register/login/pin-login/refresh). Everything else requires
-    `authenticate` + `requireApproved`.
-  - Many routers mount at `/` because they declare absolute paths
-    (e.g. `/projects/:id/reports`).
-- `server.js` — creates the HTTP server, attaches **Socket.IO** (`initSocket`), and
-  stores it via `app.set('io', io)` so controllers can emit real-time events.
-- `config/index.js` — env config. Key fields: `apiPrefix`, `corsOrigins`, `publicUrl`
-  (used to build correct public file download URLs behind Render's proxy), JWT secrets.
+### 2.1 Entry & Wiring
 
-### 2.2 Module pattern
-Every feature in `src/modules/<name>/` follows the same shape:
+- `app.js` — builds the Express app, mounts all routers under `/api/v1`.
+  - `/auth` is public (register, login, PIN-login, refresh). Everything else requires
+    `authenticate` + `requireApproved`.
+  - Many routers mount at `/` because they declare absolute paths internally.
+- `server.js` — creates HTTP server, attaches **Socket.IO** (`initSocket`), stores via
+  `app.set('io', io)` so controllers can emit real-time events.
+- `config/index.js` — env config: `apiPrefix`, `corsOrigins`, `publicUrl` (for correct
+  public file URLs behind Render's proxy), JWT secrets.
+
+### 2.2 Module Pattern
+
+Every feature in `src/modules/<name>/` follows:
 - `*.routes.js` — Express routes + middleware (auth, rbac, validation).
 - `*.controller.js` — request/response handling.
 - `*.service.js` — business logic + SQL queries.
-- `*.schema.js` — (some modules) Joi/zod validation schemas.
+- `*.schema.js` — (some modules) Zod validation schemas.
 
-### 2.3 The 15 modules
+### 2.3 All Modules (19)
+
 | Module | Responsibility |
 |--------|----------------|
-| `auth` | Register, **PIN login**, refresh tokens, change PIN, reset PIN, profile avatar upload/serve. NO OTP. |
-| `users` | List/approve/assign-role/disable/**delete** users. Enforces single-admin rule. |
-| `projects` | CRUD projects, stages, `serializeProject` (applies customer-privacy filtering per role). |
-| `drawings` (files) | Upload/list/download files & drawings. `fileBaseUrl()` builds public URLs from `PUBLIC_URL`/X-Forwarded headers. |
-| `reports` | Daily reports — these **double as the project chat messages**. Emits `new_message` over Socket.IO. |
+| `auth` | Register, **PIN login**, refresh tokens, change/reset PIN, avatar upload/serve. NO OTP. |
+| `users` | List/approve/assign-role/disable/delete users. Enforces single-admin rule. |
+| `projects` | CRUD projects, stages, `serializeProject` (privacy filtering per role). |
+| `drawings` (files) | Upload/list/download files & drawings. `fileBaseUrl()` builds public URLs. |
+| `reports` | Daily reports — these **double as project chat messages**. Emits `new_message` via Socket.IO. |
 | `workplans` | Daily work plans + per-worker task status (started/completed). |
-| `payments` | Quotation vs received. `recomputeTotalReceived()` keeps `payments.total_received` in sync after history add/update/delete. Admin-only. |
-| `notifications` | In-app notifications. |
-| `activity` | Activity logs / audit trail (feeds "recent updates" on dashboards & worker history). |
-| `dashboard` | Aggregated dashboard data per role (`dashboard.service.js`) + `workforce.controller.js`. |
+| `payments` | Project quotation vs received payments. `recomputeTotalReceived()` keeps sync. Admin-only. |
+| `notifications` | In-app + FCM push notifications. |
+| `activity` | Activity logs / audit trail (recent updates on dashboards & worker history). |
+| `dashboard` | Aggregated dashboard data per role + `workforce.controller.js`. |
 | `checklists` | Project checklists. |
 | `expenses` | Project expenses. |
 | `chat` | Chat room metadata / helpers. |
 | `client` | Public client portal (no auth, clean URLs). |
 | `assignments` | Assign workers/staff to projects, assignment messages. |
+| `attendance` | GPS check-in/check-out, geofence monitoring, location reporting, alerts. |
+| `weekly_status` | Weekly project status tracking (on_track / normal / slow). Upsert per week. Push alerts on "slow". |
+| `snag` | Snag/punch list: create → resolve → close items per project. Priority + assignment. |
+| `payroll` | Worker salary profiles, daily attendance marking, monthly salary calculation, payments (salary/advance/bonus). |
 
 ### 2.4 Auth (PIN-based, NO OTP)
+
 OTP/Firebase Phone Auth/MSG91/Twilio were **removed completely. Do not reintroduce.**
 
 - Login = **Mobile (+91 fixed prefix, 10 digits) + 4-digit PIN**.
 - Endpoints:
   - `POST /auth/pin-login` — mobile + PIN → JWT.
-  - `PUT  /auth/me/pin` — change own PIN (current PIN → new PIN → confirm).
+  - `PUT  /auth/me/pin` — change own PIN (current → new → confirm).
   - `POST /auth/reset-pin-by-id` — forgot PIN via Employee ID (UUID).
   - `PUT  /users/:id/pin` — admin resets a user's PIN.
   - `PUT  /auth/me/avatar` — multipart avatar upload (multer).
   - `GET  /auth/avatar/:userId` — serves avatar image.
-- PINs are **bcrypt-hashed** (`pin_hash` column). Phone format is enforced: no `+91+91`,
+- PINs are **bcrypt-hashed** (`pin_hash` column). Phone format enforced: no `+91+91`,
   no `0091`, country code not editable.
 
 ### 2.5 Real-time (Socket.IO) — `src/socket/index.js`
+
 - Handshake auth: JWT token from `socket.handshake.auth.token`.
-- On connect, the socket auto-joins rooms `project:<id>`:
-  - Workers/anyone → projects they're actively assigned to.
+- On connect, socket auto-joins rooms `project:<id>`:
+  - Workers → projects they're actively assigned to.
   - **admin** → ALL non-archived projects.
   - **supervisor** → projects they supervise.
 - Events: `typing`, `message_read` (updates `daily_reports.read_by` jsonb), `new_message`.
-- `emitNewMessage(io, projectId, message)` is called by the reports controller after a
-  report/message is created → pushes to everyone in that project room.
+- `emitNewMessage(io, projectId, message)` pushes to everyone in the project room.
 
-### 2.6 Database migrations
-`backend/src/db/migrations/` run in order by `migrate.js` (Render build runs
-`npm install && npm run migrate`). Highlights:
-- `001`–`009` — base schema: extensions/enums, users+auth, projects, files, reports+plans,
-  payments, notifications, activity logs, triggers+indexes.
-- `010` ERP enhancements · `011` drawings+chat · `012` master rectification.
-- `021` assignment messages · `022` report enhancements · `023` project creation v2 ·
-  `024` payments v2 · `025` drawings multi · `026` profile OTP (legacy) ·
-  `027` otp_codes (legacy) · `028` **pin_column (pin_hash)** · `029` **user_avatar (avatar_url)** ·
-  `030` profile security.
+### 2.6 Attendance & Geofencing
+
+- `attendance` module: GPS check-in/out per project, haversine distance validation
+  against project GPS coordinates, geofence radius enforcement.
+- Periodic location reporting while checked in — triggers `geofence_alerts` if worker
+  moves too far from site.
+- `geofence_alerts` table: pending → approved/declined/resolved by admin.
+- Monthly summary aggregation for attendance records.
+
+### 2.7 Payroll System
+
+- `payroll` module handles:
+  - **Worker attendance** (separate from GPS attendance): at_site / workshop / leave / absent per day.
+  - **Salary profiles**: monthly_salary + working_days_per_month on users table.
+  - **Monthly salary calculation**: days present × daily rate, minus advances, plus bonuses = net payable.
+  - **Payment records**: salary / advance / bonus with proof images.
+- Admin marks attendance, sets salaries, processes payments.
+- Workers can view their own salary/payment history.
+
+### 2.8 Database Migrations
+
+`backend/src/db/migrations/` run in order by `migrate.js` (Render build command:
+`npm install && npm run migrate`).
+
+| Range | Content |
+|-------|---------|
+| `001`–`009` | Base schema: extensions/enums, users+auth, projects, files, reports+plans, payments, notifications, activity logs, triggers+indexes. |
+| `010`–`012` | ERP enhancements, drawings+chat, master rectification. |
+| `021`–`025` | Assignment messages, report enhancements, project creation v2, payments v2, drawings multi. |
+| `026`–`031` | Profile OTP (legacy/unused), otp_codes (legacy/unused), **pin_column**, **user_avatar**, profile security, project GPS. |
+| `032`–`035` | Attendance records, photo timeline, drawing approval, project timeline. |
+| `036`–`039` | Invoices, worker performance, WhatsApp log, localisation. |
+| `040` | **Weekly project status** (`project_weekly_status` table). |
+| `041` | Drawing approval flow, password_hash nullable. |
+| `042` | **Geofence alerts**, **snag_items** table. |
+| `043` | **Worker attendance + salary** (`worker_attendance`, salary columns on users). |
+| `044` | **Worker payments** (`worker_payments` table). |
 
 > Migrations 026/027 are OTP leftovers — OTP is no longer used in code.
 
@@ -120,26 +159,29 @@ OTP/Firebase Phone Auth/MSG91/Twilio were **removed completely. Do not reintrodu
 
 ## 3. RBAC & Customer Privacy (CRITICAL — do not break)
 
-### 3.1 Permission matrix — `backend/src/middleware/rbac.js`
+### 3.1 Permission Matrix — `backend/src/middleware/rbac.js`
+
 `ROLE_PERMISSIONS` maps each role to capability keys. Enforced server-side via
-`requireRole(...)` and `requirePermission(key)`. Mirrored on the Flutter side in
+`requireRole(...)` and `requirePermission(key)`. Mirrored on Flutter side in
 `core/permissions/permissions.dart`.
 
-- **admin** — everything (users, projects CRUD, stages, assignments, drawings up/delete,
-  reports, payments read/write, activity all).
-- **supervisor** — read all projects, execution stage, assign workers, work plans, media
-  upload, supervisor reports, project activity.
-- **designer** — read all projects, design stage, drawings upload/delete, media upload.
-- **worker** — `media:upload`, `reports:worker` ONLY.
+| Role | Permissions |
+|------|-------------|
+| **admin** | users (read/approve/assign-role), projects (full CRUD + read-all), stages (design/execution/override), assignments (workers/staff), workplans (write), drawings (upload/delete), media (upload), reports (worker/supervisor), payments (read/write), activity (read-all/read-project) |
+| **supervisor** | projects (read-all), stages (execution), assignments (workers), workplans (write), media (upload), reports (supervisor), activity (read-project) |
+| **designer** | projects (read-all), stages (design), drawings (upload/delete), media (upload), activity (read-project) |
+| **worker** | media (upload), reports (worker) |
 
-### 3.2 Worker scoping
+### 3.2 Worker Scoping
+
 Workers can only access projects they are actively assigned to (via `project_assignments`,
-`role='worker'`, `active=true`). Backend uses an accessible-project guard for every
+`role='worker'`, `active=true`). Backend enforces accessible-project guards on every
 worker request — **enforced in APIs, not just hidden in UI.**
 
-### 3.3 Customer privacy for workers
+### 3.3 Customer Privacy for Workers
+
 `serializeProject` strips fields based on role. Workers may see:
-- ✅ Customer **name**, customer **phone** (to call), project name, site name, full site
+- ✅ Customer name, customer phone (to call), project name, site name, full site
   address, Google Maps location, progress, assigned supervisor/team, today's tasks,
   assigned drawings, latest reports, announcements.
 
@@ -147,7 +189,7 @@ Workers must **NOT** see:
 - ❌ Customer email, payment details/history, project cost, quotations, invoices,
   receipts, admin remarks/internal notes, financials, customer documents.
 
-Workers cannot edit customer info. Payments are **completely removed** from the worker app.
+Workers cannot edit customer info. Payments are **completely hidden** from the worker app.
 
 ---
 
@@ -155,24 +197,24 @@ Workers cannot edit customer info. Payments are **completely removed** from the 
 
 **Path:** `frontend/lib`
 
-### 4.1 Core
-- `core/config/env.dart` — `Env.apiBase` defaults to
-  `https://icms-backend-s2va.onrender.com/api/v1`.
-- `core/router/app_router.dart` — GoRouter. Auth-state redirects + one **ShellRoute per
-  role** (bottom-nav scaffold). See routes table below.
-- `core/network/dio_client.dart` — Dio instance, JWT interceptor, refresh handling.
-- `core/services/socket_service.dart` — `socket_io_client`; connects on login/bootstrap,
-  disconnects on logout; listens for `new_message`/`typing`/`message_read`.
-- `core/services/offline_sync_service.dart` — Hive boxes (cache + outbound queue),
-  connectivity listener, auto-sync with retry on reconnect.
-- `core/services/push_notification_service.dart` — FCM push.
-- `core/permissions/permissions.dart` — client mirror of the RBAC matrix.
+### 4.1 Core Layer
 
-### 4.2 Routing & role shells (`app_router.dart`)
+| File/Dir | Purpose |
+|----------|---------|
+| `core/config/env.dart` | `Env.apiBase` → `https://icms-backend-s2va.onrender.com/api/v1` |
+| `core/router/app_router.dart` | GoRouter with auth-state redirects + ShellRoute per role |
+| `core/network/dio_client.dart` | Dio instance, JWT interceptor, refresh handling |
+| `core/services/socket_service.dart` | Socket.IO client: connects on login, `new_message`/`typing`/`message_read` |
+| `core/services/offline_sync_service.dart` | Hive boxes (cache + outbound queue), connectivity listener, auto-sync |
+| `core/services/push_notification_service.dart` | FCM push notifications |
+| `core/permissions/permissions.dart` | Client-side mirror of RBAC matrix |
+
+### 4.2 Routing & Role Shells
+
 Redirect logic: loading → `/splash`; no user → `/login`; `pending` → `/pending`;
-`rejected`/`disabled` → back to `/login`; approved → role home.
+`rejected`/`disabled` → `/login`; approved → role home.
 
-| Role | Home | Bottom-nav tabs |
+| Role | Home | Bottom-Nav Tabs |
 |------|------|-----------------|
 | admin | `/admin` | Home · Projects · Workers · Alerts |
 | supervisor | `/supervisor` | Home · Projects · Reports · Alerts |
@@ -182,165 +224,271 @@ Redirect logic: loading → `/splash`; no user → `/login`; `pending` → `/pen
 Full-screen routes (outside shells, wrapped in `BackGuard`): `/viewer` (PDF/drawing),
 `/profile`, `/settings`, project detail screens, project form.
 
-### 4.3 Feature folders (`frontend/lib/features/`)
-`auth`, `dashboard`, `projects`, `reports`, `users`, `profile`, `payments`, `drawings`,
-`assignments`, `tasks`, `notifications`, `activity`. Each typically has
-`presentation/` (screens/widgets), `application/` (controllers/providers),
-`data/` (api clients/models).
+**Admin additional routes:** `/admin/approvals`, `/admin/assignments`, `/admin/tasks`,
+`/admin/all-reports`, `/admin/payments`, `/admin/workers`.
 
-### 4.4 Shared widgets
-- `shared/widgets/voice_recorder_sheet.dart` — WhatsApp-style in-app voice recording
-  (`flutter_sound` + `permission_handler`): mic permission → record → timer →
-  cancel/pause/send → AAC file.
-- `shared/widgets/voice_note_player.dart` — plays voice notes (`just_audio`, play/pause/seek).
-- `shared/widgets/gradient_button.dart`, `role_scaffold.dart`, `back_guard.dart`.
+**Supervisor additional routes:** `/supervisor/all-reports`, `/supervisor/assignments`,
+`/supervisor/workers`, `/supervisor/tasks`.
+
+### 4.3 Feature Folders
+
+| Feature | Contents |
+|---------|----------|
+| `auth` | Login, register, forgot-password, splash, pending-approval screens |
+| `dashboard` | Admin/Supervisor/Designer/Worker dashboards + attendance card widget |
+| `projects` | Project list, detail (tabbed: details/drawings/payments/timeline), form, edit sheet, site photos, snag list, weekly status (set + history) |
+| `reports` | Reports home (room list), WhatsApp-style chat, report form, all-reports, voice notes |
+| `users` | Workers screen (workforce ops center), staff detail, approvals |
+| `profile` | Profile screen, settings |
+| `payments` | Payments overview (project payments) |
+| `payroll` | Admin payroll screen, worker salary screen (my salary), attendance card, payment detail |
+| `drawings` | PDF viewer |
+| `assignments` | Assignment management |
+| `tasks` | Task panel |
+| `notifications` | Notifications screen |
+| `activity` | Activity/audit trail |
+
+### 4.4 Key Shared Widgets
+
+- `voice_recorder_sheet.dart` — WhatsApp-style voice recording (record + timer + cancel/pause/send → AAC).
+- `voice_note_player.dart` — voice note playback (just_audio, play/pause/seek).
+- `weekly_status_chip.dart` — colored chip for on_track/normal/slow display.
+- `gradient_button.dart`, `role_scaffold.dart`, `back_guard.dart`.
+
+### 4.5 Key Dependencies
+
+| Purpose | Package |
+|---------|---------|
+| State management | flutter_riverpod |
+| Routing | go_router |
+| HTTP | dio |
+| Offline | hive, hive_flutter, connectivity_plus |
+| Token storage | flutter_secure_storage |
+| PDF | syncfusion_flutter_pdfviewer |
+| Audio | just_audio, record |
+| GPS / Location | geolocator |
+| Push | firebase_core, firebase_messaging, flutter_local_notifications |
+| Media | image_picker, file_picker, photo_view, video_player, chewie |
+| Real-time | socket_io_client |
 
 ---
 
-## 5. The Dashboards (what each shows + its data source)
+## 5. Dashboards
 
 All dashboard data comes from `GET /dashboard` (role-detected server-side) in
 `backend/src/modules/dashboard/dashboard.service.js`, plus `GET /dashboard/workforce`.
 
-### 5.1 Admin Dashboard — `features/dashboard/presentation/admin_dashboard.dart`
+### 5.1 Admin Dashboard
+
+**File:** `features/dashboard/presentation/admin_dashboard.dart`
 **Backend:** `dashboard.service.admin()`
+
 Shows:
 - **Site stats:** total / active / completed projects.
-- **Workforce:** workers planned today, active workers (`worker_status='at_site'`),
-  today's assignments count.
+- **Workforce:** workers planned today, active workers (`worker_status='at_site'`), assignments count.
 - **Reports/approvals:** pending worker reports today, pending user approvals.
-- **Payments:** amount received, outstanding amount, pending payments count.
+- **Payments:** amount received, outstanding, pending count.
 - **Stage distribution** (graph) across project stages.
-- **Recent projects** (8 newest active) — customer name **bold/prominent**.
+- **Recent projects** (8 newest active) — customer name prominent.
 - **Recent updates** — activity log feed.
-Admin tabs also reach: Projects, Workers (Workforce Operations Center), Approvals,
-Assignments, Tasks, All Reports, Payments overview, Notifications.
 
-### 5.2 Supervisor Dashboard — `supervisor_dashboard.dart`
+Additional admin screens: Projects, Workers (Workforce Ops Center), Approvals,
+Assignments, Tasks, All Reports, Payments overview, Payroll, Notifications.
+
+### 5.2 Supervisor Dashboard
+
+**File:** `supervisor_dashboard.dart`
 **Backend:** `dashboard.service.supervisor(userId)`
+
 Shows:
-- **My sites** count (projects where `supervisor_id = me`).
+- **My sites** count.
 - **Today's work** — work plans for my sites today.
-- **Report submitted today?** flag (supervisor report).
+- **Report submitted today?** flag.
 - **My workers** — workers on my projects with status, site, task.
+- **Weekly status** — ability to set/view weekly status for supervised projects.
 - **Recent updates** scoped to my projects.
 
-### 5.3 Designer Dashboard — `designer_dashboard.dart`
-**Backend:** `dashboard.service.designer(userId)`
-Shows:
-- **Sites needing design** — projects in stages `discussion`/`3d_design`/`drawing`.
-- **My recent uploads** — files I uploaded (3d_design, working/measurement/site/pdf
-  drawing, quotation).
-Designers always display **"Showroom"** status (never workshop/at_site).
+### 5.3 Designer Dashboard
 
-### 5.4 Worker Dashboard — `worker_dashboard.dart`
+**File:** `designer_dashboard.dart`
+**Backend:** `dashboard.service.designer(userId)`
+
+Shows:
+- **Sites needing design** — projects in discussion/3d_design/drawing stages.
+- **My recent uploads** — files uploaded (3D designs, drawings, quotations).
+- Designers always show **"Showroom"** status.
+
+### 5.4 Worker Dashboard
+
+**File:** `worker_dashboard.dart`
 **Backend:** `dashboard.service.worker(userId)`
+
 A personal field-operations assistant. Shows:
 - Greeting + date + **status chip**.
+- **Attendance card** — GPS check-in/check-out with geofence monitoring.
 - **Report-due banner** (if no worker report submitted today).
-- **Quick actions:** Voice (recorder), Photo (camera), Report (report screen), Drawings.
+- **Quick actions:** Voice, Photo, Report, Drawings.
 - **Today's site card** + **tomorrow's work**.
 - **Tasks checklist** (work_plan_workers status).
-- **Recent drawings** (clickable → PDF/image viewer) limited to assigned projects.
+- **Recent drawings** (limited to assigned projects).
 - **My sites** (assigned projects only).
 - **Contacts** — ONLY admin + assigned supervisor (phone to call). No company-wide list.
 - **Recent work** — own activity-log history.
-- Empty state when no assignment exists (this is a data issue, not a bug — admin must
-  assign the worker to a project).
 - **No payments / no financials / no customer-private data** anywhere.
 
-### 5.5 Workforce Operations Center — `features/users/presentation/workers_screen.dart`
-**Backend:** `GET /dashboard/workforce` (`workforce.controller.js`)
-Admin/supervisor view: summary cards, clickable staff directory, project workforce
-distribution, recent reports. (Daily-report query uses `author_id`, not `submitted_by` —
-this was a 500-bug fix; keep it.) → Staff detail via `staff_detail_screen.dart`
-(Employee ID copyable, contact, assignments, report history; admin actions: Reset PIN,
-Disable, Delete — cannot delete admins).
+### 5.5 Workforce Operations Center
+
+**File:** `features/users/presentation/workers_screen.dart`
+**Backend:** `GET /dashboard/workforce`
+
+Admin/supervisor view: summary cards, staff directory, project workforce distribution,
+recent reports. Staff detail → Employee ID (copyable), contact, assignments, report
+history; admin actions: Reset PIN, Disable, Delete (cannot delete admins).
 
 ---
 
-## 6. Chat / Reports system (how messaging works)
+## 6. Chat / Reports System
 
-The **project's daily reports ARE the chat.** There is no separate messages table for
-the project conversation — reports are shared across admin/supervisor/worker on a project
-and rendered as a WhatsApp-style thread.
+The **project's daily reports ARE the chat.** No separate messages table — reports are
+shared across admin/supervisor/worker on a project and rendered as a WhatsApp-style thread.
 
-- **UI:** `features/reports/presentation/whatsapp_report_screen.dart`
-  (WhatsApp Business **light** theme: `#ECE5DD` bg, own bubbles green `#D9FDD3`,
-  others white). Supporting: `report_chat_view.dart`, `report_form_sheet.dart`,
-  `reports_home_screen.dart` (room list with avatars), `all_reports_screen.dart`.
-- **Real-time:** listens on Socket.IO for `new_message`, shows "is typing…", emits
-  `typing` on text change, handles `message_read`.
-- **Offline:** offline banner; text messages are queued (Hive) when offline and synced on
-  reconnect; messages cached for offline reading.
+- **UI:** `whatsapp_report_screen.dart` (WhatsApp Business light theme: `#ECE5DD` bg,
+  own bubbles `#D9FDD3`, others white). Supporting: `report_chat_view.dart`,
+  `report_form_sheet.dart`, `reports_home_screen.dart` (room list with avatars),
+  `all_reports_screen.dart`.
+- **Real-time:** Socket.IO `new_message`, "is typing…", `message_read`.
+- **Offline:** banner shown; text messages queued in Hive and synced on reconnect;
+  messages cached for offline reading.
 - **Media:** photos, voice notes (record + playback), attachments. Voice/photos allowed
   for workers (`media:upload`).
 - Worker bottom-nav "Reports" is labeled **"Chat"** (chat icon) at `/worker/reports`.
 
 ---
 
-## 7. Files & drawings
+## 7. Files & Drawings
 
-- Upload/download via the `drawings`(files) module. `fileBaseUrl()` builds public URLs from
-  `PUBLIC_URL` env → X-Forwarded headers → fallback (fixes the worker 404-on-attachment bug
-  that came from `req.get('host')` returning internal addresses behind Render).
-- Frontend opens drawings in-app: PDF via `/viewer` (`pdf_viewer_screen.dart`), images via
-  an in-app image viewer.
+- Upload/download via the `drawings` (files) module. `fileBaseUrl()` builds public URLs
+  from `PUBLIC_URL` env → X-Forwarded headers → fallback.
+- Frontend opens drawings in-app: PDF via `/viewer` (Syncfusion PDF viewer), images via
+  photo_view.
 - Workers can **open / zoom / pan / download-offline / view revisions / mark viewed**.
   Workers **cannot** upload / delete / replace / approve / manage revisions.
 
 ---
 
-## 8. Build & deploy
+## 8. Weekly Project Status
 
-### Backend (Render)
-- Build command: `npm install && npm run migrate`
-- Branch: **`main`** (was once wrongly set to a feat branch → caused "Route Not Found").
-- Required env: `PUBLIC_URL=https://icms-backend-s2va.onrender.com`, JWT secrets, DB URL.
+A traffic-light system for project health, set weekly by supervisors/admin.
 
-### Frontend
-- **Android APK:** `flutter build apk --release` from `frontend/`.
-  Output: `frontend\build\app\outputs\flutter-apk\app-release.apk`.
-  ⚠️ The command may exit code 1 due to a terminal pipe/Select-String quirk **but the APK
-  still builds** — verify with:
-  `Test-Path "build\app\outputs\flutter-apk\app-release.apk"` or look for
-  `Built ... app-release.apk` in the output.
-- **iOS:** cannot build on Windows.
-- **Windows native:** FAILS (firebase_core + flutter_sound have no working Windows impl).
-  Use **`flutter build web`** as the Windows/desktop alternative.
-- **App icon:** `frontend/assets/icon/app_icon.png` → regenerate with
-  `dart run flutter_launcher_icons`.
-
-### System / shell notes
-- OS: Windows, **cmd** shell. Use `;` to chain (not `&&`); avoid `&` in PowerShell.
+- **Statuses:** `on_track` 🟢 · `normal` 🟡 · `slow` 🔴
+- **Backend:** `weekly_status` module — upsert per project per ISO week (Monday-based).
+- Supervisors can only set status for their own projects. Admin can set for any.
+- When marked "slow", push notification sent to all admins.
+- Activity log entry created for each status change.
+- **Frontend:** `set_weekly_status_sheet.dart` (set), `weekly_status_history_screen.dart`
+  (history), `weekly_status_chip.dart` (display).
 
 ---
 
-## 9. Hard rules (things that must NOT be broken)
+## 9. Snag / Punch List
 
-1. **No OTP** anywhere. Auth is Mobile(+91) + 4-digit PIN only.
+Per-project snag tracking for site handover quality control.
+
+- **Statuses:** `open` → `resolved` → `closed`.
+- **Priority:** low / medium / high (sorted high-first).
+- Assignable to specific users. Resolution includes note + photo.
+- **Backend:** `snag` module — CRUD + summary counts.
+- **Frontend:** `snag_list_screen.dart` inside project detail.
+
+---
+
+## 10. Attendance & Geofencing
+
+- **GPS attendance** (`attendance` module): check-in/out with lat/lng validation against
+  project coordinates using haversine distance.
+- **Geofence alerts:** periodic location reporting detects when worker moves outside
+  project radius → creates alert → admin approves/declines.
+- **Worker dashboard:** `AttendanceCard` widget — shows check-in/out buttons, live
+  distance from site, geofence warning, active alert status.
+- **Monthly summaries** for admin review.
+
+---
+
+## 11. Payroll & Worker Payments
+
+Separate from project payments — this tracks individual worker compensation.
+
+- **Salary setup:** admin sets `monthly_salary` + `working_days_per_month` per worker.
+- **Attendance tracking:** `worker_attendance` table — daily at_site/workshop/leave/absent records.
+- **Salary calculation:** days present × daily rate; deductions for absence; advances
+  subtracted; bonuses added → net payable.
+- **Payment types:** salary, advance, bonus — with proof image upload.
+- **Frontend:**
+  - `admin_payroll_screen.dart` — overview of all workers, mark attendance, process payments.
+  - `my_salary_screen.dart` — worker's own salary/payment history.
+  - `worker_payment_detail_screen.dart` — payment breakdown.
+
+---
+
+## 12. Build & Deploy
+
+### Backend (Render)
+
+- Build command: `npm install && npm run migrate`
+- Start command: `npm start`
+- Branch: **`main`**
+- Required env: `PUBLIC_URL=https://icms-backend-s2va.onrender.com`, JWT secrets, `DATABASE_URL`.
+
+### Frontend
+
+- **Android APK:** `flutter build apk --release` from `frontend/`.
+  Output: `frontend\build\app\outputs\flutter-apk\app-release.apk`.
+  ⚠️ Command may exit code 1 due to terminal pipe quirk — APK still builds. Verify with
+  `Test-Path "build\app\outputs\flutter-apk\app-release.apk"`.
+- **Web (desktop fallback):** `flutter build web` from `frontend/`.
+- **iOS:** cannot build on Windows.
+- **Windows native:** FAILS (firebase_core + audio packages lack Windows support).
+- **App icon:** `frontend/assets/icon/app_icon.png` → regenerate with
+  `dart run flutter_launcher_icons`.
+
+### System / Shell Notes
+
+- OS: Windows, **cmd** shell. Use `&` to chain commands.
+
+---
+
+## 13. Hard Rules (things that must NOT be broken)
+
+1. **No OTP** anywhere. Auth is Mobile (+91) + 4-digit PIN only.
 2. **Phone format:** fixed `+91` prefix (non-editable), 10 digits. Block `+91+91`, `0091`.
 3. **Single admin:** `users.service.approve()` throws if a second admin is assigned.
-4. **Don't break admin/supervisor/designer dashboards** when changing worker features —
-   they share the same backend APIs.
+4. **Don't break other dashboards** when changing one role's features — they share backend APIs.
 5. **Customer privacy for workers** enforced in BACKEND (`serializeProject`), not just UI.
 6. **Designers** always show "Showroom".
 7. **Workers** never see payments/financials/quotations/customer-private data.
 8. RBAC enforced server-side via `rbac.js` (`requireRole`/`requirePermission`).
 9. Render must deploy branch `main` with the migrate build command + `PUBLIC_URL`.
+10. **Geofence alerts** only visible to admin — workers see their own alert status only.
+11. **Weekly status** — supervisors can only set for their own projects; slow triggers admin push notification.
 
 ---
 
-## 10. Quick "where do I look?" index
+## 14. Quick "Where Do I Look?" Index
 
 | I want to… | Go to |
 |-----------|-------|
-| Change how dashboards aggregate data | `backend/src/modules/dashboard/dashboard.service.js` |
-| Change role permissions | `backend/src/middleware/rbac.js` (+ frontend `core/permissions/permissions.dart`) |
-| Change what fields workers can see on a project | `serializeProject` in `backend/src/modules/projects/` |
+| Change dashboard data | `backend/src/modules/dashboard/dashboard.service.js` |
+| Change role permissions | `backend/src/middleware/rbac.js` + `frontend/lib/core/permissions/permissions.dart` |
+| Change what fields workers see | `serializeProject` in `backend/src/modules/projects/` |
 | Touch login / PIN / avatar | `backend/src/modules/auth/*` + `frontend/lib/features/auth/*` + `profile/*` |
 | Touch real-time chat | `backend/src/socket/index.js`, reports controller, `whatsapp_report_screen.dart` |
 | Touch routing / role shells | `frontend/lib/core/router/app_router.dart` |
 | Touch file/drawing URLs | `backend/src/modules/drawings/files.controller.js` (`fileBaseUrl`) |
-| Touch payments | `backend/src/modules/payments/payments.service.js` (`recomputeTotalReceived`) |
-| Add a DB column/table | new file in `backend/src/db/migrations/` (next number) |
+| Touch project payments | `backend/src/modules/payments/payments.service.js` (`recomputeTotalReceived`) |
+| Touch worker payroll | `backend/src/modules/payroll/payroll.service.js` + `frontend/lib/features/payroll/` |
+| Touch attendance / geofencing | `backend/src/modules/attendance/attendance.service.js` + `AttendanceCard` widget |
+| Touch weekly project status | `backend/src/modules/weekly_status/` + `frontend/.../set_weekly_status_sheet.dart` |
+| Touch snag list | `backend/src/modules/snag/` + `frontend/.../snag_list_screen.dart` |
+| Add a DB column/table | new file in `backend/src/db/migrations/` (next number: `045`) |
+| Touch offline sync | `frontend/lib/core/services/offline_sync_service.dart` |
+| Touch push notifications | `frontend/lib/core/services/push_notification_service.dart` + backend `notifyAdmins()` |
