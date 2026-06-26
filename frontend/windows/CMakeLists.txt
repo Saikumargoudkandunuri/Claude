@@ -1,10 +1,17 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+
+# Fix for Firebase C++ SDK CMake compatibility (requires 3.5+ policy)
+if(POLICY CMP0000)
+  cmake_policy(SET CMP0000 NEW)
+endif()
+set(CMAKE_POLICY_DEFAULT_CMP0012 NEW)
+
 project(icms LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "icms")
+set(BINARY_NAME "work_management")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
