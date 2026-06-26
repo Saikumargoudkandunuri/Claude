@@ -39,6 +39,16 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# Suppress experimental coroutine deprecation warnings (needed by permission_handler_windows)
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
+# Add ATL include path from Community edition if BuildTools lacks it
+set(_ATL_INCLUDE "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/atlmfc/include")
+if(EXISTS "${_ATL_INCLUDE}" AND NOT EXISTS "${CMAKE_CXX_COMPILER}/../../../atlmfc/include/atlstr.h")
+  include_directories(SYSTEM "${_ATL_INCLUDE}")
+  link_directories("C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/atlmfc/lib/x64")
+endif()
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by

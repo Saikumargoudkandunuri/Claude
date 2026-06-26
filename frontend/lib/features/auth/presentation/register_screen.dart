@@ -5,10 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/dio_client.dart';
-import '../../../core/theme/app_spacing.dart';
 
-const _navy = Color(0xFF1A237E);
-const _blue = Color(0xFF1565C0);
+const _primaryColor = Color(0xFF00D1DC);
+const _darkColor = Color(0xFF004D51);
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -41,8 +40,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   String? _validateName(String? v) {
-    if (v == null || v.trim().length < 2)
+    if (v == null || v.trim().length < 2) {
       return 'Name must be at least 2 characters';
+    }
     return null;
   }
 
@@ -89,7 +89,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         setState(() => _busy = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(DioClient.toApiException(e).message)),
+          SnackBar(
+            content: Text(DioClient.toApiException(e).message),
+            backgroundColor: Colors.red.shade600,
+          ),
         );
       }
     }
@@ -98,183 +101,334 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Create Account',
-          style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF00D1DC),
+              Color(0xFF00A8B3),
+            ],
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Full Name
-                    TextFormField(
-                      controller: _nameCtrl,
-                      textCapitalization: TextCapitalization.words,
-                      validator: _validateName,
-                      decoration: InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: const Icon(Icons.person_outline),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              child: Column(
+                children: [
+                  // Header
+                  const Icon(
+                    Icons.person_add_rounded,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Create Account',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Register as a new employee',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
 
-                    // Mobile Number
-                    TextFormField(
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 10,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: _validatePhone,
-                      decoration: InputDecoration(
-                        labelText: 'Mobile Number',
-                        counterText: '',
-                        prefixIcon: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          alignment: Alignment.center,
-                          width: 70,
-                          child: const Text(
-                            '+91',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                  // Card
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Full Name
+                          _buildField(
+                            controller: _nameCtrl,
+                            label: 'Full Name',
+                            icon: Icons.person_outline,
+                            textCapitalization: TextCapitalization.words,
+                            validator: _validateName,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Mobile Number
+                          _buildField(
+                            controller: _phoneCtrl,
+                            label: 'Mobile Number',
+                            icon: Icons.phone_android,
+                            keyboardType: TextInputType.number,
+                            maxLength: 10,
+                            formatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            validator: _validatePhone,
+                            prefix: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              alignment: Alignment.center,
+                              width: 50,
+                              child: const Text(
+                                '+91',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _darkColor,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: 16),
 
-                    // Role Dropdown
-                    DropdownButtonFormField<String>(
-                      value: _selectedRole,
-                      decoration: InputDecoration(
-                        labelText: 'Role',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      items: _roles
-                          .map((r) => DropdownMenuItem(
-                                value: r,
-                                child: Text(
-                                  r[0].toUpperCase() + r.substring(1),
-                                ),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _selectedRole = v);
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Create PIN
-                    TextFormField(
-                      controller: _pinCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 4,
-                      obscureText: _obscurePin,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: _validatePin,
-                      decoration: InputDecoration(
-                        labelText: 'Create PIN',
-                        counterText: '',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePin
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () =>
-                              setState(() => _obscurePin = !_obscurePin),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Confirm PIN
-                    TextFormField(
-                      controller: _confirmPinCtrl,
-                      keyboardType: TextInputType.number,
-                      maxLength: 4,
-                      obscureText: _obscureConfirm,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: _validateConfirmPin,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm PIN',
-                        counterText: '',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirm
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
-                          onPressed: () => setState(
-                              () => _obscureConfirm = !_obscureConfirm),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Submit
-                    SizedBox(
-                      height: 50,
-                      child: FilledButton(
-                        onPressed: _busy ? null : _submit,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _blue,
-                          minimumSize: const Size.fromHeight(50),
-                        ),
-                        child: _busy
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Register',
-                                style: TextStyle(fontSize: 16),
+                          // Role Dropdown
+                          DropdownButtonFormField<String>(
+                            value: _selectedRole,
+                            decoration: InputDecoration(
+                              labelText: 'Role',
+                              labelStyle:
+                                  TextStyle(color: Colors.grey.shade600),
+                              prefixIcon: Icon(
+                                Icons.badge_outlined,
+                                color: Colors.grey.shade500,
                               ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: _primaryColor,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            items: _roles
+                                .map(
+                                  (r) => DropdownMenuItem(
+                                    value: r,
+                                    child: Text(
+                                      r[0].toUpperCase() + r.substring(1),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) setState(() => _selectedRole = v);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Create PIN
+                          _buildField(
+                            controller: _pinCtrl,
+                            label: 'Create PIN',
+                            icon: Icons.lock_outline,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            obscureText: _obscurePin,
+                            formatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            validator: _validatePin,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePin
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: Colors.grey.shade500,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePin = !_obscurePin,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Confirm PIN
+                          _buildField(
+                            controller: _confirmPinCtrl,
+                            label: 'Confirm PIN',
+                            icon: Icons.lock_outline,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            obscureText: _obscureConfirm,
+                            formatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            validator: _validateConfirmPin,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirm
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: Colors.grey.shade500,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscureConfirm = !_obscureConfirm,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          // Register Button
+                          SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _busy ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    _primaryColor.withOpacity(0.6),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: _busy
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Register',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                  ),
+                  const SizedBox(height: 24),
 
-                    // Already have account
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: const Text('Already have account? Log in'),
-                    ),
-                  ],
-                ),
+                  // Login link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have account? ',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go('/login'),
+                        child: const Text(
+                          'Log in',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int? maxLength,
+    bool obscureText = false,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    List<TextInputFormatter>? formatters,
+    String? Function(String?)? validator,
+    Widget? prefix,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      obscureText: obscureText,
+      textCapitalization: textCapitalization,
+      inputFormatters: formatters,
+      validator: validator,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey.shade600),
+        counterText: '',
+        prefixIcon: prefix ??
+            Icon(
+              icon,
+              color: Colors.grey.shade500,
+            ),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _primaryColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade300),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 2),
         ),
       ),
     );
