@@ -38,10 +38,18 @@ async function issueTokens(user) {
 
 async function register({ fullName, email, phone, password, pin, role }) {
   // Check for existing user by phone (primary) or email (legacy)
-  const existing = await query(
-    'SELECT id FROM users WHERE phone = $1 OR ($2 IS NOT NULL AND email = $2)',
-    [phone, email || null]
-  );
+  let existing;
+  if (email) {
+    existing = await query(
+      'SELECT id FROM users WHERE phone = $1 OR email = $2',
+      [phone, email]
+    );
+  } else {
+    existing = await query(
+      'SELECT id FROM users WHERE phone = $1',
+      [phone]
+    );
+  }
   if (existing.rows.length > 0) {
     throw ApiError.conflict('An account with this mobile number already exists');
   }

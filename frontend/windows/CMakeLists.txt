@@ -62,7 +62,21 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
-include(flutter/generated_plugins.cmake)
+#
+# flutter_sound workaround: Its Windows CMake creates 'taudio_plugin' instead of
+# 'flutter_sound_plugin'. We preprocess the generated file to handle this.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/flutter/generated_plugins.cmake" _PLUGINS_CONTENT)
+string(REPLACE "flutter_sound\n" "" _PLUGINS_CONTENT "${_PLUGINS_CONTENT}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_plugins_fixed.cmake" "${_PLUGINS_CONTENT}")
+include("${CMAKE_CURRENT_BINARY_DIR}/generated_plugins_fixed.cmake")
+
+# Now manually handle flutter_sound with its actual target name
+add_subdirectory(flutter/ephemeral/.plugin_symlinks/flutter_sound/windows plugins/flutter_sound)
+if(TARGET taudio_plugin)
+  target_link_libraries(${BINARY_NAME} PRIVATE taudio_plugin)
+  list(APPEND PLUGIN_BUNDLED_LIBRARIES $<TARGET_FILE:taudio_plugin>)
+  list(APPEND PLUGIN_BUNDLED_LIBRARIES ${taudio_bundled_libraries})
+endif()
 
 
 # === Installation ===
