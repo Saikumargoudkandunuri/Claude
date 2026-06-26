@@ -20,6 +20,9 @@ class Project {
     this.designerId,
     this.remarks,
     this.contacts,
+    this.siteLatitude,
+    this.siteLongitude,
+    this.siteRadiusMeters,
   });
 
   final String id;
@@ -41,6 +44,9 @@ class Project {
   final String? designerId;
   final String? remarks;
   final ProjectContacts? contacts;
+  final double? siteLatitude;
+  final double? siteLongitude;
+  final int? siteRadiusMeters;
 
   factory Project.fromJson(Map<String, dynamic> j) => Project(
         id: j['id'] as String,
@@ -64,6 +70,9 @@ class Project {
         contacts: j['contacts'] is Map
             ? ProjectContacts.fromJson(j['contacts'] as Map<String, dynamic>)
             : null,
+        siteLatitude: (j['siteLatitude'] as num?)?.toDouble(),
+        siteLongitude: (j['siteLongitude'] as num?)?.toDouble(),
+        siteRadiusMeters: (j['siteRadiusMeters'] as num?)?.toInt(),
       );
 }
 
@@ -90,7 +99,17 @@ class ProjectContacts {
 }
 
 const kProjectStages = [
-  'discussion', '3d_design', 'drawing', 'material_purchase', 'cutting', 'making',
-  'lamination', 'painting', 'packing', 'transport', 'installation', 'checking',
+  'discussion',
+  '3d_design',
+  'drawing',
+  'material_purchase',
+  'cutting',
+  'making',
+  'lamination',
+  'painting',
+  'packing',
+  'transport',
+  'installation',
+  'checking',
   'completed',
 ];

@@ -34,6 +34,9 @@ function serializeProject(row, viewerRole) {
     isArchived: row.is_archived,
     createdAt: row.created_at,
     progress: stageProgress(row.current_stage),
+    siteLatitude: row.site_latitude || null,
+    siteLongitude: row.site_longitude || null,
+    siteRadiusMeters: row.site_radius_meters || 300,
   };
   if (!isWorker) {
     base.quotationAmount = Number(row.quotation_amount);
@@ -283,6 +286,9 @@ async function update(adminId, projectId, body) {
     supervisorId: 'supervisor_id',
     designerId: 'designer_id',
     remarks: 'remarks',
+    siteLatitude: 'site_latitude',
+    siteLongitude: 'site_longitude',
+    siteRadiusMeters: 'site_radius_meters',
   };
 
   const set = [];

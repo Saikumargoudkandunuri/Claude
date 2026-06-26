@@ -9,8 +9,11 @@ import '../domain/project.dart';
 
 /// Bottom sheet to edit project details (admin only).
 class EditProjectSheet extends ConsumerStatefulWidget {
-  const EditProjectSheet(
-      {super.key, required this.project, required this.onUpdated});
+  const EditProjectSheet({
+    super.key,
+    required this.project,
+    required this.onUpdated,
+  });
   final Project project;
   final VoidCallback onUpdated;
 
@@ -30,6 +33,9 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
   late final TextEditingController _workDescCtrl;
   late final TextEditingController _quotationCtrl;
   late final TextEditingController _remarksCtrl;
+  late final TextEditingController _latitudeCtrl;
+  late final TextEditingController _longitudeCtrl;
+  late final TextEditingController _radiusCtrl;
 
   bool _busy = false;
 
@@ -49,6 +55,15 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
       text: p.quotationAmount != null ? p.quotationAmount.toString() : '',
     );
     _remarksCtrl = TextEditingController(text: p.remarks ?? '');
+    _latitudeCtrl = TextEditingController(
+      text: p.siteLatitude != null ? p.siteLatitude.toString() : '',
+    );
+    _longitudeCtrl = TextEditingController(
+      text: p.siteLongitude != null ? p.siteLongitude.toString() : '',
+    );
+    _radiusCtrl = TextEditingController(
+      text: (p.siteRadiusMeters ?? 300).toString(),
+    );
   }
 
   @override
@@ -63,6 +78,9 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
     _workDescCtrl.dispose();
     _quotationCtrl.dispose();
     _remarksCtrl.dispose();
+    _latitudeCtrl.dispose();
+    _longitudeCtrl.dispose();
+    _radiusCtrl.dispose();
     super.dispose();
   }
 
@@ -104,6 +122,20 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
       }
       if (_remarksCtrl.text.trim() != (p.remarks ?? '')) {
         body['remarks'] = _remarksCtrl.text.trim();
+      }
+
+      // GPS coordinates
+      final lat = double.tryParse(_latitudeCtrl.text.trim());
+      final lng = double.tryParse(_longitudeCtrl.text.trim());
+      final radius = int.tryParse(_radiusCtrl.text.trim());
+      if (lat != null && lat != (p.siteLatitude ?? 0)) {
+        body['siteLatitude'] = lat;
+      }
+      if (lng != null && lng != (p.siteLongitude ?? 0)) {
+        body['siteLongitude'] = lng;
+      }
+      if (radius != null && radius != (p.siteRadiusMeters ?? 300)) {
+        body['siteRadiusMeters'] = radius;
       }
 
       if (body.isEmpty) {
@@ -174,10 +206,61 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
                 _quotationCtrl,
                 keyboard: TextInputType.number,
                 formatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                 ],
               ),
               _field('Remarks', _remarksCtrl, maxLines: 3),
+              const Divider(height: 32),
+              const Text(
+                'GPS Location (for attendance geofencing)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: _field(
+                      'Latitude',
+                      _latitudeCtrl,
+                      keyboard: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      formatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[\d.\-]'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _field(
+                      'Longitude',
+                      _longitudeCtrl,
+                      keyboard: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      formatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[\d.\-]'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              _field(
+                'Radius (meters)',
+                _radiusCtrl,
+                keyboard: TextInputType.number,
+                formatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
               const SizedBox(height: AppSpacing.xl),
               FilledButton(
                 onPressed: _busy ? null : _save,
