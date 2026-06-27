@@ -7,27 +7,53 @@ const config = require('../../config');
 const { ApiError } = require('../../utils/http');
 
 /**
- * Lookup a customer by mobile number in the customers table.
- * Returns { found, customerName, pinSet } or throws 404.
+ * Lookup a customer by mobile number.
+ * First checks the customers table, then falls back to projects.phone
+ * (for projects created before the customer portal existed).
+ * If found in projects but not in customers, auto-creates a customer record.
  */
 async function checkMobile(mobile) {
+  // First try the customers table
   const { rows } = await query(
-    `SELECT c.id, c.name, c.pin_set
-       FROM customers c
-      WHERE c.mobile = $1
-      LIMIT 1`,
+    `SELECT id, name, pin_set FROM customers WHERE mobile = $1 LIMIT 1`,
     [mobile]
   );
 
-  if (!rows.length) {
+  if (rows.length) {
+    const row = rows[0];
+    return { found: true, customerName: row.name, pinSet: row.pin_set };
+  }
+
+  // Fallback: check projects.phone (legacy projects without a customer record)
+  const { rows: projRows } = await query(
+    `SELECT id, customer_name, phone FROM projects WHERE phone = $1 LIMIT 1`,
+    [mobile]
+  );
+
+  if (!projRows.length) {
     throw ApiError.notFound('Mobile number not found');
   }
 
-  const row = rows[0];
+  // Auto-create a customer record from the project data
+  const proj = projRows[0];
+  const { rows: newCustomer } = await query(
+    `INSERT INTO customers (name, mobile)
+     VALUES ($1, $2)
+     ON CONFLICT (mobile) DO UPDATE SET name = EXCLUDED.name
+     RETURNING id, name, pin_set`,
+    [proj.customer_name || 'Customer', mobile]
+  );
+
+  // Link the project to this customer
+  await query(
+    `UPDATE projects SET customer_id = $1 WHERE id = $2`,
+    [newCustomer[0].id, proj.id]
+  );
+
   return {
     found: true,
-    customerName: row.name,
-    pinSet: row.pin_set,
+    customerName: newCustomer[0].name,
+    pinSet: newCustomer[0].pin_set,
   };
 }
 
@@ -36,13 +62,21 @@ async function checkMobile(mobile) {
  * Verifies pin_set is false (else 409), hashes PIN, updates customers table.
  */
 async function setPin(mobile, pin) {
-  const { rows } = await query(
-    `SELECT id, pin_set
-       FROM customers
-      WHERE mobile = $1
-      LIMIT 1`,
+  // Try customers table first, then auto-resolve from projects
+  let { rows } = await query(
+    `SELECT id, pin_set FROM customers WHERE mobile = $1 LIMIT 1`,
     [mobile]
   );
+
+  if (!rows.length) {
+    // Auto-resolve: call checkMobile to create the customer record
+    await checkMobile(mobile);
+    const res = await query(
+      `SELECT id, pin_set FROM customers WHERE mobile = $1 LIMIT 1`,
+      [mobile]
+    );
+    rows = res.rows;
+  }
 
   if (!rows.length) {
     throw ApiError.notFound('Mobile number not found');
@@ -57,9 +91,7 @@ async function setPin(mobile, pin) {
   const hash = await bcrypt.hash(pin, config.bcryptRounds);
 
   await query(
-    `UPDATE customers
-        SET pin_hash = $1, pin_set = true, updated_at = now()
-      WHERE id = $2`,
+    `UPDATE customers SET pin_hash = $1, pin_set = true, updated_at = now() WHERE id = $2`,
     [hash, customer.id]
   );
 }
