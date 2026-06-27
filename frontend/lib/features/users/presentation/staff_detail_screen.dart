@@ -8,6 +8,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/loading_view.dart';
+import 'worker_attendance_calendar_screen.dart';
+import 'worker_pay_screen.dart';
 
 /// Provider fetching a single staff member's full details + history.
 final staffDetailProvider = FutureProvider.autoDispose
@@ -77,6 +79,66 @@ class StaffDetailScreen extends ConsumerWidget {
               // Contact info
               _InfoSection(user: user),
               const SizedBox(height: AppSpacing.xl),
+
+              // Attendance & Pay buttons (only for workers)
+              if (user['role'] == 'worker') ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkerAttendanceCalendarScreen(
+                                workerId: userId,
+                                workerName: userName,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.calendar_month_rounded,
+                              size: 18),
+                          label: const Text('Attendance'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF00D1DC),
+                            side: const BorderSide(color: Color(0xFF00D1DC)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkerPayScreen(
+                                workerId: userId,
+                                workerName: userName,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.payments_rounded, size: 18),
+                          label: const Text('Pay'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF00D1DC),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
 
               // Current Assignments
               const Text(
@@ -209,20 +271,26 @@ class StaffDetailScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
 
               // Admin Actions
-              const Text('Admin Actions',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const Text(
+                'Admin Actions',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Card(
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.pin_outlined,
-                          color: AppColors.primary),
+                      leading: const Icon(
+                        Icons.pin_outlined,
+                        color: AppColors.primary,
+                      ),
                       title: const Text('Reset PIN'),
                       subtitle:
                           const Text('Set a new 4-digit PIN for this user'),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: AppColors.textMuted),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                      ),
                       onTap: () => _resetPin(context, ref, userId),
                     ),
                     const Divider(height: 1),
@@ -231,19 +299,27 @@ class StaffDetailScreen extends ConsumerWidget {
                           const Icon(Icons.block, color: AppColors.warning),
                       title: const Text('Disable Account'),
                       subtitle: const Text('User will not be able to login'),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: AppColors.textMuted),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                      ),
                       onTap: () => _disableUser(context, ref, userId, userName),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.delete_forever,
-                          color: AppColors.danger),
-                      title: const Text('Delete User',
-                          style: TextStyle(color: AppColors.danger)),
+                      leading: const Icon(
+                        Icons.delete_forever,
+                        color: AppColors.danger,
+                      ),
+                      title: const Text(
+                        'Delete User',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
                       subtitle: const Text('Permanently remove this user'),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: AppColors.textMuted),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                      ),
                       onTap: () => _deleteUser(context, ref, userId, userName),
                     ),
                   ],
@@ -258,7 +334,10 @@ class StaffDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _resetPin(
-      BuildContext context, WidgetRef ref, String userId) async {
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+  ) async {
     final pinCtrl = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
@@ -272,11 +351,13 @@ class StaffDetailScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Set PIN')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Set PIN'),
+          ),
         ],
       ),
     );
@@ -299,7 +380,11 @@ class StaffDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _disableUser(
-      BuildContext context, WidgetRef ref, String userId, String name) async {
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String name,
+  ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -308,8 +393,9 @@ class StaffDetailScreen extends ConsumerWidget {
             Text('$name will not be able to login. You can re-enable later.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
             onPressed: () => Navigator.pop(context, true),
@@ -338,17 +424,23 @@ class StaffDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _deleteUser(
-      BuildContext context, WidgetRef ref, String userId, String name) async {
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String name,
+  ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete User Permanently?'),
         content: Text(
-            'This will permanently remove $name and all their data. This cannot be undone.'),
+          'This will permanently remove $name and all their data. This cannot be undone.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, true),

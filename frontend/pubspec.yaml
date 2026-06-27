@@ -77,10 +77,15 @@ flutter:
   uses-material-design: true
 
 msix_config:
-  display_name: ICMS
+  display_name: ICMS - Metal & More
   publisher_display_name: Metal & More Interiors
   identity_name: com.metalandmore.icms
-  msix_version: 1.0.0.0
+  msix_version: 1.1.0.0
   logo_path: assets/icon/app_icon.png
-  capabilities: internetClient, internetClientServer
+  start_menu_icon_path: assets/icon/app_icon.png
+  tile_icon_path: assets/icon/app_icon.png
+  icons_background_color: "#00D1DC"
+  architecture: x64
+  capabilities: internetClient, internetClientServer, microphone, webcam, location
   languages: en-us
+  install_certificate: false

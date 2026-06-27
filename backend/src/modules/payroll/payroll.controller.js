@@ -184,9 +184,33 @@ async function getAllSalarySummary(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getMonthAttendance(req, res, next) {
+  try {
+    const month = req.query.month || new Date().toISOString().slice(0, 7);
+    // Admin can query any worker; worker can only query self
+    const targetId = req.user.role === 'admin' ? (req.query.user_id || req.user.id) : req.user.id;
+    const fromDate = `${month}-01`;
+    const lastDay = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0).getDate();
+    const toDate = `${month}-${String(lastDay).padStart(2, '0')}`;
+    const records = await service.getWorkerAttendance(targetId, fromDate, toDate);
+    res.json({ success: true, data: records });
+  } catch (e) { next(e); }
+}
+
+async function getDayDetail(req, res, next) {
+  try {
+    const { date } = req.params;
+    const targetId = req.user.role === 'admin' ? (req.query.user_id || req.user.id) : req.user.id;
+    // Get attendance for that day
+    const records = await service.getWorkerAttendance(targetId, date, date);
+    res.json({ success: true, data: { attendance: records[0] || null, reports: [] } });
+  } catch (e) { next(e); }
+}
+
 module.exports = {
   markAttendance, checkOut, getMyTodayStatus, getMyAttendance,
   getAllTodayAttendance, adminMarkAttendance,
+  getMonthAttendance, getDayDetail,
   setSalary, getSalaryPreview, getMySalaryPreview,
   addPayment, getMyPayments, getWorkerPayments, getAllSalarySummary,
   upload,

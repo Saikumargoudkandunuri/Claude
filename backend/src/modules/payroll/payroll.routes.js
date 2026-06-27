@@ -15,6 +15,8 @@ router.get('/payroll/attendance/my', requireRole('worker'), ctrl.getMyAttendance
 // ── ATTENDANCE — Admin ─────────────────────────────────────────
 router.get('/payroll/attendance/all-today', requireRole('admin'), ctrl.getAllTodayAttendance);
 router.post('/payroll/attendance/admin-mark', requireRole('admin'), ctrl.adminMarkAttendance);
+router.get('/payroll/attendance/month', ctrl.getMonthAttendance);
+router.get('/payroll/attendance/day/:date', ctrl.getDayDetail);
 
 // ── SALARY PROFILE ─────────────────────────────────────────────
 router.post('/payroll/salary/set', requireRole('admin'), ctrl.setSalary);
