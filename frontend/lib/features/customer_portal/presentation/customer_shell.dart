@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../core/network/customer_dio_client.dart';
+import '../../customer_auth/application/customer_auth_controller.dart';
+import '../application/customer_providers.dart';
 
 /// Bottom-navigation shell for the customer portal.
 ///
 /// Wraps a [child] widget provided by GoRouter's ShellRoute and displays
 /// a 5-tab bottom navigation bar (Home, Photos, Timeline, Payments, Messages)
 /// with the #00D1DC teal brand color for the active tab.
-class CustomerShell extends StatelessWidget {
+/// Includes a logout button in the app bar.
+class CustomerShell extends ConsumerWidget {
   const CustomerShell({super.key, required this.child});
 
   final Widget child;
@@ -61,12 +67,71 @@ class CustomerShell extends StatelessWidget {
     return bestIndex;
   }
 
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Log out of customer portal?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Clear token
+    await CustomerDioClient.clearToken();
+
+    // Clear auth state
+    ref.read(customerAuthControllerProvider.notifier).logout();
+
+    // Invalidate all customer data providers
+    ref.invalidate(customerOverviewProvider);
+    ref.invalidate(customerTimelineProvider);
+    ref.invalidate(customerPhotosProvider);
+    ref.invalidate(customerDrawingsProvider);
+    ref.invalidate(customerPaymentSummaryProvider);
+    ref.invalidate(customerNotificationsProvider);
+    ref.invalidate(customerMessagesProvider);
+
+    // Navigate to login
+    if (context.mounted) {
+      context.go('/customer-login');
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.toString();
     final selectedIndex = _currentIndex(location);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Metal & More',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: _brandTeal,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Logout',
+            onPressed: () => _handleLogout(context, ref),
+          ),
+        ],
+      ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
