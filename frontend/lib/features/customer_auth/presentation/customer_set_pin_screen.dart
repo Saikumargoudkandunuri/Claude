@@ -33,6 +33,13 @@ class _CustomerSetPinScreenState extends ConsumerState<CustomerSetPinScreen> {
   bool _busy = false;
 
   String get _mobile {
+    // Try query parameter first (navigated via URL)
+    final uri = GoRouterState.of(context).uri;
+    final queryMobile = uri.queryParameters['mobile'];
+    if (queryMobile != null && queryMobile.isNotEmpty) {
+      return queryMobile;
+    }
+    // Fallback to extra map
     final extra = GoRouterState.of(context).extra;
     if (extra is Map<String, dynamic>) {
       return extra['mobile'] as String? ?? '';
