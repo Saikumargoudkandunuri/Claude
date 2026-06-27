@@ -309,6 +309,41 @@ async function resetPin(customerId) {
   }
 }
 
+/**
+ * Create a new customer record (admin action).
+ * Optionally links the customer to a project.
+ */
+async function createCustomer(fullName, mobile, projectId) {
+  // Check if mobile already exists
+  const { rows: existing } = await query(
+    `SELECT id FROM customers WHERE mobile = $1`,
+    [mobile]
+  );
+
+  if (existing.length) {
+    throw ApiError.conflict('A customer with this mobile already exists');
+  }
+
+  const { rows } = await query(
+    `INSERT INTO customers (name, mobile)
+     VALUES ($1, $2)
+     RETURNING id, name AS full_name, mobile, pin_set, created_at`,
+    [fullName, mobile]
+  );
+
+  const customer = rows[0];
+
+  // Link to project if provided
+  if (projectId) {
+    await query(
+      `UPDATE projects SET customer_id = $1 WHERE id = $2`,
+      [customer.id, projectId]
+    );
+  }
+
+  return customer;
+}
+
 module.exports = {
   checkMobile,
   setPin,
@@ -323,4 +358,5 @@ module.exports = {
   getMessages,
   postAnnouncement,
   resetPin,
+  createCustomer,
 };

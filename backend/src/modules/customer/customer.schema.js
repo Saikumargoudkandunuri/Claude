@@ -26,4 +26,10 @@ const resetPin = z.object({
   customerId: z.string().uuid(),
 });
 
-module.exports = { checkMobile, setPin, login, announce, resetPin };
+const createCustomer = z.object({
+  fullName: z.string().min(1),
+  mobile: z.string().min(1),
+  projectId: z.string().uuid().optional(),
+});
+
+module.exports = { checkMobile, setPin, login, announce, resetPin, createCustomer };

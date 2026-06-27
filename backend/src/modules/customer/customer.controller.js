@@ -69,6 +69,12 @@ const resetPin = asyncHandler(async (req, res) => {
   ok(res, { success: true });
 });
 
+const createCustomer = asyncHandler(async (req, res) => {
+  const { fullName, mobile, projectId } = req.body;
+  const result = await service.createCustomer(fullName, mobile, projectId);
+  ok(res, result, 201);
+});
+
 module.exports = {
   checkMobile,
   setPin,
@@ -83,4 +89,5 @@ module.exports = {
   getMessages,
   postAnnouncement,
   resetPin,
+  createCustomer,
 };

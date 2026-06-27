@@ -29,5 +29,6 @@ router.get('/customer/messages', authenticateCustomer, controller.getMessages);
 // --- Admin routes (staff auth + admin role) ---
 router.post('/customer/admin/announce', authenticate, requireRole('admin'), validate(schema.announce), controller.postAnnouncement);
 router.post('/customer/admin/reset-pin', authenticate, requireRole('admin'), validate(schema.resetPin), controller.resetPin);
+router.post('/customer/admin/create', authenticate, requireRole('admin'), validate(schema.createCustomer), controller.createCustomer);
 
 module.exports = router;
