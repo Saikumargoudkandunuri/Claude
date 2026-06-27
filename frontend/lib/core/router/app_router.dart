@@ -50,7 +50,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loc = state.matchedLocation;
 
-      // Web build is customer-portal only — block all staff routes.
+      // Web build is customer-portal only — block all staff routes and let
+      // customer routes through without running the staff auth logic below
+      // (the customer portal manages its own authentication).
       if (kIsWeb) {
         const allowedPrefixes = [
           '/customer-login',
@@ -59,7 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ];
         final isAllowed =
             allowedPrefixes.any((p) => loc == p || loc.startsWith('$p/'));
-        if (!isAllowed) return '/customer-login';
+        return isAllowed ? null : '/customer-login';
       }
 
       final auth = ref.read(authControllerProvider);
