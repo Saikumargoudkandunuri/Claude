@@ -48,7 +48,6 @@ dependencies:
   geolocator: ^13.0.2
 
 dependency_overrides:
-  record_platform_interface: 1.2.0
   # UI utilities
   shimmer: ^3.0.0
   connectivity_plus: ^6.1.1
@@ -80,7 +79,7 @@ msix_config:
   display_name: ICMS - Metal & More
   publisher_display_name: Metal & More Interiors
   identity_name: com.metalandmore.icms
-  msix_version: 1.1.0.0
+  msix_version: 1.2.0.0
   logo_path: assets/icon/app_icon.png
   start_menu_icon_path: assets/icon/app_icon.png
   tile_icon_path: assets/icon/app_icon.png

@@ -26,6 +26,14 @@ import '../../features/reports/presentation/reports_home_screen.dart';
 import '../../features/tasks/presentation/task_panel_screen.dart';
 import '../../features/users/presentation/approvals_screen.dart';
 import '../../features/users/presentation/workers_screen.dart';
+import '../../features/customer_auth/presentation/customer_login_screen.dart';
+import '../../features/customer_auth/presentation/customer_set_pin_screen.dart';
+import '../../features/customer_portal/presentation/customer_home_screen.dart';
+import '../../features/customer_portal/presentation/customer_messages_screen.dart';
+import '../../features/customer_portal/presentation/customer_payments_screen.dart';
+import '../../features/customer_portal/presentation/customer_photos_screen.dart';
+import '../../features/customer_portal/presentation/customer_shell.dart';
+import '../../features/customer_portal/presentation/customer_timeline_screen.dart';
 import '../../shared/navigation/back_guard.dart';
 import '../widgets/role_scaffold.dart';
 
@@ -256,6 +264,43 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => BackGuard(
           child: ProjectDetailScreen(projectId: s.pathParameters['id']!),
         ),
+      ),
+
+      // ===== Customer auth routes (no bottom nav) =====
+      GoRoute(
+        path: '/customer-login',
+        builder: (_, __) => const CustomerLoginScreen(),
+      ),
+      GoRoute(
+        path: '/customer-set-pin',
+        builder: (_, state) => const CustomerSetPinScreen(),
+      ),
+
+      // ===== Customer portal shell =====
+      ShellRoute(
+        builder: (_, state, child) => CustomerShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/customer',
+            builder: (_, __) => const CustomerHomeScreen(),
+          ),
+          GoRoute(
+            path: '/customer/photos',
+            builder: (_, __) => const CustomerPhotosScreen(),
+          ),
+          GoRoute(
+            path: '/customer/timeline',
+            builder: (_, __) => const CustomerTimelineScreen(),
+          ),
+          GoRoute(
+            path: '/customer/payments',
+            builder: (_, __) => const CustomerPaymentsScreen(),
+          ),
+          GoRoute(
+            path: '/customer/messages',
+            builder: (_, __) => const CustomerMessagesScreen(),
+          ),
+        ],
       ),
     ],
   );

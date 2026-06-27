@@ -44,6 +44,11 @@ const config = {
     refreshTtlDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '30', 10),
   },
 
+  customerJwt: {
+    secret: process.env.CUSTOMER_JWT_SECRET || 'dev_customer_secret',
+    expiry: process.env.CUSTOMER_JWT_EXPIRY || '30d',
+  },
+
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
 
   storage: {

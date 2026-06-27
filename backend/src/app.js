@@ -32,6 +32,7 @@ const attendanceRoutes = require('./modules/attendance/attendance.routes');
 const weeklyStatusRoutes = require('./modules/weekly_status/weekly_status.routes');
 const snagRoutes = require('./modules/snag/snag.routes');
 const payrollRoutes = require('./modules/payroll/payroll.routes');
+const customerRoutes = require('./modules/customer/customer.routes');
 
 function createApp() {
   const app = express();
@@ -75,6 +76,10 @@ function createApp() {
 
   // Public auth endpoints (register/login/refresh) + a few authenticated ones.
   api.use('/auth', authRoutes);
+
+  // Customer portal routes — mounted before staff auth so public customer auth
+  // endpoints work and customer-authenticated routes use their own middleware.
+  api.use('/', customerRoutes);
 
   // Everything below requires a valid, approved account.
   api.use(apiLimiter);

@@ -1,11 +1,11 @@
 {
-    "name": "icms",
-    "short_name": "icms",
-    "start_url": ".",
+    "name": "Metal & More Interiors",
+    "short_name": "M&M Portal",
+    "start_url": "/customer-login",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#00D1DC",
+    "description": "Customer project tracking portal",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
