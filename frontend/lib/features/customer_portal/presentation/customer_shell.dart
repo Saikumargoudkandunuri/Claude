@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../theme/customer_theme.dart';
+import '../theme/portal_theme.dart';
 
 /// Bottom-navigation shell for the customer portal.
 ///
@@ -41,9 +41,9 @@ class CustomerShell extends ConsumerWidget {
       route: '/customer/payments',
     ),
     _CustomerTab(
-      label: 'Updates',
-      icon: Icons.campaign_outlined,
-      selectedIcon: Icons.campaign,
+      label: 'Journal',
+      icon: Icons.menu_book_outlined,
+      selectedIcon: Icons.menu_book,
       route: '/customer/messages',
     ),
   ];
@@ -69,30 +69,96 @@ class CustomerShell extends ConsumerWidget {
     final selectedIndex = _currentIndex(location);
 
     return Scaffold(
+      backgroundColor: PortalColors.neutral,
       body: child,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
+          color: Colors.white,
           border: Border(
-            top: BorderSide(color: CTheme.inactive, width: 0.5),
+            top: BorderSide(color: PortalColors.border, width: 0.8),
           ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: selectedIndex,
-          onTap: (i) => context.go(_tabs[i].route),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: CTheme.primary,
-          unselectedItemColor: CTheme.textLight,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          backgroundColor: CTheme.bgWhite,
-          elevation: 0,
-          items: [
-            for (final tab in _tabs)
-              BottomNavigationBarItem(
-                icon: Icon(tab.icon),
-                activeIcon: Icon(tab.selectedIcon),
-                label: tab.label,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 62,
+            child: Row(
+              children: [
+                for (var i = 0; i < _tabs.length; i++)
+                  Expanded(
+                    child: _NavItem(
+                      tab: _tabs[i],
+                      selected: i == selectedIndex,
+                      onTap: () => context.go(_tabs[i].route),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single bottom-nav item with a teal dot indicator and a tap scale bounce.
+class _NavItem extends StatefulWidget {
+  const _NavItem({
+    required this.tab,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _CustomerTab tab;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  double _scale = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        widget.selected ? PortalColors.primary : PortalColors.textSoft;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _scale = 0.85),
+      onTapUp: (_) => setState(() => _scale = 1),
+      onTapCancel: () => setState(() => _scale = 1),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 120),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 3,
+              height: 3,
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    widget.selected ? PortalColors.primary : Colors.transparent,
               ),
+            ),
+            Icon(
+              widget.selected ? widget.tab.selectedIcon : widget.tab.icon,
+              color: color,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              widget.tab.label,
+              style: PortalText.label(size: 10, color: color).copyWith(
+                fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../application/customer_providers.dart';
-import '../theme/customer_theme.dart';
+import '../theme/portal_theme.dart';
+import 'milestone_celebration_overlay.dart';
 
-/// Vertical timeline showing all 13 project stages with visual distinction
-/// between completed, current, and upcoming stages.
+/// Vertical project journey — all 13 stages as premium cards with completed,
+/// current (pulsing), and future visual states. Data fetching preserved.
 class CustomerTimelineScreen extends ConsumerWidget {
   const CustomerTimelineScreen({super.key});
 
-  /// The 13 stages in order (matching backend enum values).
   static const _stageKeys = [
     'discussion',
     'site_measurement',
@@ -27,7 +27,6 @@ class CustomerTimelineScreen extends ConsumerWidget {
     'handover',
   ];
 
-  /// Human-readable labels for each stage.
   static const _stageLabels = {
     'discussion': 'Discussion',
     'site_measurement': 'Site Measurement',
@@ -50,86 +49,35 @@ class CustomerTimelineScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(customerOverviewProvider);
 
     return Scaffold(
-      backgroundColor: CTheme.bgSoft,
+      backgroundColor: PortalColors.neutral,
       appBar: AppBar(
-        title: const Text(
-          'Project Journey',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: CTheme.textDark,
-          ),
-        ),
-        backgroundColor: CTheme.bgWhite,
-        foregroundColor: CTheme.textDark,
+        title: Text('Project Journey', style: PortalText.heading(size: 20)),
+        backgroundColor: PortalColors.cardBg,
+        foregroundColor: PortalColors.text,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
       body: overviewAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: CTheme.primary),
+          child: CircularProgressIndicator(color: PortalColors.primary),
         ),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(CTheme.p24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    size: 48, color: CTheme.textLight),
-                const SizedBox(height: CTheme.p12),
-                const Text(
-                  'Failed to load timeline',
-                  style: TextStyle(color: CTheme.textMid),
-                ),
-                const SizedBox(height: CTheme.p8),
-                TextButton(
-                  onPressed: () {
-                    ref.invalidate(customerOverviewProvider);
-                    ref.invalidate(customerTimelineProvider);
-                  },
-                  child: const Text(
-                    'Retry',
-                    style: TextStyle(color: CTheme.primary),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        error: (e, _) => _error(
+          'Failed to load timeline',
+          () {
+            ref.invalidate(customerOverviewProvider);
+            ref.invalidate(customerTimelineProvider);
+          },
         ),
         data: (overview) {
           final currentStage = (overview['current_stage'] as String?) ?? '';
 
           return timelineAsync.when(
             loading: () => const Center(
-              child: CircularProgressIndicator(color: CTheme.primary),
+              child: CircularProgressIndicator(color: PortalColors.primary),
             ),
-            error: (e, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: CTheme.textLight,
-                  ),
-                  const SizedBox(height: CTheme.p12),
-                  const Text(
-                    'Failed to load timeline data',
-                    style: TextStyle(color: CTheme.textMid),
-                  ),
-                  const SizedBox(height: CTheme.p8),
-                  TextButton(
-                    onPressed: () => ref.invalidate(customerTimelineProvider),
-                    child: const Text(
-                      'Retry',
-                      style: TextStyle(color: CTheme.primary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            error: (e, _) => _error('Failed to load timeline data',
+                () => ref.invalidate(customerTimelineProvider),),
             data: (timelineEntries) {
-              // Build a map of stage → earliest changed_at date from API data
               final stageDates = <String, String>{};
               for (final entry in timelineEntries) {
                 final stage = entry['stage'] as String? ?? '';
@@ -141,27 +89,23 @@ class CustomerTimelineScreen extends ConsumerWidget {
                 }
               }
 
-              // Determine the index of the current stage
               final currentIdx = _stageKeys.indexOf(currentStage);
 
               return RefreshIndicator(
-                color: CTheme.primary,
+                color: PortalColors.primary,
                 onRefresh: () async {
                   ref.invalidate(customerOverviewProvider);
                   ref.invalidate(customerTimelineProvider);
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: CTheme.p20,
-                    vertical: CTheme.p24,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   itemCount: _stageKeys.length,
                   itemBuilder: (context, index) {
                     final stageKey = _stageKeys[index];
                     final label = _stageLabels[stageKey] ?? stageKey;
                     final isLast = index == _stageKeys.length - 1;
 
-                    // Determine stage status
                     _StageStatus status;
                     if (currentIdx >= 0 && index < currentIdx) {
                       status = _StageStatus.completed;
@@ -170,7 +114,6 @@ class CustomerTimelineScreen extends ConsumerWidget {
                     } else {
                       status = _StageStatus.upcoming;
                     }
-
                     if (stageDates.containsKey(stageKey) &&
                         status == _StageStatus.upcoming &&
                         currentIdx < 0) {
@@ -178,6 +121,9 @@ class CustomerTimelineScreen extends ConsumerWidget {
                     }
 
                     final dateStr = stageDates[stageKey];
+                    final nextLabel = index < _stageKeys.length - 1
+                        ? (_stageLabels[_stageKeys[index + 1]] ?? '')
+                        : '';
 
                     return _StaggeredItem(
                       index: index,
@@ -185,7 +131,16 @@ class CustomerTimelineScreen extends ConsumerWidget {
                         label: label,
                         status: status,
                         dateStr: dateStr,
+                        nextLabel: nextLabel,
                         isLast: isLast,
+                        onTap: () => _maybeCelebrate(
+                          context,
+                          stageKey: stageKey,
+                          label: label,
+                          nextLabel: nextLabel,
+                          dateStr: dateStr,
+                          status: status,
+                        ),
                       ),
                     );
                   },
@@ -197,28 +152,70 @@ class CustomerTimelineScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _maybeCelebrate(
+    BuildContext context, {
+    required String stageKey,
+    required String label,
+    required String nextLabel,
+    required String? dateStr,
+    required _StageStatus status,
+  }) async {
+    if (status != _StageStatus.completed || dateStr == null) return;
+    final completedAt = DateTime.tryParse(dateStr);
+    if (completedAt == null) return;
+    if (DateTime.now().difference(completedAt).inHours > 24) return;
+
+    await MilestoneCelebrationOverlay.showOnce(
+      context,
+      stageKey: stageKey,
+      stageName: label,
+      nextStageName: nextLabel,
+      completedOn: DateFormat('d MMM yyyy').format(completedAt),
+    );
+  }
+
+  Widget _error(String message, VoidCallback onRetry) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline,
+                size: 48, color: PortalColors.textSoft,),
+            const SizedBox(height: 12),
+            Text(message, style: PortalText.body(color: PortalColors.textSoft)),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRetry,
+              child: Text('Retry',
+                  style: PortalText.body(color: PortalColors.primary),),
+            ),
+          ],
+        ),
+      );
 }
 
 enum _StageStatus { completed, current, upcoming }
 
-/// A single row in the vertical timeline.
 class _TimelineItem extends StatelessWidget {
   const _TimelineItem({
     required this.label,
     required this.status,
     required this.isLast,
+    required this.nextLabel,
+    required this.onTap,
     this.dateStr,
   });
 
   final String label;
   final _StageStatus status;
   final String? dateStr;
+  final String nextLabel;
   final bool isLast;
+  final VoidCallback onTap;
 
   String _formatDate(String iso) {
     try {
-      final dt = DateTime.parse(iso);
-      return DateFormat('d MMM yyyy').format(dt);
+      return DateFormat('d MMM yyyy').format(DateTime.parse(iso));
     } catch (_) {
       return iso;
     }
@@ -230,9 +227,8 @@ class _TimelineItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline connector column (dot + line)
           SizedBox(
-            width: 44,
+            width: 32,
             child: Column(
               children: [
                 const SizedBox(height: 4),
@@ -242,190 +238,143 @@ class _TimelineItem extends StatelessWidget {
                     child: Container(
                       width: 2,
                       color: status == _StageStatus.upcoming
-                          ? CTheme.inactive
-                          : CTheme.primary.withValues(alpha: 0.3),
+                          ? PortalColors.border
+                          : PortalColors.primary.withValues(alpha: 0.4),
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: CTheme.p12),
-          // Content card
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: CTheme.p12),
-              padding: const EdgeInsets.all(CTheme.p16),
-              decoration: BoxDecoration(
-                color: CTheme.bgWhite,
-                borderRadius: CTheme.r12,
-                boxShadow: CTheme.cardShadow,
-                border: status == _StageStatus.current
-                    ? Border.all(color: CTheme.primary, width: 1.5)
-                    : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: status == _StageStatus.current
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: status == _StageStatus.upcoming
-                          ? CTheme.textLight
-                          : CTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: CTheme.p4),
-                  if (status == _StageStatus.completed && dateStr != null)
-                    Text(
-                      _formatDate(dateStr!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: CTheme.primary.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    )
-                  else if (status == _StageStatus.current)
-                    Row(
-                      children: [
-                        _PulsingDot(color: CTheme.primary),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'Work in progress',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: CTheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    )
-                  else if (status == _StageStatus.upcoming)
-                    const Text(
-                      'Upcoming',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: CTheme.textLight,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(width: 12),
+          Expanded(child: _card()),
         ],
       ),
     );
+  }
+
+  Widget _card() {
+    switch (status) {
+      case _StageStatus.completed:
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FFFE),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: PortalColors.primary, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: PortalText.heading(
+                      size: 15, color: PortalColors.primaryDark,),),
+              const SizedBox(height: 4),
+              Text(
+                dateStr != null
+                    ? 'Completed on ${_formatDate(dateStr!)}'
+                    : 'Completed',
+                style: PortalText.caption(size: 12),
+              ),
+            ],
+          ),
+        );
+      case _StageStatus.current:
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: PortalColors.cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: PortalColors.primary, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: PortalColors.primary.withValues(alpha: 0.125),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(label, style: PortalText.heading(size: 16)),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4,),
+                      decoration: BoxDecoration(
+                        color: PortalColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('In Progress',
+                          style: PortalText.caption(
+                              size: 11, color: Colors.white,),),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text('Work is actively underway at your site.',
+                    style: PortalText.caption(size: 12),),
+                if (nextLabel.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('Next: $nextLabel',
+                      style: PortalText.caption(size: 11)
+                          .copyWith(fontStyle: FontStyle.italic),),
+                ],
+              ],
+            ),
+          ),
+        );
+      case _StageStatus.upcoming:
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAFAFA),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: PortalColors.border),
+          ),
+          child: Text(label,
+              style: PortalText.body(size: 14, color: PortalColors.textSoft),),
+        );
+    }
   }
 
   Widget _buildIndicator() {
     switch (status) {
       case _StageStatus.completed:
         return Container(
-          width: 28,
-          height: 28,
+          width: 24,
+          height: 24,
           decoration: const BoxDecoration(
-            color: CTheme.primary,
+            color: PortalColors.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check, color: CTheme.bgWhite, size: 16),
+          child: const Icon(Icons.check, color: Colors.white, size: 15),
         );
       case _StageStatus.current:
-        return Container(
+        return const SizedBox(
           width: 28,
           height: 28,
-          decoration: BoxDecoration(
-            color: CTheme.primary.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-            border: Border.all(color: CTheme.primary, width: 2.5),
-          ),
-          child: Center(
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: CTheme.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
+          child: Center(child: PortalPulseDot(size: 14)),
         );
       case _StageStatus.upcoming:
         return Container(
-          width: 28,
-          height: 28,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
-            color: CTheme.bgSoft,
+            color: PortalColors.neutral,
             shape: BoxShape.circle,
-            border: Border.all(color: CTheme.inactive, width: 1.5),
-          ),
-          child: Center(
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: CTheme.inactive,
-                shape: BoxShape.circle,
-              ),
-            ),
+            border: Border.all(color: PortalColors.border, width: 1.5),
           ),
         );
     }
-  }
-}
-
-/// A small dot that pulses (scales in and out) to indicate the current stage.
-class _PulsingDot extends StatefulWidget {
-  const _PulsingDot({required this.color});
-  final Color color;
-
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: widget.color,
-              shape: BoxShape.circle,
-            ),
-          ),
-        );
-      },
-    );
   }
 }
 
