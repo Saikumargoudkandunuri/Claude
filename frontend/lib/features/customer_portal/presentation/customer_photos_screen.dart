@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../application/customer_providers.dart';
+import '../theme/customer_theme.dart';
 
 /// Displays a grid of project photos for the customer portal.
 ///
@@ -12,21 +13,29 @@ import '../application/customer_providers.dart';
 class CustomerPhotosScreen extends ConsumerWidget {
   const CustomerPhotosScreen({super.key});
 
-  static const _brandTeal = Color(0xFF00D1DC);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final photosAsync = ref.watch(customerPhotosProvider);
 
     return Scaffold(
+      backgroundColor: CTheme.bgSoft,
       appBar: AppBar(
-        title: const Text('Project Photos', style: TextStyle(fontSize: 16)),
-        backgroundColor: _brandTeal,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Site Photos',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: CTheme.textDark,
+          ),
+        ),
+        backgroundColor: CTheme.bgWhite,
+        foregroundColor: CTheme.textDark,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       body: photosAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: CTheme.primary),
+        ),
         error: (error, _) => _ErrorState(
           message: error.toString(),
           onRetry: () => ref.invalidate(customerPhotosProvider),
@@ -36,17 +45,16 @@ class CustomerPhotosScreen extends ConsumerWidget {
             return const _EmptyState();
           }
           return RefreshIndicator(
-            color: _brandTeal,
+            color: CTheme.primary,
             onRefresh: () async => ref.invalidate(customerPhotosProvider),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
                 return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                  padding: const EdgeInsets.all(CTheme.p12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                     childAspectRatio: 0.85,
                   ),
                   itemCount: photos.length,
@@ -68,8 +76,6 @@ class CustomerPhotosScreen extends ConsumerWidget {
 
   void _openFullScreen(BuildContext context, Map<String, dynamic> photo) {
     final name = photo['original_name']?.toString() ?? 'Photo';
-    final id = photo['id']?.toString() ?? '';
-    // If the photo has a url field, use it; otherwise construct from id
     final url = photo['url']?.toString() ?? '';
 
     Navigator.of(context).push(
@@ -77,7 +83,6 @@ class CustomerPhotosScreen extends ConsumerWidget {
         builder: (_) => _FullScreenPhotoView(
           photoName: name,
           photoUrl: url,
-          photoId: id,
         ),
       ),
     );
@@ -92,7 +97,6 @@ class _PhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = photo['original_name']?.toString() ?? 'Untitled';
     final createdAt = photo['created_at']?.toString();
     final url = photo['url']?.toString();
 
@@ -108,15 +112,18 @@ class _PhotoCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: url != null && url.isNotEmpty
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: CTheme.r16,
+          boxShadow: CTheme.cardShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: CTheme.r16,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Photo
+              url != null && url.isNotEmpty
                   ? Image.network(
                       url,
                       fit: BoxFit.cover,
@@ -127,35 +134,41 @@ class _PhotoCard extends StatelessWidget {
                       },
                     )
                   : _photoPlaceholder(),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+              // Bottom gradient overlay with date
+              if (formattedDate.isNotEmpty)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(
+                      CTheme.p12,
+                      CTheme.p24,
+                      CTheme.p12,
+                      CTheme.p8,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (formattedDate.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      formattedDate,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black54,
+                        ],
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+                    child: Text(
+                      formattedDate,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: CTheme.bgWhite,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -163,15 +176,22 @@ class _PhotoCard extends StatelessWidget {
 
   Widget _photoPlaceholder() {
     return Container(
-      color: Colors.grey.shade100,
-      child: Icon(Icons.photo_outlined, size: 40, color: Colors.grey.shade400),
+      color: CTheme.bgSoft,
+      child: const Center(
+        child: Icon(Icons.photo_outlined, size: 40, color: CTheme.textLight),
+      ),
     );
   }
 
   Widget _photoLoadingPlaceholder() {
     return Container(
-      color: Colors.grey.shade100,
-      child: const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      color: CTheme.bgSoft,
+      child: const Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 1.5,
+          color: CTheme.primary,
+        ),
+      ),
     );
   }
 }
@@ -188,21 +208,21 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.photo_library_outlined,
             size: 64,
-            color: Colors.grey.shade300,
+            color: CTheme.textLight.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: CTheme.p12),
           const Text(
             'No photos yet',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+              color: CTheme.textMid,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
+          const SizedBox(height: CTheme.p8),
+          const Text(
             'Project photos will appear here once uploaded',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: CTheme.textLight),
             textAlign: TextAlign.center,
           ),
         ],
@@ -217,38 +237,45 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  static const _brandTeal = Color(0xFF00D1DC);
-
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(CTheme.p24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-            const SizedBox(height: 12),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Color(0xFFDC2626),
+            ),
+            const SizedBox(height: CTheme.p12),
             const Text(
               'Failed to load photos',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: CTheme.textDark,
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: CTheme.p8),
             Text(
               message,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: const TextStyle(fontSize: 12, color: CTheme.textMid),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: CTheme.p16),
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _brandTeal,
-                foregroundColor: Colors.white,
+                backgroundColor: CTheme.primary,
+                foregroundColor: CTheme.bgWhite,
+                shape: RoundedRectangleBorder(borderRadius: CTheme.r12),
               ),
             ),
           ],
@@ -262,12 +289,10 @@ class _FullScreenPhotoView extends StatelessWidget {
   const _FullScreenPhotoView({
     required this.photoName,
     required this.photoUrl,
-    required this.photoId,
   });
 
   final String photoName;
   final String photoUrl;
-  final String photoId;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +300,7 @@ class _FullScreenPhotoView extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        foregroundColor: CTheme.bgWhite,
         title: Text(
           photoName,
           style: const TextStyle(fontSize: 13),
@@ -302,7 +327,9 @@ class _FullScreenPhotoView extends StatelessWidget {
                   ),
                   loadingBuilder: (_, child, progress) {
                     if (progress == null) return child;
-                    return const CircularProgressIndicator(color: Colors.white);
+                    return const CircularProgressIndicator(
+                      color: CTheme.bgWhite,
+                    );
                   },
                 )
               : const Column(

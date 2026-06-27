@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/network/customer_dio_client.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/loading_view.dart';
+import '../../customer_auth/application/customer_auth_controller.dart';
 import '../application/customer_providers.dart';
+import '../theme/customer_theme.dart';
 
-/// Customer home screen with hero card, photos, stage strip, payments, and messages.
-///
-/// Uses [RefreshIndicator] wrapping a [CustomScrollView] so the customer can
-/// pull-to-refresh all data at once.
+/// Customer home screen with hero card, today's update, photos, mini timeline,
+/// and payment summary. Pull-to-refresh. No AppBar — hero card IS the header.
 class CustomerHomeScreen extends ConsumerWidget {
   const CustomerHomeScreen({super.key});
-
-  static const _brandTeal = Color(0xFF00D1DC);
-  static const _brandTealDark = Color(0xFF0097A7);
 
   /// The 13 standard project stages in order.
   static const _stages = [
@@ -37,7 +33,7 @@ class CustomerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
-      color: _brandTeal,
+      color: CTheme.primary,
       onRefresh: () async {
         ref.invalidate(customerOverviewProvider);
         ref.invalidate(customerPhotosProvider);
@@ -49,18 +45,16 @@ class CustomerHomeScreen extends ConsumerWidget {
         slivers: [
           // Hero progress card
           SliverToBoxAdapter(child: _HeroCard(ref: ref)),
+          // Today's update
+          SliverToBoxAdapter(child: _TodaysUpdate(ref: ref)),
           // Latest photos section
           SliverToBoxAdapter(child: _PhotosSection(ref: ref)),
-          // Stage strip
-          SliverToBoxAdapter(child: _StageStrip(ref: ref)),
+          // Mini timeline
+          SliverToBoxAdapter(child: _MiniTimeline(ref: ref)),
           // Payment summary
           SliverToBoxAdapter(child: _PaymentSection(ref: ref)),
-          // Recent messages
-          SliverToBoxAdapter(child: _MessagesSection(ref: ref)),
           // Bottom padding
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.xxl),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -75,101 +69,210 @@ class _HeroCard extends StatelessWidget {
   const _HeroCard({required this.ref});
   final WidgetRef ref;
 
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: CTheme.r16),
+        title: const Text('Logout', style: TextStyle(color: CTheme.textDark)),
+        content: const Text(
+          'Log out of customer portal?',
+          style: TextStyle(color: CTheme.textMid),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child:
+                const Text('Cancel', style: TextStyle(color: CTheme.textMid)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await CustomerDioClient.clearToken();
+    ref.read(customerAuthControllerProvider.notifier).logout();
+
+    ref.invalidate(customerOverviewProvider);
+    ref.invalidate(customerTimelineProvider);
+    ref.invalidate(customerPhotosProvider);
+    ref.invalidate(customerDrawingsProvider);
+    ref.invalidate(customerPaymentSummaryProvider);
+    ref.invalidate(customerNotificationsProvider);
+    ref.invalidate(customerMessagesProvider);
+
+    if (context.mounted) {
+      context.go('/customer-login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final overview = ref.watch(customerOverviewProvider);
 
     return overview.when(
       loading: () => Container(
-        height: 180,
-        margin: const EdgeInsets.all(AppSpacing.lg),
+        height: 200,
+        margin: const EdgeInsets.all(CTheme.p16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          gradient: const LinearGradient(
-            colors: [
-              CustomerHomeScreen._brandTeal,
-              CustomerHomeScreen._brandTealDark,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: CTheme.r24,
+          gradient: CTheme.heroGradient,
         ),
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: CTheme.bgWhite),
         ),
       ),
       error: (e, _) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: ErrorView(
-          message: 'Unable to load project info',
-          onRetry: () => ref.invalidate(customerOverviewProvider),
+        padding: const EdgeInsets.all(CTheme.p16),
+        child: Container(
+          padding: const EdgeInsets.all(CTheme.p24),
+          decoration: BoxDecoration(
+            borderRadius: CTheme.r24,
+            gradient: CTheme.heroGradient,
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, color: CTheme.bgWhite, size: 32),
+              const SizedBox(height: CTheme.p8),
+              const Text(
+                'Unable to load project info',
+                style: TextStyle(color: CTheme.bgWhite, fontSize: 14),
+              ),
+              const SizedBox(height: CTheme.p8),
+              TextButton(
+                onPressed: () => ref.invalidate(customerOverviewProvider),
+                child: const Text(
+                  'Retry',
+                  style: TextStyle(color: CTheme.bgWhite),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       data: (data) {
         final projectName = data['project_name']?.toString() ?? 'Your Project';
+        final customerName = data['customer_name']?.toString() ?? '';
         final currentStage = data['current_stage']?.toString() ?? '';
         final stageLabel = Formatters.stageLabel(currentStage);
+        final expectedDate = data['expected_completion']?.toString();
 
-        return Container(
-          margin: const EdgeInsets.all(AppSpacing.lg),
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            gradient: const LinearGradient(
-              colors: [
-                CustomerHomeScreen._brandTeal,
-                CustomerHomeScreen._brandTealDark,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        final stageIndex = CustomerHomeScreen._stages.indexOf(currentStage);
+        final progress = stageIndex >= 0
+            ? (stageIndex + 1) / CustomerHomeScreen._stages.length
+            : 0.0;
+
+        return _FadeSlideIn(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(
+              CTheme.p16,
+              CTheme.p16,
+              CTheme.p16,
+              CTheme.p8,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: CustomerHomeScreen._brandTeal.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                projectName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Current Stage: $stageLabel',
-                      style: const TextStyle(
-                        color: Colors.white70,
+            padding: const EdgeInsets.all(CTheme.p24),
+            decoration: BoxDecoration(
+              borderRadius: CTheme.r24,
+              gradient: CTheme.heroGradient,
+              boxShadow: CTheme.heroShadow,
+            ),
+            child: Stack(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _greeting(),
+                      style: TextStyle(
+                        color: CTheme.bgWhite.withValues(alpha: 0.85),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    const SizedBox(height: CTheme.p4),
+                    Text(
+                      customerName.isNotEmpty ? customerName : 'Customer',
+                      style: const TextStyle(
+                        color: CTheme.bgWhite,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: CTheme.p4),
+                    Text(
+                      projectName,
+                      style: TextStyle(
+                        color: CTheme.bgWhite.withValues(alpha: 0.8),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: CTheme.p20),
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: CTheme.r8,
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: CTheme.bgWhite.withValues(alpha: 0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          CTheme.bgWhite,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: CTheme.p12),
+                    // Badges
+                    Row(
+                      children: [
+                        _Badge(label: stageLabel, icon: Icons.engineering),
+                        const SizedBox(width: CTheme.p8),
+                        if (expectedDate != null)
+                          _Badge(
+                            label: expectedDate,
+                            icon: Icons.calendar_today,
+                          ),
+                        const Spacer(),
+                        Text(
+                          '${(progress * 100).round()}%',
+                          style: const TextStyle(
+                            color: CTheme.bgWhite,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                // Logout icon top-right
+                Positioned(
+                  top: -8,
+                  right: -8,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.logout_rounded,
+                      color: CTheme.bgWhite.withValues(alpha: 0.8),
+                      size: 20,
+                    ),
+                    tooltip: 'Logout',
+                    onPressed: () => _handleLogout(context, ref),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              // Stage progress indicator
-              _StageProgressBar(currentStage: currentStage),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -177,39 +280,124 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _StageProgressBar extends StatelessWidget {
-  const _StageProgressBar({required this.currentStage});
-  final String currentStage;
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final stageIndex = CustomerHomeScreen._stages.indexOf(currentStage);
-    final progress = stageIndex >= 0
-        ? (stageIndex + 1) / CustomerHomeScreen._stages.length
-        : 0.0;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CTheme.p8,
+        vertical: CTheme.p4,
+      ),
+      decoration: BoxDecoration(
+        color: CTheme.bgWhite.withValues(alpha: 0.2),
+        borderRadius: CTheme.r8,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: CTheme.bgWhite, size: 12),
+          const SizedBox(width: CTheme.p4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: CTheme.bgWhite,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 6,
-            backgroundColor: Colors.white.withValues(alpha: 0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+// ---------------------------------------------------------------------------
+// Today's Update
+// ---------------------------------------------------------------------------
+
+class _TodaysUpdate extends StatelessWidget {
+  const _TodaysUpdate({required this.ref});
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = ref.watch(customerMessagesProvider);
+
+    return messages.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (msgList) {
+        if (msgList.isEmpty) return const SizedBox.shrink();
+        final latest = msgList.first as Map<String, dynamic>;
+        final body =
+            latest['body']?.toString() ?? latest['message']?.toString() ?? '';
+        if (body.isEmpty) return const SizedBox.shrink();
+
+        return _FadeSlideIn(
+          delay: const Duration(milliseconds: 100),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CTheme.p16),
+            child: Container(
+              padding: const EdgeInsets.all(CTheme.p16),
+              decoration: BoxDecoration(
+                color: CTheme.bgWhite,
+                borderRadius: CTheme.r16,
+                boxShadow: CTheme.cardShadow,
+                border: Border.all(
+                  color: CTheme.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: CTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: CTheme.r8,
+                    ),
+                    child: const Icon(
+                      Icons.campaign,
+                      color: CTheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: CTheme.p12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Today's Update",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: CTheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: CTheme.p4),
+                        Text(
+                          body,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: CTheme.textMid,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${(progress * 100).round()}%',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -233,53 +421,71 @@ class _PhotosSection extends StatelessWidget {
         if (photoList.isEmpty) return const SizedBox.shrink();
         final latest = photoList.take(10).toList();
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Latest Photos',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 100,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: latest.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: AppSpacing.sm),
-                  itemBuilder: (context, index) {
-                    final photo = latest[index] as Map<String, dynamic>;
-                    final url = photo['url']?.toString() ?? '';
+        return _FadeSlideIn(
+          delay: const Duration(milliseconds: 200),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              CTheme.p16,
+              CTheme.p20,
+              CTheme.p16,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Site Photos',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: CTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: CTheme.p12),
+                SizedBox(
+                  height: 150,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: latest.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: CTheme.p12),
+                    itemBuilder: (context, index) {
+                      final photo = latest[index] as Map<String, dynamic>;
+                      final url = photo['url']?.toString() ?? '';
 
-                    return GestureDetector(
-                      onTap: () => _showFullPhoto(context, url),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppSpacing.radius),
-                        child: Image.network(
-                          url,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 100,
-                            height: 100,
-                            color: AppColors.border,
-                            child: const Icon(
-                              Icons.broken_image_outlined,
-                              color: AppColors.textMuted,
+                      return GestureDetector(
+                        onTap: () => _showFullPhoto(context, url),
+                        child: Container(
+                          width: 140,
+                          decoration: BoxDecoration(
+                            borderRadius: CTheme.r16,
+                            boxShadow: CTheme.cardShadow,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: CTheme.r16,
+                            child: Image.network(
+                              url,
+                              width: 140,
+                              height: 150,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 140,
+                                height: 150,
+                                color: CTheme.bgSoft,
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: CTheme.textLight,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -291,7 +497,7 @@ class _PhotosSection extends StatelessWidget {
       context: context,
       builder: (_) => Dialog(
         backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(AppSpacing.lg),
+        insetPadding: const EdgeInsets.all(CTheme.p16),
         child: Stack(
           children: [
             Center(
@@ -325,133 +531,171 @@ class _PhotosSection extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Stage Strip — Horizontal scrollable 13-stage progression
+// Mini Timeline (last done, current, next)
 // ---------------------------------------------------------------------------
 
-class _StageStrip extends StatelessWidget {
-  const _StageStrip({required this.ref});
+class _MiniTimeline extends StatelessWidget {
+  const _MiniTimeline({required this.ref});
   final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
     final timeline = ref.watch(customerTimelineProvider);
+    final overview = ref.watch(customerOverviewProvider);
 
-    return timeline.when(
+    return overview.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
-      data: (stages) {
-        // Build a set of completed/current stages from timeline data
-        final completedStages = <String>{};
-        String? currentStage;
+      data: (overviewData) {
+        final currentStage = overviewData['current_stage']?.toString() ?? '';
+        final currentIdx = CustomerHomeScreen._stages.indexOf(currentStage);
+        if (currentIdx < 0) return const SizedBox.shrink();
 
-        for (final s in stages) {
-          final stage = (s as Map<String, dynamic>)['stage']?.toString() ?? '';
-          final isCurrent = s['is_current'] == true;
-          final completedAt = s['completed_at'];
+        return timeline.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (_) {
+            final stages = <_MiniStageData>[];
 
-          if (isCurrent) {
-            currentStage = stage;
-          }
-          if (completedAt != null) {
-            completedStages.add(stage);
-          }
-        }
+            // Previous
+            if (currentIdx > 0) {
+              stages.add(_MiniStageData(
+                label: Formatters.stageLabel(
+                  CustomerHomeScreen._stages[currentIdx - 1],
+                ),
+                status: _MiniStatus.done,
+              ));
+            }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Project Stages',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 72,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: CustomerHomeScreen._stages.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 2),
-                  itemBuilder: (context, index) {
-                    final stage = CustomerHomeScreen._stages[index];
-                    final isCompleted = completedStages.contains(stage);
-                    final isCurrent = stage == currentStage;
+            // Current
+            stages.add(_MiniStageData(
+              label: Formatters.stageLabel(currentStage),
+              status: _MiniStatus.current,
+            ));
 
-                    return _StageChipItem(
-                      label: Formatters.stageLabel(stage),
-                      isCompleted: isCompleted,
-                      isCurrent: isCurrent,
-                    );
-                  },
+            // Next
+            if (currentIdx < CustomerHomeScreen._stages.length - 1) {
+              stages.add(_MiniStageData(
+                label: Formatters.stageLabel(
+                  CustomerHomeScreen._stages[currentIdx + 1],
+                ),
+                status: _MiniStatus.upcoming,
+              ));
+            }
+
+            return _FadeSlideIn(
+              delay: const Duration(milliseconds: 300),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CTheme.p16,
+                  CTheme.p20,
+                  CTheme.p16,
+                  0,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(CTheme.p20),
+                  decoration: BoxDecoration(
+                    color: CTheme.bgWhite,
+                    borderRadius: CTheme.r16,
+                    boxShadow: CTheme.cardShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Project Progress',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: CTheme.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: CTheme.p16),
+                      ...stages.map((s) => _MiniStageRow(data: s)),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 }
 
-class _StageChipItem extends StatelessWidget {
-  const _StageChipItem({
-    required this.label,
-    required this.isCompleted,
-    required this.isCurrent,
-  });
+enum _MiniStatus { done, current, upcoming }
 
+class _MiniStageData {
+  const _MiniStageData({required this.label, required this.status});
   final String label;
-  final bool isCompleted;
-  final bool isCurrent;
+  final _MiniStatus status;
+}
+
+class _MiniStageRow extends StatelessWidget {
+  const _MiniStageRow({required this.data});
+  final _MiniStageData data;
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor;
+    Color dotColor;
     Color textColor;
+    FontWeight weight;
     IconData? icon;
 
-    if (isCompleted) {
-      bgColor = AppColors.success.withValues(alpha: 0.1);
-      textColor = AppColors.success;
-      icon = Icons.check_circle;
-    } else if (isCurrent) {
-      bgColor = CustomerHomeScreen._brandTeal.withValues(alpha: 0.15);
-      textColor = CustomerHomeScreen._brandTeal;
-      icon = Icons.radio_button_checked;
-    } else {
-      bgColor = AppColors.border.withValues(alpha: 0.5);
-      textColor = AppColors.textMuted;
-      icon = Icons.circle_outlined;
+    switch (data.status) {
+      case _MiniStatus.done:
+        dotColor = CTheme.primary;
+        textColor = CTheme.textMid;
+        weight = FontWeight.w500;
+        icon = Icons.check_circle;
+      case _MiniStatus.current:
+        dotColor = CTheme.primary;
+        textColor = CTheme.textDark;
+        weight = FontWeight.w700;
+        icon = Icons.radio_button_checked;
+      case _MiniStatus.upcoming:
+        dotColor = CTheme.inactive;
+        textColor = CTheme.textLight;
+        weight = FontWeight.w500;
+        icon = Icons.circle_outlined;
     }
 
-    return Container(
-      width: 80,
-      padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.sm,
-        horizontal: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CTheme.p12),
+      child: Row(
         children: [
-          Icon(icon, size: 18, color: textColor),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: textColor,
+          Icon(icon, color: dotColor, size: 20),
+          const SizedBox(width: CTheme.p12),
+          Expanded(
+            child: Text(
+              data.label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: weight,
+                color: textColor,
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
+          if (data.status == _MiniStatus.current)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CTheme.p8,
+                vertical: CTheme.p4,
+              ),
+              decoration: BoxDecoration(
+                color: CTheme.primary.withValues(alpha: 0.1),
+                borderRadius: CTheme.r8,
+              ),
+              child: const Text(
+                'In Progress',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: CTheme.primary,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -474,62 +718,88 @@ class _PaymentSection extends StatelessWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (data) {
-        final quotation = (data['total_quoted'] as num?) ?? 0;
+        final quotation = (data['total_quoted'] as num?) ??
+            (data['quotation_amount'] as num?) ??
+            0;
         final received = (data['total_received'] as num?) ?? 0;
-        final outstanding = (data['outstanding'] as num?) ?? 0;
+        final outstanding = (data['outstanding'] as num?) ??
+            (data['outstanding_balance'] as num?) ??
+            0;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+        if (quotation == 0 && received == 0) return const SizedBox.shrink();
+
+        final percent =
+            quotation > 0 ? (received / quotation).clamp(0.0, 1.0) : 0.0;
+
+        return _FadeSlideIn(
+          delay: const Duration(milliseconds: 400),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              CTheme.p16,
+              CTheme.p20,
+              CTheme.p16,
+              0,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(CTheme.p20),
+              decoration: BoxDecoration(
+                color: CTheme.bgWhite,
+                borderRadius: CTheme.r16,
+                boxShadow: CTheme.cardShadow,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Payment Summary',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
-                      Expanded(
-                        child: _PaymentItem(
-                          label: 'Quotation',
-                          value: Formatters.currency(quotation),
-                          color: AppColors.textPrimary,
+                      const Text(
+                        'Payment Summary',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: CTheme.textDark,
                         ),
                       ),
-                      Expanded(
-                        child: _PaymentItem(
-                          label: 'Received',
-                          value: Formatters.currency(received),
-                          color: AppColors.success,
-                        ),
-                      ),
-                      Expanded(
-                        child: _PaymentItem(
-                          label: 'Outstanding',
-                          value: Formatters.currency(outstanding),
-                          color: AppColors.danger,
+                      const Spacer(),
+                      Text(
+                        '${(percent * 100).round()}% paid',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: CTheme.primary,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  // Progress bar showing received / quotation
+                  const SizedBox(height: CTheme.p16),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: CTheme.r8,
                     child: LinearProgressIndicator(
-                      value: quotation > 0
-                          ? (received / quotation).clamp(0.0, 1.0)
-                          : 0,
+                      value: percent,
                       minHeight: 6,
-                      backgroundColor: AppColors.border,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.success,
-                      ),
+                      backgroundColor: CTheme.inactive,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(CTheme.success),
                     ),
+                  ),
+                  const SizedBox(height: CTheme.p16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PaymentMiniItem(
+                          label: 'Received',
+                          value: Formatters.currency(received),
+                          color: CTheme.success,
+                        ),
+                      ),
+                      Expanded(
+                        child: _PaymentMiniItem(
+                          label: 'Outstanding',
+                          value: Formatters.currency(outstanding),
+                          color: CTheme.warning,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -541,8 +811,8 @@ class _PaymentSection extends StatelessWidget {
   }
 }
 
-class _PaymentItem extends StatelessWidget {
-  const _PaymentItem({
+class _PaymentMiniItem extends StatelessWidget {
+  const _PaymentMiniItem({
     required this.label,
     required this.value,
     required this.color,
@@ -557,6 +827,11 @@ class _PaymentItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: CTheme.textLight),
+        ),
+        const SizedBox(height: CTheme.p4),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -564,17 +839,9 @@ class _PaymentItem extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: color,
             ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
           ),
         ),
       ],
@@ -583,102 +850,53 @@ class _PaymentItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Recent Messages Section
+// Fade + Slide entrance animation
 // ---------------------------------------------------------------------------
 
-class _MessagesSection extends StatelessWidget {
-  const _MessagesSection({required this.ref});
-  final WidgetRef ref;
+class _FadeSlideIn extends StatefulWidget {
+  const _FadeSlideIn({required this.child, this.delay = Duration.zero});
+  final Widget child;
+  final Duration delay;
 
   @override
-  Widget build(BuildContext context) {
-    final messages = ref.watch(customerMessagesProvider);
-
-    return messages.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (msgList) {
-        if (msgList.isEmpty) return const SizedBox.shrink();
-        final latest = msgList.take(3).toList();
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Recent Messages',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              for (final msg in latest)
-                _MessageTile(message: msg as Map<String, dynamic>),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  State<_FadeSlideIn> createState() => _FadeSlideInState();
 }
 
-class _MessageTile extends StatelessWidget {
-  const _MessageTile({required this.message});
-  final Map<String, dynamic> message;
+class _FadeSlideInState extends State<_FadeSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _offset = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final body = message['message']?.toString() ?? '';
-    final createdAt = message['created_at']?.toString();
-    final isRead = message['is_read'] == true;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              isRead ? Icons.mark_email_read_outlined : Icons.mark_email_unread,
-              size: 20,
-              color:
-                  isRead ? AppColors.textMuted : CustomerHomeScreen._brandTeal,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    body,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isRead ? FontWeight.w400 : FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (createdAt != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      Formatters.dateTime(createdAt),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(position: _offset, child: widget.child),
     );
   }
 }

@@ -3,15 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../application/customer_providers.dart';
+import '../theme/customer_theme.dart';
 
 /// Vertical timeline showing all 13 project stages with visual distinction
 /// between completed, current, and upcoming stages.
-///
-/// Requirements: 19.1, 19.2, 19.3, 19.4
 class CustomerTimelineScreen extends ConsumerWidget {
   const CustomerTimelineScreen({super.key});
-
-  static const _brandTeal = Color(0xFF00D1DC);
 
   /// The 13 stages in order (matching backend enum values).
   static const _stageKeys = [
@@ -53,33 +50,47 @@ class CustomerTimelineScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(customerOverviewProvider);
 
     return Scaffold(
+      backgroundColor: CTheme.bgSoft,
       appBar: AppBar(
-        title: const Text('Project Timeline'),
-        backgroundColor: _brandTeal,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Project Journey',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: CTheme.textDark,
+          ),
+        ),
+        backgroundColor: CTheme.bgWhite,
+        foregroundColor: CTheme.textDark,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       body: overviewAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: CTheme.primary),
+        ),
         error: (e, _) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(CTheme.p24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                const SizedBox(height: 12),
-                Text(
+                const Icon(Icons.error_outline,
+                    size: 48, color: CTheme.textLight),
+                const SizedBox(height: CTheme.p12),
+                const Text(
                   'Failed to load timeline',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: TextStyle(color: CTheme.textMid),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: CTheme.p8),
                 TextButton(
                   onPressed: () {
                     ref.invalidate(customerOverviewProvider);
                     ref.invalidate(customerTimelineProvider);
                   },
-                  child: const Text('Retry'),
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(color: CTheme.primary),
+                  ),
                 ),
               ],
             ),
@@ -89,21 +100,30 @@ class CustomerTimelineScreen extends ConsumerWidget {
           final currentStage = (overview['current_stage'] as String?) ?? '';
 
           return timelineAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: CTheme.primary),
+            ),
             error: (e, _) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Failed to load timeline data',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: CTheme.textLight,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: CTheme.p12),
+                  const Text(
+                    'Failed to load timeline data',
+                    style: TextStyle(color: CTheme.textMid),
+                  ),
+                  const SizedBox(height: CTheme.p8),
                   TextButton(
                     onPressed: () => ref.invalidate(customerTimelineProvider),
-                    child: const Text('Retry'),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: CTheme.primary),
+                    ),
                   ),
                 ],
               ),
@@ -125,13 +145,16 @@ class CustomerTimelineScreen extends ConsumerWidget {
               final currentIdx = _stageKeys.indexOf(currentStage);
 
               return RefreshIndicator(
+                color: CTheme.primary,
                 onRefresh: () async {
                   ref.invalidate(customerOverviewProvider);
                   ref.invalidate(customerTimelineProvider);
                 },
                 child: ListView.builder(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: CTheme.p20,
+                    vertical: CTheme.p24,
+                  ),
                   itemCount: _stageKeys.length,
                   itemBuilder: (context, index) {
                     final stageKey = _stageKeys[index];
@@ -148,22 +171,22 @@ class CustomerTimelineScreen extends ConsumerWidget {
                       status = _StageStatus.upcoming;
                     }
 
-                    // Also mark as completed if we have timeline data for it
-                    // and it's before or at the current stage
                     if (stageDates.containsKey(stageKey) &&
                         status == _StageStatus.upcoming &&
                         currentIdx < 0) {
-                      // If no current_stage set but we have data, use dates
                       status = _StageStatus.completed;
                     }
 
                     final dateStr = stageDates[stageKey];
 
-                    return _TimelineItem(
-                      label: label,
-                      status: status,
-                      dateStr: dateStr,
-                      isLast: isLast,
+                    return _StaggeredItem(
+                      index: index,
+                      child: _TimelineItem(
+                        label: label,
+                        status: status,
+                        dateStr: dateStr,
+                        isLast: isLast,
+                      ),
                     );
                   },
                 ),
@@ -192,10 +215,6 @@ class _TimelineItem extends StatelessWidget {
   final String? dateStr;
   final bool isLast;
 
-  static const _brandTeal = Color(0xFF00D1DC);
-  static const _completedColor = Color(0xFF00D1DC);
-  static const _upcomingColor = Color(0xFFBDBDBD);
-
   String _formatDate(String iso) {
     try {
       final dt = DateTime.parse(iso);
@@ -213,7 +232,7 @@ class _TimelineItem extends StatelessWidget {
         children: [
           // Timeline connector column (dot + line)
           SizedBox(
-            width: 40,
+            width: 44,
             child: Column(
               children: [
                 const SizedBox(height: 4),
@@ -223,18 +242,27 @@ class _TimelineItem extends StatelessWidget {
                     child: Container(
                       width: 2,
                       color: status == _StageStatus.upcoming
-                          ? _upcomingColor.withValues(alpha: 0.4)
-                          : _completedColor.withValues(alpha: 0.5),
+                          ? CTheme.inactive
+                          : CTheme.primary.withValues(alpha: 0.3),
                     ),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          // Content column
+          const SizedBox(width: CTheme.p12),
+          // Content card
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: CTheme.p12),
+              padding: const EdgeInsets.all(CTheme.p16),
+              decoration: BoxDecoration(
+                color: CTheme.bgWhite,
+                borderRadius: CTheme.r12,
+                boxShadow: CTheme.cardShadow,
+                border: status == _StageStatus.current
+                    ? Border.all(color: CTheme.primary, width: 1.5)
+                    : null,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -246,49 +274,41 @@ class _TimelineItem extends StatelessWidget {
                           ? FontWeight.w700
                           : FontWeight.w500,
                       color: status == _StageStatus.upcoming
-                          ? Colors.grey
-                          : Colors.black87,
+                          ? CTheme.textLight
+                          : CTheme.textDark,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: CTheme.p4),
                   if (status == _StageStatus.completed && dateStr != null)
                     Text(
                       _formatDate(dateStr!),
                       style: TextStyle(
                         fontSize: 12,
-                        color: _brandTeal.withValues(alpha: 0.8),
+                        color: CTheme.primary.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w500,
                       ),
                     )
                   else if (status == _StageStatus.current)
-                    const Row(
+                    Row(
                       children: [
-                        _PulsingDot(color: _brandTeal),
-                        SizedBox(width: 6),
-                        Text(
-                          'In Progress',
+                        _PulsingDot(color: CTheme.primary),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Work in progress',
                           style: TextStyle(
                             fontSize: 12,
-                            color: _brandTeal,
+                            color: CTheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
-                    )
-                  else if (status == _StageStatus.upcoming && dateStr != null)
-                    Text(
-                      'Planned: ${_formatDate(dateStr!)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
                     )
                   else if (status == _StageStatus.upcoming)
                     const Text(
                       'Upcoming',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey,
+                        color: CTheme.textLight,
                       ),
                     ),
                 ],
@@ -307,26 +327,26 @@ class _TimelineItem extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: const BoxDecoration(
-            color: _completedColor,
+            color: CTheme.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check, color: Colors.white, size: 16),
+          child: const Icon(Icons.check, color: CTheme.bgWhite, size: 16),
         );
       case _StageStatus.current:
         return Container(
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: _brandTeal.withValues(alpha: 0.15),
+            color: CTheme.primary.withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: _brandTeal, width: 2.5),
+            border: Border.all(color: CTheme.primary, width: 2.5),
           ),
           child: Center(
             child: Container(
               width: 10,
               height: 10,
               decoration: const BoxDecoration(
-                color: _brandTeal,
+                color: CTheme.primary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -337,16 +357,16 @@ class _TimelineItem extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: CTheme.bgSoft,
             shape: BoxShape.circle,
-            border: Border.all(color: _upcomingColor, width: 1.5),
+            border: Border.all(color: CTheme.inactive, width: 1.5),
           ),
           child: Center(
             child: Container(
               width: 8,
               height: 8,
               decoration: const BoxDecoration(
-                color: _upcomingColor,
+                color: CTheme.inactive,
                 shape: BoxShape.circle,
               ),
             ),
@@ -405,6 +425,55 @@ class _PulsingDotState extends State<_PulsingDot>
           ),
         );
       },
+    );
+  }
+}
+
+/// Stagger animation wrapper — each item appears with 80ms delay.
+class _StaggeredItem extends StatefulWidget {
+  const _StaggeredItem({required this.index, required this.child});
+  final int index;
+  final Widget child;
+
+  @override
+  State<_StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<_StaggeredItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _offset = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    Future.delayed(Duration(milliseconds: 80 * widget.index), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(position: _offset, child: widget.child),
     );
   }
 }

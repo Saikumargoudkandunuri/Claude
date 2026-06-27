@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,10 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 
 import '../../../core/network/customer_dio_client.dart';
+import '../../../core/utils/web_platform.dart' as web_platform;
+import '../../customer_portal/theme/customer_theme.dart';
 import '../data/customer_auth_api.dart';
-
-const _teal = Color(0xFF00D1DC);
-const _darkTeal = Color(0xFF004D51);
 
 /// Three-phase customer login screen:
 /// 1. Mobile entry → 2. Name reveal (greeting) → 3. PIN entry via custom keypad.
@@ -205,22 +205,25 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_teal, Color(0xFF0097A7)],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: CTheme.heroGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.symmetric(horizontal: CTheme.p24),
               child: Column(
                 children: [
                   _buildLogo(),
                   const SizedBox(height: 36),
-                  _buildCard(),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: _buildCard(),
+                  ),
+                  if (kIsWeb) ...[
+                    const SizedBox(height: 24),
+                    const _WebDownloadSection(),
+                  ],
                   const SizedBox(height: 30),
                 ],
               ),
@@ -235,43 +238,37 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
     return Column(
       children: [
         Container(
-          width: 90,
-          height: 90,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: CTheme.bgWhite,
+            borderRadius: CTheme.r20,
+            boxShadow: CTheme.heroShadow,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: CTheme.r20,
             child: Image.asset(
               'assets/icon/app_icon.png',
               fit: BoxFit.cover,
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: CTheme.p16),
         const Text(
           'Metal & More Interiors',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: CTheme.bgWhite,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: CTheme.p4),
         Text(
           'Customer Portal',
           style: TextStyle(
             fontSize: 13,
-            color: Colors.white.withValues(alpha: 0.85),
+            color: CTheme.bgWhite.withValues(alpha: 0.85),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -280,24 +277,25 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
   }
 
   Widget _buildCard() {
+    Widget content;
+    switch (_phase) {
+      case _Phase.mobile:
+        content = _buildMobilePhase();
+      case _Phase.nameReveal:
+        content = _buildNameRevealPhase();
+      case _Phase.pinEntry:
+        content = _buildPinPhase();
+    }
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      key: ValueKey(_phase),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: CTheme.bgWhite,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: CTheme.heroShadow,
       ),
-      child: switch (_phase) {
-        _Phase.mobile => _buildMobilePhase(),
-        _Phase.nameReveal => _buildNameRevealPhase(),
-        _Phase.pinEntry => _buildPinPhase(),
-      },
+      child: content,
     );
   }
 
@@ -310,99 +308,79 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Welcome',
+          'Welcome Back',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: _darkTeal,
+            color: CTheme.textDark,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 6),
-        Text(
+        const SizedBox(height: CTheme.p4),
+        const Text(
           'Enter your registered mobile number',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 13, color: CTheme.textMid),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 28),
-        TextField(
-          controller: _phoneCtrl,
-          keyboardType: TextInputType.number,
-          maxLength: 10,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1,
+        const SizedBox(height: CTheme.p24),
+        Container(
+          decoration: BoxDecoration(
+            color: CTheme.bgSoft,
+            borderRadius: CTheme.r12,
+            border: Border.all(color: CTheme.inactive),
           ),
-          decoration: InputDecoration(
-            labelText: 'Mobile Number',
-            labelStyle: TextStyle(color: Colors.grey.shade600),
-            prefixIcon: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.center,
-              width: 64,
-              child: const Text(
-                '+91',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _darkTeal,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: CTheme.p16),
+                child: const Text(
+                  '+91',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: CTheme.primaryDeep,
+                  ),
                 ),
               ),
-            ),
-            hintText: '9876543210',
-            counterText: '',
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _teal, width: 2),
-            ),
+              Container(width: 1, height: 28, color: CTheme.inactive),
+              Expanded(
+                child: TextField(
+                  controller: _phoneCtrl,
+                  keyboardType: TextInputType.number,
+                  maxLength: 10,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                    color: CTheme.textDark,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '9876543210',
+                    hintStyle: TextStyle(color: CTheme.textLight),
+                    counterText: '',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: CTheme.p12,
+                      vertical: CTheme.p16,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _checkMobile(),
+                ),
+              ),
+            ],
           ),
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _checkMobile(),
         ),
         if (_errorMsg != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: CTheme.p12),
           _buildErrorBanner(),
         ],
-        const SizedBox(height: 24),
-        SizedBox(
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _busy ? null : _checkMobile,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _teal,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: _teal.withValues(alpha: 0.6),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: _busy
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-          ),
+        const SizedBox(height: CTheme.p24),
+        _GradientButton(
+          label: 'Continue',
+          busy: _busy,
+          onPressed: _checkMobile,
         ),
       ],
     );
@@ -426,33 +404,65 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
       },
       child: Column(
         children: [
-          const Icon(Icons.check_circle, color: _teal, size: 56),
-          const SizedBox(height: 16),
-          Text(
-            'Welcome,',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: CTheme.heroGradient,
+            ),
+            child: Center(
+              child: Text(
+                _customerName.isNotEmpty ? _customerName[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: CTheme.bgWhite,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: CTheme.p16),
+          const Text(
+            'Welcome,',
+            style: TextStyle(fontSize: 16, color: CTheme.textMid),
+          ),
+          const SizedBox(height: CTheme.p4),
           Text(
             _customerName,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: _darkTeal,
+              color: CTheme.textDark,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          if (!_pinSet)
-            Text(
-              'Setting up your PIN...',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-            )
-          else
-            Text(
-              'Enter your PIN to continue',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+          const SizedBox(height: CTheme.p16),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: CTheme.p12,
+              vertical: CTheme.p8,
             ),
+            decoration: BoxDecoration(
+              color: CTheme.success.withValues(alpha: 0.1),
+              borderRadius: CTheme.r8,
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: CTheme.success, size: 18),
+                SizedBox(width: CTheme.p8),
+                Text(
+                  'We found your project ✓',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CTheme.success,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -470,22 +480,22 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: _darkTeal,
+            color: CTheme.textDark,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 6),
-        Text(
+        const SizedBox(height: CTheme.p4),
+        const Text(
           'Enter your 4-digit PIN',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 13, color: CTheme.textMid),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: CTheme.p24),
         _buildPinDots(),
         if (_errorMsg != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: CTheme.p12),
           _buildErrorBanner(),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: CTheme.p24),
         _buildNumpad(),
       ],
     );
@@ -498,14 +508,15 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
         final filled = i < _pin.length;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
           margin: const EdgeInsets.symmetric(horizontal: 10),
-          width: filled ? 18 : 16,
-          height: filled ? 18 : 16,
+          width: filled ? 20 : 16,
+          height: filled ? 20 : 16,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: filled ? _teal : Colors.transparent,
+            color: filled ? CTheme.primary : Colors.transparent,
             border: Border.all(
-              color: filled ? _teal : Colors.grey.shade300,
+              color: filled ? CTheme.primary : CTheme.inactive,
               width: 2,
             ),
           ),
@@ -530,7 +541,7 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: row.map((key) {
               if (key.isEmpty) {
-                return const SizedBox(width: 72, height: 56);
+                return const SizedBox(width: 64, height: 52);
               }
               return _buildKeyButton(key);
             }).toList(),
@@ -545,23 +556,24 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
 
     return InkWell(
       onTap: () => _onKeyTap(key),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: CTheme.r16,
       child: Container(
-        width: 72,
-        height: 56,
+        width: 64,
+        height: 52,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
+          color: CTheme.bgSoft,
+          borderRadius: CTheme.r16,
+          border: Border.all(color: CTheme.inactive),
         ),
         child: isBackspace
-            ? Icon(Icons.backspace_outlined, color: Colors.grey.shade700)
+            ? const Icon(Icons.backspace_outlined, color: CTheme.textMid)
             : Text(
                 key,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w600,
-                  color: _darkTeal,
+                  color: CTheme.textDark,
                 ),
               ),
       ),
@@ -574,23 +586,285 @@ class _CustomerLoginScreenState extends ConsumerState<CustomerLoginScreen>
 
   Widget _buildErrorBanner() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: CTheme.p12, vertical: CTheme.p8),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFFEF2F2),
+        borderRadius: CTheme.r8,
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, size: 18, color: Colors.red.shade700),
-          const SizedBox(width: 8),
+          const Icon(Icons.error_outline, size: 18, color: Color(0xFFDC2626)),
+          const SizedBox(width: CTheme.p8),
           Expanded(
             child: Text(
               _errorMsg!,
-              style: TextStyle(color: Colors.red.shade700, fontSize: 12.5),
+              style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12.5),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Gradient Button
+// ---------------------------------------------------------------------------
+
+class _GradientButton extends StatelessWidget {
+  const _GradientButton({
+    required this.label,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: busy ? null : onPressed,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: CTheme.heroGradient,
+          borderRadius: CTheme.r16,
+          boxShadow: CTheme.heroShadow,
+        ),
+        child: Center(
+          child: busy
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: CTheme.bgWhite,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: CTheme.bgWhite,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Web Download / Add-to-Home-Screen Section
+// ---------------------------------------------------------------------------
+
+class _WebDownloadSection extends StatelessWidget {
+  const _WebDownloadSection();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kIsWeb) return const SizedBox.shrink();
+
+    final isAndroid = web_platform.isWebAndroid();
+    final isIOS = web_platform.isWebIOS();
+
+    if (isAndroid) return const _AndroidDownloadWidget();
+    if (isIOS) return const _IOSHomeScreenWidget();
+    return const SizedBox.shrink(); // Desktop — show nothing
+  }
+}
+
+class _AndroidDownloadWidget extends StatelessWidget {
+  const _AndroidDownloadWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => web_platform.triggerApkDownload(),
+          icon: const Icon(Icons.download, color: CTheme.primary),
+          label: const Text(
+            'Download App for Android',
+            style: TextStyle(
+              color: CTheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: CTheme.primary, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'After download, tap the file to install',
+          style: TextStyle(
+            fontSize: 12,
+            color: CTheme.bgWhite.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _IOSHomeScreenWidget extends StatelessWidget {
+  const _IOSHomeScreenWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () => _showIOSInstructions(context),
+      icon: const Icon(Icons.add_to_home_screen, color: CTheme.primary),
+      label: const Text(
+        'Add to Home Screen for iPhone',
+        style: TextStyle(
+          color: CTheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: CTheme.primary, width: 1.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      ),
+    );
+  }
+
+  void _showIOSInstructions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Add to Home Screen',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: CTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildStep(
+                  number: '1',
+                  text: 'Tap the Share icon at the bottom of Safari',
+                  icon: Icons.ios_share,
+                ),
+                const SizedBox(height: 14),
+                _buildStep(
+                  number: '2',
+                  text: 'Scroll down and tap "Add to Home Screen"',
+                  icon: Icons.add_box_outlined,
+                ),
+                const SizedBox(height: 14),
+                _buildStep(
+                  number: '3',
+                  text: 'Tap Add',
+                  icon: Icons.check_circle_outline,
+                ),
+                const SizedBox(height: 24),
+                // Visual arrow pointing down toward Safari share bar
+                Column(
+                  children: [
+                    Text(
+                      'Look for this icon below',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Icon(
+                      Icons.ios_share,
+                      size: 28,
+                      color: CTheme.primary,
+                    ),
+                    const SizedBox(height: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 32,
+                      color: CTheme.primary,
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 32,
+                      color: CTheme.primary,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStep({
+    required String number,
+    required String text,
+    required IconData icon,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: CTheme.heroGradient,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(icon, size: 20, color: CTheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: CTheme.textDark,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

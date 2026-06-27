@@ -1,41 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/loading_view.dart';
 import '../application/customer_providers.dart';
+import '../theme/customer_theme.dart';
 
 /// Customer-facing payment summary screen.
 ///
-/// Shows a circular progress indicator (received / quotation ratio) and
-/// summary cards for Quotation Amount, Total Received, and Outstanding Balance.
-/// No individual transaction records are displayed.
+/// Shows a top gradient card with contract value and progress,
+/// plus two stat cards for amount paid and outstanding.
 class CustomerPaymentsScreen extends ConsumerWidget {
   const CustomerPaymentsScreen({super.key});
-
-  static const _brandTeal = Color(0xFF00D1DC);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(customerPaymentSummaryProvider);
 
     return Scaffold(
+      backgroundColor: CTheme.bgSoft,
       appBar: AppBar(
-        title: const Text('Payments'),
-        centerTitle: true,
+        title: const Text(
+          'Payments',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: CTheme.textDark,
+          ),
+        ),
+        backgroundColor: CTheme.bgWhite,
+        foregroundColor: CTheme.textDark,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       body: async.when(
-        loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(
-          message: e.toString(),
-          onRetry: () => ref.invalidate(customerPaymentSummaryProvider),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: CTheme.primary),
+        ),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 48, color: CTheme.textLight),
+              const SizedBox(height: CTheme.p12),
+              Text(
+                e.toString(),
+                style: const TextStyle(color: CTheme.textMid, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: CTheme.p16),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(customerPaymentSummaryProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CTheme.primary,
+                  foregroundColor: CTheme.bgWhite,
+                  shape: RoundedRectangleBorder(borderRadius: CTheme.r12),
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
         data: (data) {
-          final quotation = (data['quotation_amount'] as num?) ?? 0;
+          final quotation = (data['quotation_amount'] as num?) ??
+              (data['total_quoted'] as num?) ??
+              0;
           final received = (data['total_received'] as num?) ?? 0;
-          final outstanding = (data['outstanding_balance'] as num?) ?? 0;
+          final outstanding = (data['outstanding_balance'] as num?) ??
+              (data['outstanding'] as num?) ??
+              0;
 
           // Empty / zero state
           if (quotation == 0 && received == 0 && outstanding == 0) {
@@ -46,76 +78,84 @@ class CustomerPaymentsScreen extends ConsumerWidget {
               quotation > 0 ? (received / quotation).clamp(0.0, 1.0) : 0.0;
 
           return ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(CTheme.p16),
             children: [
-              const SizedBox(height: AppSpacing.xl),
-
-              // Circular progress indicator
-              Center(
-                child: SizedBox(
-                  width: 180,
-                  height: 180,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 180,
-                        height: 180,
-                        child: CircularProgressIndicator(
-                          value: percent,
-                          strokeWidth: 14,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: AppColors.surfaceAlt,
-                          color: _brandTeal,
+              // Top gradient card
+              Container(
+                padding: const EdgeInsets.all(CTheme.p24),
+                decoration: BoxDecoration(
+                  gradient: CTheme.heroGradient,
+                  borderRadius: CTheme.r16,
+                  boxShadow: CTheme.heroShadow,
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Contract Value',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CTheme.bgWhite,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: CTheme.p8),
+                    Text(
+                      Formatters.currency(quotation),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: CTheme.bgWhite,
+                      ),
+                    ),
+                    const SizedBox(height: CTheme.p20),
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: CTheme.r8,
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 8,
+                        backgroundColor: CTheme.bgWhite.withValues(alpha: 0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          CTheme.bgWhite,
                         ),
                       ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${(percent * 100).toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: _brandTeal,
-                            ),
-                          ),
-                          const Text(
-                            'Received',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                    ),
+                    const SizedBox(height: CTheme.p8),
+                    Text(
+                      '${(percent * 100).round()}% paid',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CTheme.bgWhite.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: CTheme.p16),
 
-              // Summary cards
-              _SummaryCard(
-                icon: Icons.request_quote_outlined,
-                label: 'Quotation Amount',
-                amount: quotation,
-                color: _brandTeal,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SummaryCard(
-                icon: Icons.check_circle_outline,
-                label: 'Total Received',
-                amount: received,
-                color: AppColors.success,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SummaryCard(
-                icon: Icons.account_balance_wallet_outlined,
-                label: 'Outstanding Balance',
-                amount: outstanding,
-                color: outstanding > 0 ? AppColors.warning : AppColors.success,
+              // Two stat cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Amount Paid',
+                      value: Formatters.currency(received),
+                      color: CTheme.success,
+                      icon: Icons.check_circle_outline,
+                    ),
+                  ),
+                  const SizedBox(width: CTheme.p12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Outstanding',
+                      value: Formatters.currency(outstanding),
+                      color: CTheme.warning,
+                      icon: Icons.account_balance_wallet_outlined,
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -133,21 +173,21 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(CTheme.p32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.payments_outlined,
               size: 64,
-              color: AppColors.textMuted.withValues(alpha: 0.5),
+              color: CTheme.textLight.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: CTheme.p16),
             const Text(
               'No payment information available',
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textSecondary,
+                color: CTheme.textMid,
               ),
               textAlign: TextAlign.center,
             ),
@@ -158,65 +198,60 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-/// A single summary row card displaying an icon, label, and formatted amount.
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.icon,
+/// A stat card showing label, value and colored accent.
+class _StatCard extends StatelessWidget {
+  const _StatCard({
     required this.label,
-    required this.amount,
+    required this.value,
     required this.color,
+    required this.icon,
   });
 
-  final IconData icon;
   final String label;
-  final num amount;
+  final String value;
   final Color color;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
-      ),
+      padding: const EdgeInsets.all(CTheme.p16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: CTheme.bgWhite,
+        borderRadius: CTheme.r16,
+        boxShadow: CTheme.cardShadow,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.1),
+              borderRadius: CTheme.r8,
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  Formatters.currency(amount),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
+          const SizedBox(height: CTheme.p12),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: CTheme.textLight,
+            ),
+          ),
+          const SizedBox(height: CTheme.p4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ),
         ],

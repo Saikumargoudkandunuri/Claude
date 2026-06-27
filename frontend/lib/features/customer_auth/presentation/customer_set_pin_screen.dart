@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/customer_dio_client.dart';
+import '../../customer_portal/theme/customer_theme.dart';
 import '../data/customer_auth_api.dart';
-
-const _brandColor = Color(0xFF00D1DC);
 
 /// Screen for first-time customers to create a 4-digit PIN.
 ///
@@ -126,91 +125,125 @@ class _CustomerSetPinScreenState extends ConsumerState<CustomerSetPinScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_brandColor, Color(0xFF0097A7)],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: CTheme.heroGradient),
         child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-              // Title
-              Text(
-                _step == _PinStep.enter
-                    ? 'Create your PIN'
-                    : 'Confirm your PIN',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _step == _PinStep.enter
-                    ? 'Enter a 4-digit PIN to secure your account'
-                    : 'Re-enter your PIN to confirm',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // PIN dots
-              _PinDots(filledCount: _currentInput.length),
-
-              // Error message
-              if (_error != null) ...[
-                const SizedBox(height: 20),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 40),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 18,
-                        color: Colors.red.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: CTheme.p24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  // White card
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: CTheme.bgWhite,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: CTheme.heroShadow,
+                    ),
+                    child: Column(
+                      children: [
+                        // Lock icon
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: CTheme.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock_outline_rounded,
+                            color: CTheme.primary,
+                            size: 28,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: CTheme.p20),
+
+                        // Title
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            _step == _PinStep.enter
+                                ? 'Create your PIN'
+                                : 'Confirm your PIN',
+                            key: ValueKey(_step),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: CTheme.textDark,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: CTheme.p8),
+                        Text(
+                          _step == _PinStep.enter
+                              ? 'Enter a 4-digit PIN to secure your account'
+                              : 'Re-enter your PIN to confirm',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: CTheme.textMid,
+                          ),
+                        ),
+                        const SizedBox(height: CTheme.p32),
+
+                        // PIN dots
+                        _PinDots(filledCount: _currentInput.length),
+
+                        // Error message
+                        if (_error != null) ...[
+                          const SizedBox(height: CTheme.p16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: CTheme.p12,
+                              vertical: CTheme.p8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: CTheme.r8,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 18,
+                                  color: Color(0xFFDC2626),
+                                ),
+                                const SizedBox(width: CTheme.p8),
+                                Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFDC2626),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: CTheme.p32),
+
+                        // Loading indicator or numpad
+                        if (_busy)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: CTheme.p20),
+                            child: CircularProgressIndicator(
+                                color: CTheme.primary),
+                          )
+                        else
+                          _CustomNumpad(
+                            onDigit: _onDigit,
+                            onBackspace: _onBackspace,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-
-              const Spacer(),
-
-              // Loading indicator
-              if (_busy)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 20),
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-
-              // Custom numpad
-              if (!_busy)
-                _CustomNumpad(onDigit: _onDigit, onBackspace: _onBackspace),
-
-              const SizedBox(height: 30),
-            ],
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -235,15 +268,16 @@ class _PinDots extends StatelessWidget {
         final filled = index < filledCount;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          width: filled ? 20 : 16,
-          height: filled ? 20 : 16,
+          curve: Curves.easeOut,
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          width: filled ? 22 : 16,
+          height: filled ? 22 : 16,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: filled ? Colors.white : Colors.transparent,
+            color: filled ? CTheme.primary : Colors.transparent,
             border: Border.all(
-              color: Colors.white,
-              width: 2,
+              color: filled ? CTheme.primary : CTheme.inactive,
+              width: 2.5,
             ),
           ),
         );
@@ -267,50 +301,40 @@ class _CustomNumpad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        children: [
-          // Row 1: 1 2 3
-          _buildRow(['1', '2', '3']),
-          const SizedBox(height: 16),
-          // Row 2: 4 5 6
-          _buildRow(['4', '5', '6']),
-          const SizedBox(height: 16),
-          // Row 3: 7 8 9
-          _buildRow(['7', '8', '9']),
-          const SizedBox(height: 16),
-          // Row 4: empty 0 backspace
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Empty space
-              const SizedBox(width: 72, height: 72),
-              // 0
-              _NumpadButton(label: '0', onTap: () => onDigit('0')),
-              // Backspace
-              SizedBox(
-                width: 72,
-                height: 72,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(36),
-                    onTap: onBackspace,
-                    child: const Center(
-                      child: Icon(
-                        Icons.backspace_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
+    return Column(
+      children: [
+        _buildRow(['1', '2', '3']),
+        const SizedBox(height: CTheme.p12),
+        _buildRow(['4', '5', '6']),
+        const SizedBox(height: CTheme.p12),
+        _buildRow(['7', '8', '9']),
+        const SizedBox(height: CTheme.p12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const SizedBox(width: 64, height: 52),
+            _NumpadButton(label: '0', onTap: () => onDigit('0')),
+            SizedBox(
+              width: 64,
+              height: 52,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: CTheme.r16,
+                  onTap: onBackspace,
+                  child: const Center(
+                    child: Icon(
+                      Icons.backspace_outlined,
+                      color: CTheme.textMid,
+                      size: 22,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -332,24 +356,24 @@ class _NumpadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      height: 72,
-      child: Material(
-        color: Colors.white.withValues(alpha: 0.15),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: Center(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: CTheme.r16,
+      child: Container(
+        width: 64,
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: CTheme.bgSoft,
+          borderRadius: CTheme.r16,
+          border: Border.all(color: CTheme.inactive),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: CTheme.textDark,
           ),
         ),
       ),

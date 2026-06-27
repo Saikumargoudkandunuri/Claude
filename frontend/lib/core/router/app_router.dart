@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,8 +48,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final auth = ref.read(authControllerProvider);
       final loc = state.matchedLocation;
+
+      // Web build is customer-portal only — block all staff routes.
+      if (kIsWeb) {
+        const allowedPrefixes = [
+          '/customer-login',
+          '/customer-set-pin',
+          '/customer',
+        ];
+        final isAllowed =
+            allowedPrefixes.any((p) => loc == p || loc.startsWith('$p/'));
+        if (!isAllowed) return '/customer-login';
+      }
+
+      final auth = ref.read(authControllerProvider);
       final onAuthPage = loc == '/login' ||
           loc == '/register' ||
           loc == '/pin-login' ||

@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/customer_providers.dart';
-
-const _brandTeal = Color(0xFF00D1DC);
+import '../theme/customer_theme.dart';
 
 /// Displays admin announcements for the customer, ordered newest first.
 ///
-/// Each message shows title, body preview (max 2 lines), and created_at date.
-/// Tapping a message expands it to reveal the full body text.
-/// Shows a friendly empty state when no messages exist.
+/// Each card shows an avatar circle, sender name, time, and message.
+/// Unread messages have a teal tint background + teal border.
 class CustomerMessagesScreen extends ConsumerWidget {
   const CustomerMessagesScreen({super.key});
 
@@ -18,34 +16,51 @@ class CustomerMessagesScreen extends ConsumerWidget {
     final messagesAsync = ref.watch(customerMessagesProvider);
 
     return Scaffold(
+      backgroundColor: CTheme.bgSoft,
       appBar: AppBar(
-        title: const Text('Messages'),
-        centerTitle: true,
+        title: const Text(
+          'Project Updates',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: CTheme.textDark,
+          ),
+        ),
+        backgroundColor: CTheme.bgWhite,
+        foregroundColor: CTheme.textDark,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       body: messagesAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: _brandTeal),
+          child: CircularProgressIndicator(color: CTheme.primary),
         ),
         error: (error, _) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(CTheme.p24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-                const SizedBox(height: 12),
-                Text(
-                  'Failed to load messages',
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Color(0xFFDC2626),
+                ),
+                const SizedBox(height: CTheme.p12),
+                const Text(
+                  'Failed to load updates',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade700,
+                    color: CTheme.textMid,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: CTheme.p16),
                 OutlinedButton.icon(
                   onPressed: () => ref.invalidate(customerMessagesProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  icon: const Icon(Icons.refresh, color: CTheme.primary),
+                  label: const Text(
+                    'Retry',
+                    style: TextStyle(color: CTheme.primary),
+                  ),
                 ),
               ],
             ),
@@ -56,18 +71,19 @@ class CustomerMessagesScreen extends ConsumerWidget {
             return _buildEmptyState();
           }
           return RefreshIndicator(
-            color: _brandTeal,
+            color: CTheme.primary,
             onRefresh: () async => ref.invalidate(customerMessagesProvider),
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.all(CTheme.p16),
               itemCount: messages.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: CTheme.p12),
               itemBuilder: (context, index) {
                 final msg = messages[index] as Map<String, dynamic>;
                 return _MessageCard(
                   title: msg['title'] as String? ?? '',
                   body: msg['body'] as String? ?? '',
                   createdAt: msg['created_at'] as String? ?? '',
+                  isRead: msg['is_read'] == true,
                 );
               },
             ),
@@ -83,18 +99,23 @@ class CustomerMessagesScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.message_outlined,
+            Icons.campaign_outlined,
             size: 64,
-            color: Colors.grey.shade300,
+            color: CTheme.textLight.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No messages yet',
+          const SizedBox(height: CTheme.p16),
+          const Text(
+            'No updates yet',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w600,
+              color: CTheme.textMid,
             ),
+          ),
+          const SizedBox(height: CTheme.p8),
+          const Text(
+            'Project updates will appear here',
+            style: TextStyle(fontSize: 13, color: CTheme.textLight),
           ),
         ],
       ),
@@ -102,135 +123,124 @@ class CustomerMessagesScreen extends ConsumerWidget {
   }
 }
 
-/// A single message card that expands on tap to reveal the full body.
-class _MessageCard extends StatefulWidget {
+/// A single update card with avatar, sender, time, and message text.
+class _MessageCard extends StatelessWidget {
   const _MessageCard({
     required this.title,
     required this.body,
     required this.createdAt,
+    required this.isRead,
   });
 
   final String title;
   final String body;
   final String createdAt;
-
-  @override
-  State<_MessageCard> createState() => _MessageCardState();
-}
-
-class _MessageCardState extends State<_MessageCard> {
-  bool _expanded = false;
+  final bool isRead;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+    return Container(
+      padding: const EdgeInsets.all(CTheme.p16),
+      decoration: BoxDecoration(
+        color: isRead ? CTheme.bgWhite : CTheme.primary.withValues(alpha: 0.04),
+        borderRadius: CTheme.r16,
+        boxShadow: CTheme.cardShadow,
+        border: Border.all(
+          color:
+              isRead ? CTheme.inactive : CTheme.primary.withValues(alpha: 0.3),
+        ),
       ),
-      child: InkWell(
-        onTap: () => setState(() => _expanded = !_expanded),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _brandTeal.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar circle
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: CTheme.heroGradient,
+            ),
+            child: const Center(
+              child: Text(
+                'M',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: CTheme.bgWhite,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: CTheme.p12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Metal & More',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: CTheme.textDark,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.campaign_outlined,
-                      color: _brandTeal,
-                      size: 20,
+                    const Spacer(),
+                    Text(
+                      _formatTimeAgo(createdAt),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: CTheme.textLight,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatDate(widget.createdAt),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+                if (title.isNotEmpty) ...[
+                  const SizedBox(height: CTheme.p4),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: CTheme.textDark,
                     ),
-                  ),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: Colors.grey.shade400,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              AnimatedCrossFade(
-                firstChild: Text(
-                  widget.body,
-                  maxLines: 2,
+                const SizedBox(height: CTheme.p4),
+                Text(
+                  body,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: Colors.grey.shade700,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: CTheme.textMid,
                     height: 1.4,
                   ),
                 ),
-                secondChild: Text(
-                  widget.body,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: Colors.grey.shade700,
-                    height: 1.4,
-                  ),
-                ),
-                crossFadeState: _expanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 200),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  /// Formats an ISO 8601 date string into a readable format (e.g. "Mar 15, 2024").
-  String _formatDate(String isoDate) {
+  String _formatTimeAgo(String isoDate) {
     if (isoDate.isEmpty) return '';
     try {
       final dt = DateTime.parse(isoDate);
       final now = DateTime.now();
       final diff = now.difference(dt);
 
-      // Show relative time for recent messages
       if (diff.inMinutes < 1) return 'Just now';
       if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       if (diff.inDays < 7) return '${diff.inDays}d ago';
 
-      // Otherwise show formatted date
       const months = [
         'Jan',
         'Feb',
@@ -245,7 +255,7 @@ class _MessageCardState extends State<_MessageCard> {
         'Nov',
         'Dec',
       ];
-      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+      return '${months[dt.month - 1]} ${dt.day}';
     } catch (_) {
       return isoDate;
     }
