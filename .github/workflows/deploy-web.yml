@@ -10,7 +10,9 @@ name: Deploy Customer Portal (Web) to Hostinger
 #     HOSTINGER_SSH_HOST   e.g. 82.112.239.151
 #     HOSTINGER_SSH_PORT   e.g. 65002
 #     HOSTINGER_SSH_USER   e.g. u235894942
-#     HOSTINGER_SSH_KEY    the PRIVATE key whose public half is added in hPanel
+#     HOSTINGER_SSH_KEY_B64  base64 of the PRIVATE key (avoids newline mangling);
+#                            generate with: base64 -w0 ~/.ssh/key  (Linux/mac) or
+#                            [Convert]::ToBase64String([IO.File]::ReadAllBytes("key")) (PowerShell)
 #   Variables:
 #     HOSTINGER_WEB_DIR    absolute path of the client subdomain doc root,
 #                          e.g. /home/u235894942/domains/client.metalandmore.in/public_html/
@@ -59,7 +61,7 @@ jobs:
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.HOSTINGER_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           # Best-effort known_hosts population; never fail the step on it.
           ssh-keyscan -p "${{ secrets.HOSTINGER_SSH_PORT }}" "${{ secrets.HOSTINGER_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
