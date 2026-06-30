@@ -1,0 +1,64 @@
+name: Deploy Customer Portal (Web) to Hostinger
+
+# Builds the Flutter web app and uploads it to the Hostinger subdomain
+# (client.metalandmore.in) over FTPS. Runs on every push to main, and can
+# also be triggered manually from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web (release)
+        run: >
+          flutter build web --release
+          --dart-define=API_BASE_URL=https://api.metalandmore.in/api/v1
+
+      # The .htaccess and download.html live in frontend/web/ and are copied
+      # into build/web automatically by `flutter build web`.
+
+      - name: Deploy to Hostinger via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          # Trailing slashes are REQUIRED on both paths.
+          local-dir: ./frontend/build/web/
+          # Document root of the `client` subdomain. Adjust if your Hostinger
+          # layout differs (see notes in the PR/commit description).
+          server-dir: ${{ vars.HOSTINGER_WEB_DIR }}
+          # Keep the server tidy but don't wipe unrelated files.
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
