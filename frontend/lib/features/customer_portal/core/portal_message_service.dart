@@ -16,13 +16,13 @@ class PortalMessageService {
       case MessageContext.home:
         return _dailyMessages[DateTime.now().day % _dailyMessages.length];
       case MessageContext.milestoneComplete:
-        return '🎉 Another milestone achieved. Your home is getting closer.';
+        return 'Another milestone achieved. Your home is getting closer.';
       case MessageContext.paymentComplete:
-        return '✅ Thank you for your trust. Payment received safely.';
+        return 'Thank you for your trust. Payment received safely.';
       case MessageContext.photosUploaded:
-        return "📸 New photos from your site — see today's progress.";
+        return "New photos from your site — see today's progress.";
       case MessageContext.projectComplete:
-        return '🏡 Your home is ready. It has been an honour building it.';
+        return 'Your home is ready. It has been an honour building it.';
     }
   }
 

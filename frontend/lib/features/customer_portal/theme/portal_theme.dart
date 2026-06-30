@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -498,4 +500,486 @@ class _StrategicMessageState extends State<StrategicMessage>
       ),
     );
   }
+}
+
+// ===========================================================================
+// GLASSMORPHISM CARDS (white theme)
+//
+// Translates the dark "glowing gradient card" inspiration into a light
+// version: white translucent surfaces, soft teal-tinted glow shadows (no
+// neon), rounded depth and floating numbers. Brand accent #00D1DC only,
+// with the gold accent reserved for secondary metrics. Glass is achieved
+// with a BackdropFilter blur over a ~75% white surface, so a subtle
+// background (e.g. ambient colour blobs) shows through.
+// ===========================================================================
+
+/// A frosted white stat tile: icon chip + large number + label, with an
+/// optional [trailing] accent (small chart / badge). Soft teal glow shadow.
+class GlassStatCard extends StatelessWidget {
+  const GlassStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.accentColor = PortalColors.primary,
+    this.trailing,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.15),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.10),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(icon, size: 18, color: accentColor),
+                    ),
+                    if (trailing != null) trailing!,
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  value,
+                  style: PortalText.number(size: 24, color: PortalColors.text),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style:
+                      PortalText.label(size: 11, color: PortalColors.textSoft),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A frosted white circular-ring progress tile. The ring animates in once on
+/// mount, with the percentage floating in the centre.
+class GlassRingCard extends StatefulWidget {
+  const GlassRingCard({
+    super.key,
+    required this.percent,
+    required this.label,
+    this.accentColor = PortalColors.primary,
+  });
+
+  final double percent; // 0–100
+  final String label;
+  final Color accentColor;
+
+  @override
+  State<GlassRingCard> createState() => _GlassRingCardState();
+}
+
+class _GlassRingCardState extends State<GlassRingCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _anim = Tween<double>(begin: 0, end: (widget.percent / 100).clamp(0.0, 1.0))
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: widget.accentColor.withValues(alpha: 0.15),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.accentColor.withValues(alpha: 0.12),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+                spreadRadius: -6,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _anim,
+                builder: (_, __) => SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(88, 88),
+                        painter: _RingPainter(
+                          progress: _anim.value,
+                          color: widget.accentColor,
+                        ),
+                      ),
+                      Text(
+                        '${widget.percent.toInt()}%',
+                        style: PortalText.number(
+                          size: 20,
+                          color: PortalColors.text,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(widget.label, style: PortalText.label(size: 11)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter({required this.progress, required this.color});
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 6;
+
+    // Faint background ring.
+    final bgPaint = Paint()
+      ..color = color.withValues(alpha: 0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, bgPaint);
+
+    // Progress arc (sweeps from 12 o'clock).
+    final fgPaint = Paint()
+      ..shader = SweepGradient(
+        startAngle: -1.5708,
+        endAngle: -1.5708 + 6.2832,
+        colors: [color.withValues(alpha: 0.5), color],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      6.2832 * progress,
+      false,
+      fgPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.progress != progress;
+}
+
+/// A frosted white card with a large number and a smooth line (sparkline)
+/// trend, with a soft gradient fill below the line. [dataPoints] are
+/// normalised 0.0–1.0.
+class GlassSparklineCard extends StatelessWidget {
+  const GlassSparklineCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.dataPoints,
+    this.accentColor = PortalColors.primary,
+  });
+
+  final String label;
+  final String value;
+  final List<double> dataPoints;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accentColor.withValues(alpha: 0.15)),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: PortalText.number(size: 22, color: PortalColors.text),
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: PortalText.label(size: 11)),
+              const Spacer(),
+              SizedBox(
+                height: 32,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _SparklinePainter(
+                    points: dataPoints,
+                    color: accentColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  _SparklinePainter({required this.points, required this.color});
+
+  final List<double> points;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final path = Path();
+    final stepX = size.width / (points.length - 1);
+
+    for (var i = 0; i < points.length; i++) {
+      final x = i * stepX;
+      final y = size.height - (points[i].clamp(0.0, 1.0) * size.height);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, paint);
+
+    // Soft gradient fill under the line.
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color.withValues(alpha: 0.15), color.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(fillPath, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(_SparklinePainter old) => old.points != points;
+}
+
+/// A frosted white card with a large number and a compact bar chart. The most
+/// recent bar is highlighted in the full accent colour. [bars] are normalised
+/// 0.0–1.0.
+class GlassBarCard extends StatelessWidget {
+  const GlassBarCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.bars,
+    this.accentColor = PortalColors.primary,
+  });
+
+  final String label;
+  final String value;
+  final List<double> bars;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accentColor.withValues(alpha: 0.15)),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: PortalText.number(size: 22, color: PortalColors.text),
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: PortalText.label(size: 11)),
+              const Spacer(),
+              SizedBox(
+                height: 28,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: bars.asMap().entries.map((e) {
+                    final isLast = e.key == bars.length - 1;
+                    return Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                        height: 28 * e.value.clamp(0.1, 1.0),
+                        decoration: BoxDecoration(
+                          color: isLast
+                              ? accentColor
+                              : accentColor.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Soft ambient colour blobs rendered behind glass cards so the blur has
+/// something to refract — the light-theme equivalent of the dark reference's
+/// "liquid glass" glow. Drop into a [Stack] before the scrollable body.
+class PortalGlassBackdrop extends StatelessWidget {
+  const PortalGlassBackdrop({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -60,
+            right: -40,
+            child: _blob(200, PortalColors.primary.withValues(alpha: 0.06)),
+          ),
+          Positioned(
+            top: 300,
+            left: -60,
+            child: _blob(180, PortalColors.accent.withValues(alpha: 0.05)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _blob(double size, Color color) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0.0)],
+          ),
+        ),
+      );
 }

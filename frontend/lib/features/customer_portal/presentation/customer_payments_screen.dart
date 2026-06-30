@@ -34,19 +34,25 @@ class CustomerPaymentsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: PortalColors.textSoft,),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: PortalColors.textSoft,
+              ),
               const SizedBox(height: 12),
-              Text(e.toString(),
-                  style: PortalText.caption(size: 13),
-                  textAlign: TextAlign.center,),
+              Text(
+                e.toString(),
+                style: PortalText.caption(size: 13),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(customerPaymentSummaryProvider),
                 style: FilledButton.styleFrom(
                   backgroundColor: PortalColors.primary,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Retry'),
               ),
@@ -85,6 +91,12 @@ class CustomerPaymentsScreen extends ConsumerWidget {
                   received: received.toDouble(),
                   outstanding: outstanding.toDouble(),
                   percent: percent,
+                ),
+                const SizedBox(height: 16),
+                _GlassPaymentStats(
+                  percent: percent,
+                  outstanding: outstanding.toDouble(),
+                  quotation: quotation.toDouble(),
                 ),
                 const SizedBox(height: 20),
                 if (txns != null && txns.isNotEmpty) ...[
@@ -141,12 +153,18 @@ class _JourneyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Payment Journey',
-              style: PortalText.heading(size: 20, color: Colors.white),),
+          Text(
+            'Payment Journey',
+            style: PortalText.heading(size: 20, color: Colors.white),
+          ),
           const SizedBox(height: 12),
-          Text('Contract value',
-              style: PortalText.label(
-                  size: 12, color: Colors.white.withValues(alpha: 0.8),),),
+          Text(
+            'Contract value',
+            style: PortalText.label(
+              size: 12,
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
+          ),
           const SizedBox(height: 2),
           AnimatedNumber(
             value: quotation,
@@ -156,8 +174,10 @@ class _JourneyCard extends StatelessWidget {
           const SizedBox(height: 18),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text('${(percent * 100).round()}% paid',
-                style: PortalText.label(size: 12, color: Colors.white),),
+            child: Text(
+              '${(percent * 100).round()}% paid',
+              style: PortalText.label(size: 12, color: Colors.white),
+            ),
           ),
           const SizedBox(height: 6),
           PortalProgressBar(
@@ -173,8 +193,12 @@ class _JourneyCard extends StatelessWidget {
                 child: _amount('Paid', received, Colors.white),
               ),
               Expanded(
-                child: _amount('Outstanding', outstanding, PortalColors.accent,
-                    alignEnd: true,),
+                child: _amount(
+                  'Outstanding',
+                  outstanding,
+                  PortalColors.accent,
+                  alignEnd: true,
+                ),
               ),
             ],
           ),
@@ -183,8 +207,12 @@ class _JourneyCard extends StatelessWidget {
     );
   }
 
-  Widget _amount(String label, double value, Color color,
-      {bool alignEnd = false,}) {
+  Widget _amount(
+    String label,
+    double value,
+    Color color, {
+    bool alignEnd = false,
+  }) {
     return Column(
       crossAxisAlignment:
           alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -199,9 +227,13 @@ class _JourneyCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(label,
-            style: PortalText.caption(
-                size: 12, color: Colors.white.withValues(alpha: 0.8),),),
+        Text(
+          label,
+          style: PortalText.caption(
+            size: 12,
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
       ],
     );
   }
@@ -246,9 +278,11 @@ class _PaymentEntry extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: received ? PortalColors.primary : PortalColors.border,
                 ),
-                child: Icon(Icons.currency_rupee,
-                    size: 16,
-                    color: received ? Colors.white : PortalColors.textSoft,),
+                child: Icon(
+                  Icons.currency_rupee,
+                  size: 16,
+                  color: received ? Colors.white : PortalColors.textSoft,
+                ),
               ),
               if (!isLast)
                 Expanded(
@@ -266,13 +300,17 @@ class _PaymentEntry extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(milestone,
-                            style: PortalText.body(size: 14)
-                                .copyWith(fontWeight: FontWeight.w700),),
+                        child: Text(
+                          milestone,
+                          style: PortalText.body(size: 14)
+                              .copyWith(fontWeight: FontWeight.w700),
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3,),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: (received
                                   ? PortalColors.success
@@ -281,12 +319,13 @@ class _PaymentEntry extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          received ? 'Received ✓' : 'Upcoming',
+                          received ? 'Received' : 'Upcoming',
                           style: PortalText.caption(
-                              size: 11,
-                              color: received
-                                  ? PortalColors.success
-                                  : PortalColors.accent,),
+                            size: 11,
+                            color: received
+                                ? PortalColors.success
+                                : PortalColors.accent,
+                          ),
                         ),
                       ),
                     ],
@@ -296,9 +335,11 @@ class _PaymentEntry extends StatelessWidget {
                     Text(date, style: PortalText.caption(size: 12)),
                   ],
                   const SizedBox(height: 6),
-                  Text(Formatters.currency(amount),
-                      style: PortalText.body(size: 18, color: color)
-                          .copyWith(fontWeight: FontWeight.w700),),
+                  Text(
+                    Formatters.currency(amount),
+                    style: PortalText.body(size: 18, color: color)
+                        .copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
             ),
@@ -315,9 +356,87 @@ class _TrustRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        '🔒 Secure   ·   📋 Transparent   ·   ✅ Verified',
-        style: PortalText.caption(size: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _trustItem(Icons.lock_outline_rounded, 'Secure'),
+          _dot(),
+          _trustItem(Icons.description_outlined, 'Transparent'),
+          _dot(),
+          _trustItem(Icons.verified_outlined, 'Verified'),
+        ],
+      ),
+    );
+  }
+
+  Widget _trustItem(IconData icon, String label) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: PortalColors.textSoft),
+          const SizedBox(width: 5),
+          Text(label, style: PortalText.caption(size: 12)),
+        ],
+      );
+
+  Widget _dot() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Text('·', style: PortalText.caption(size: 12)),
+      );
+}
+
+/// White glassmorphism stat row for the payments screen: a paid-progress ring
+/// and an outstanding-balance sparkline. Values come from the payment summary
+/// already loaded by the screen — no new API calls.
+class _GlassPaymentStats extends StatelessWidget {
+  const _GlassPaymentStats({
+    required this.percent,
+    required this.outstanding,
+    required this.quotation,
+  });
+
+  final double percent; // 0.0–1.0 paid
+  final double outstanding;
+  final double quotation;
+
+  String _formatCompact(num value) {
+    final v = value.toDouble();
+    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
+    return v.toInt().toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final outFraction =
+        quotation > 0 ? (outstanding / quotation).clamp(0.0, 1.0) : 0.0;
+    // Declining trend toward the real outstanding fraction (visual only).
+    final outstandingTrend = <double>[
+      1.0,
+      (0.6 + outFraction * 0.4).clamp(0.05, 1.0),
+      (0.3 + outFraction * 0.7).clamp(0.05, 1.0),
+      outFraction.clamp(0.05, 1.0),
+    ];
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: GlassRingCard(
+              percent: (percent * 100).clamp(0, 100).toDouble(),
+              label: 'Paid',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GlassSparklineCard(
+              label: 'Outstanding',
+              value: '₹${_formatCompact(outstanding)}',
+              dataPoints: outstandingTrend,
+              accentColor: PortalColors.accent,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -334,12 +453,17 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.payments_outlined,
-                size: 64, color: PortalColors.primary,),
+            const Icon(
+              Icons.payments_outlined,
+              size: 64,
+              color: PortalColors.primary,
+            ),
             const SizedBox(height: 16),
-            Text('No payment information yet',
-                style: PortalText.heading(size: 18),
-                textAlign: TextAlign.center,),
+            Text(
+              'No payment information yet',
+              style: PortalText.heading(size: 18),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             Text(
               'Your payment journey will appear here.',

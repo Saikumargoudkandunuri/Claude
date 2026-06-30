@@ -137,7 +137,11 @@ class _MilestoneCelebrationOverlayState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🎉', style: TextStyle(fontSize: 56)),
+                  const Icon(
+                    Icons.celebration_rounded,
+                    size: 56,
+                    color: PortalColors.accent,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Milestone Complete!',

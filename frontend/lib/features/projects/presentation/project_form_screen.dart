@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../application/projects_controller.dart';
@@ -78,6 +79,15 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
     };
     if (body['quotationAmount'] != null) {
       body['quotationAmount'] = num.tryParse(body['quotationAmount']) ?? 0;
+    }
+    // Store phone numbers in canonical +91 form so the customer portal login
+    // (which always queries with +91) can find the project.
+    if (body['phone'] != null) {
+      body['phone'] = Formatters.normalizeIndianPhone(body['phone'] as String);
+    }
+    if (body['altPhone'] != null) {
+      body['altPhone'] =
+          Formatters.normalizeIndianPhone(body['altPhone'] as String);
     }
     try {
       final project = await ref.read(projectsRepositoryProvider).create(body);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/formatters.dart';
 import '../application/projects_controller.dart';
 import '../domain/project.dart';
 
@@ -96,10 +97,10 @@ class _EditProjectSheetState extends ConsumerState<EditProjectSheet> {
         body['customerName'] = _customerNameCtrl.text.trim();
       }
       if (_phoneCtrl.text.trim() != p.phone) {
-        body['phone'] = _phoneCtrl.text.trim();
+        body['phone'] = Formatters.normalizeIndianPhone(_phoneCtrl.text);
       }
       if (_altPhoneCtrl.text.trim() != (p.altPhone ?? '')) {
-        body['altPhone'] = _altPhoneCtrl.text.trim();
+        body['altPhone'] = Formatters.normalizeIndianPhone(_altPhoneCtrl.text);
       }
       if (_addressCtrl.text.trim() != (p.address ?? '')) {
         body['address'] = _addressCtrl.text.trim();
