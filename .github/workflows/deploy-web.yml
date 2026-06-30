@@ -53,7 +53,7 @@ jobs:
       - name: Build web (release)
         run: >
           flutter build web --release
-          --dart-define=API_BASE_URL=https://api.metalandmore.in/api/v1
+          --dart-define=API_BASE_URL=https://icms-backend-s2va.onrender.com/api/v1
 
       # The .htaccess and download.html in frontend/web/ are copied into
       # build/web automatically by `flutter build web`.
