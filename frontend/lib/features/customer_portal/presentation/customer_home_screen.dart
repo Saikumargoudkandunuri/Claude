@@ -660,7 +660,7 @@ class _PhotoThumb extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Project Journey Preview (prev / current / next)
+// Project Stage Tracker — horizontal scrollable strip showing all 13 stages
 // ---------------------------------------------------------------------------
 
 class _JourneyPreview extends StatelessWidget {
@@ -674,47 +674,25 @@ class _JourneyPreview extends StatelessWidget {
     return overview.maybeWhen(
       data: (data) {
         final currentStage = data['current_stage']?.toString() ?? '';
-        final idx = CustomerHomeScreen.stages.indexOf(currentStage);
-        if (idx < 0) return const SizedBox.shrink();
+        final currentIdx = CustomerHomeScreen.stages.indexOf(currentStage);
+        if (currentIdx < 0) return const SizedBox.shrink();
 
-        final rows = <Widget>[];
-        if (idx > 0) {
-          rows.add(
-            _stageRow(
-              Formatters.stageLabel(CustomerHomeScreen.stages[idx - 1]),
-              _JStatus.done,
-              isLast: false,
-            ),
-          );
-        }
-        rows.add(
-          _stageRow(
-            Formatters.stageLabel(currentStage),
-            _JStatus.current,
-            isLast: idx >= CustomerHomeScreen.stages.length - 1,
-          ),
-        );
-        if (idx < CustomerHomeScreen.stages.length - 1) {
-          rows.add(
-            _stageRow(
-              Formatters.stageLabel(CustomerHomeScreen.stages[idx + 1]),
-              _JStatus.upcoming,
-              isLast: true,
-            ),
-          );
-        }
+        // How many stages are done (completed stages are all before current).
+        final completedCount = currentIdx;
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
           child: PortalCard(
             elevation: 1,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Header ──────────────────────────────────────────────
                 Row(
                   children: [
                     Text(
-                      'Project journey',
+                      'Project progress',
                       style: PortalText.heading(size: 16),
                     ),
                     const Spacer(),
@@ -730,8 +708,82 @@ class _JourneyPreview extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ...rows,
+
+                // ── Stage count chip ─────────────────────────────────────
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: PortalColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        currentStage == 'handover'
+                            ? 'All stages complete'
+                            : 'Stage ${currentIdx + 1} of ${CustomerHomeScreen.stages.length}',
+                        style: PortalText.label(
+                          size: 11,
+                          color: PortalColors.primary,
+                        ).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        Formatters.stageLabel(currentStage),
+                        overflow: TextOverflow.ellipsis,
+                        style: PortalText.body(
+                          size: 13,
+                          color: PortalColors.text,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // ── Thin overall progress bar ────────────────────────────
+                const SizedBox(height: 12),
+                PortalProgressBar(
+                  value: (currentIdx + 1) /
+                      CustomerHomeScreen.stages.length.toDouble(),
+                  height: 6,
+                ),
+
+                // ── Horizontal scrollable node strip ─────────────────────
+                const SizedBox(height: 18),
+                SizedBox(
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: CustomerHomeScreen.stages.length,
+                    itemBuilder: (_, i) {
+                      final stage = CustomerHomeScreen.stages[i];
+                      final isDone = i < currentIdx;
+                      final isCurrent = i == currentIdx;
+                      final label = _shortLabel(stage);
+
+                      return _StageNode(
+                        label: label,
+                        isDone: isDone,
+                        isCurrent: isCurrent,
+                        isLast: i == CustomerHomeScreen.stages.length - 1,
+                        index: i,
+                      );
+                    },
+                  ),
+                ),
+
+                // ── Completion count ──────────────────────────────────────
+                const SizedBox(height: 4),
+                Text(
+                  '$completedCount of ${CustomerHomeScreen.stages.length} stages completed',
+                  style: PortalText.caption(size: 11),
+                ),
               ],
             ),
           ),
@@ -741,94 +793,123 @@ class _JourneyPreview extends StatelessWidget {
     );
   }
 
-  Widget _stageRow(String label, _JStatus status, {required bool isLast}) {
-    Widget dot;
-    Color textColor;
-    FontWeight weight;
-    switch (status) {
-      case _JStatus.done:
-        dot = const Icon(
-          Icons.check_circle,
-          color: PortalColors.primary,
-          size: 24,
-        );
-        textColor = PortalColors.textSoft;
-        weight = FontWeight.w500;
-      case _JStatus.current:
-        dot = const PortalPulseDot(size: 14);
-        textColor = PortalColors.text;
-        weight = FontWeight.w700;
-      case _JStatus.upcoming:
-        dot = Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: PortalColors.border, width: 2),
-          ),
-        );
-        textColor = PortalColors.textSoft;
-        weight = FontWeight.w500;
-    }
+  /// Short label that fits under the node dot (≤ 2 lines at 10px).
+  String _shortLabel(String stage) {
+    const map = {
+      'discussion': 'Discussion',
+      'site_measurement': 'Measurement',
+      'quotation': 'Quotation',
+      'design': 'Design',
+      'material_procurement': 'Materials',
+      'fabrication': 'Fabrication',
+      'surface_treatment': 'Surface',
+      'installation': 'Install',
+      'carpentry': 'Carpentry',
+      'painting': 'Painting',
+      'cleaning': 'Cleaning',
+      'final_inspection': 'Inspection',
+      'handover': 'Handover',
+    };
+    return map[stage] ?? Formatters.stageLabel(stage);
+  }
+}
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+/// A single node in the horizontal stage tracker strip.
+class _StageNode extends StatelessWidget {
+  const _StageNode({
+    required this.label,
+    required this.isDone,
+    required this.isCurrent,
+    required this.isLast,
+    required this.index,
+  });
+
+  final String label;
+  final bool isDone;
+  final bool isCurrent;
+  final bool isLast;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color dotColor =
+        isDone || isCurrent ? PortalColors.primary : PortalColors.border;
+    final Color lineColor = isDone ? PortalColors.primary : PortalColors.border;
+
+    return SizedBox(
+      width: 60,
+      child: Column(
         children: [
+          // ── Node + connecting line ──────────────────────────────────────
           SizedBox(
-            width: 28,
-            child: Column(
+            height: 28,
+            child: Row(
               children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Center(child: dot),
-                ),
-                if (!isLast)
+                // Left connector (except first node)
+                if (index > 0)
                   Expanded(
                     child: Container(
-                      width: 2,
-                      color: status == _JStatus.upcoming
-                          ? PortalColors.border
-                          : PortalColors.primary.withValues(alpha: 0.4),
+                      height: 2,
+                      color:
+                          isDone ? PortalColors.primary : PortalColors.border,
                     ),
-                  ),
+                  )
+                else
+                  const SizedBox(width: 8),
+
+                // Dot
+                isCurrent
+                    ? const PortalPulseDot(size: 10)
+                    : Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDone
+                              ? PortalColors.primary
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: dotColor,
+                            width: isDone ? 0 : 2,
+                          ),
+                        ),
+                        child: isDone
+                            ? const Icon(
+                                Icons.check,
+                                size: 12,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+
+                // Right connector (except last node)
+                if (!isLast)
+                  Expanded(
+                    child: Container(height: 2, color: lineColor),
+                  )
+                else
+                  const SizedBox(width: 8),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 14, top: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: PortalText.body(size: 14, color: textColor)
-                          .copyWith(fontWeight: weight),
-                    ),
-                  ),
-                  if (status == _JStatus.current)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: PortalColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'In Progress',
-                        style: PortalText.caption(
-                          size: 10,
-                          color: PortalColors.primary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+
+          const SizedBox(height: 4),
+
+          // ── Label ────────────────────────────────────────────────────────
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: PortalText.caption(
+              size: 9,
+              color: isCurrent
+                  ? PortalColors.primary
+                  : isDone
+                      ? PortalColors.text
+                      : PortalColors.textSoft,
+            ).copyWith(
+              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ],
@@ -836,8 +917,6 @@ class _JourneyPreview extends StatelessWidget {
     );
   }
 }
-
-enum _JStatus { done, current, upcoming }
 
 // ---------------------------------------------------------------------------
 // Payment Summary
