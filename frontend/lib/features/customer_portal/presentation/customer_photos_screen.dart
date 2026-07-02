@@ -109,8 +109,10 @@ class _CustomerPhotosScreenState extends ConsumerState<CustomerPhotosScreen> {
           final filtered = _filter(photos);
           if (filtered.isEmpty) {
             return Center(
-              child: Text('No $_selected photos yet',
-                  style: PortalText.body(color: PortalColors.textSoft),),
+              child: Text(
+                'No $_selected photos yet',
+                style: PortalText.body(color: PortalColors.textSoft),
+              ),
             );
           }
           return RefreshIndicator(
@@ -216,7 +218,7 @@ class _PhotoTile extends StatelessWidget {
     String date = '';
     if (createdAt != null) {
       final d = DateTime.tryParse(createdAt);
-      if (d != null) date = DateFormat('dd MMM yyyy').format(d);
+      if (d != null) date = DateFormat('dd MMM yyyy').format(d.toLocal());
     }
 
     final tile = GestureDetector(
@@ -252,8 +254,10 @@ class _PhotoTile extends StatelessWidget {
                       colors: [Colors.transparent, Colors.black54],
                     ),
                   ),
-                  child: Text(date,
-                      style: PortalText.caption(size: 11, color: Colors.white),),
+                  child: Text(
+                    date,
+                    style: PortalText.caption(size: 11, color: Colors.white),
+                  ),
                 ),
               ),
           ],
@@ -280,8 +284,11 @@ class _PhotoTile extends StatelessWidget {
   Widget _placeholder() => Container(
         color: PortalColors.shimmer1,
         child: const Center(
-          child: Icon(Icons.photo_outlined,
-              size: 40, color: PortalColors.textSoft,),
+          child: Icon(
+            Icons.photo_outlined,
+            size: 40,
+            color: PortalColors.textSoft,
+          ),
         ),
       );
 
@@ -333,8 +340,11 @@ class _EmptyStateState extends State<_EmptyState>
                 offset: Offset(0, -6 * _ctrl.value),
                 child: child,
               ),
-              child: const Icon(Icons.photo_camera_outlined,
-                  size: 64, color: PortalColors.primary,),
+              child: const Icon(
+                Icons.photo_camera_outlined,
+                size: 64,
+                color: PortalColors.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Text('No photos yet', style: PortalText.heading(size: 18)),
@@ -368,9 +378,11 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Color(0xFFDC2626)),
             const SizedBox(height: 12),
-            Text('Failed to load photos',
-                style: PortalText.body(size: 15)
-                    .copyWith(fontWeight: FontWeight.w600),),
+            Text(
+              'Failed to load photos',
+              style: PortalText.body(size: 15)
+                  .copyWith(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             Text(
               message,
@@ -387,7 +399,8 @@ class _ErrorState extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: PortalColors.primary,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -428,11 +441,16 @@ class _FullScreenPhotoView extends StatelessWidget {
                     errorBuilder: (_, __, ___) => const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.broken_image,
-                            size: 48, color: Colors.white54,),
+                        Icon(
+                          Icons.broken_image,
+                          size: 48,
+                          color: Colors.white54,
+                        ),
                         SizedBox(height: 8),
-                        Text('Could not load image',
-                            style: TextStyle(color: Colors.white70),),
+                        Text(
+                          'Could not load image',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ],
                     ),
                     loadingBuilder: (_, child, progress) => progress == null
@@ -440,8 +458,11 @@ class _FullScreenPhotoView extends StatelessWidget {
                         : const CircularProgressIndicator(color: Colors.white),
                   ),
                 )
-              : const Icon(Icons.photo_outlined,
-                  size: 64, color: Colors.white38,),
+              : const Icon(
+                  Icons.photo_outlined,
+                  size: 64,
+                  color: Colors.white38,
+                ),
         ),
       ),
     );

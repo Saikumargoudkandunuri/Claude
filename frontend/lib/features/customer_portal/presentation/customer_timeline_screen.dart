@@ -75,8 +75,10 @@ class CustomerTimelineScreen extends ConsumerWidget {
             loading: () => const Center(
               child: CircularProgressIndicator(color: PortalColors.primary),
             ),
-            error: (e, _) => _error('Failed to load timeline data',
-                () => ref.invalidate(customerTimelineProvider),),
+            error: (e, _) => _error(
+              'Failed to load timeline data',
+              () => ref.invalidate(customerTimelineProvider),
+            ),
             data: (timelineEntries) {
               final stageDates = <String, String>{};
               for (final entry in timelineEntries) {
@@ -162,7 +164,7 @@ class CustomerTimelineScreen extends ConsumerWidget {
     required _StageStatus status,
   }) async {
     if (status != _StageStatus.completed || dateStr == null) return;
-    final completedAt = DateTime.tryParse(dateStr);
+    final completedAt = DateTime.tryParse(dateStr)?.toLocal();
     if (completedAt == null) return;
     if (DateTime.now().difference(completedAt).inHours > 24) return;
 
@@ -179,15 +181,20 @@ class CustomerTimelineScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: PortalColors.textSoft,),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: PortalColors.textSoft,
+            ),
             const SizedBox(height: 12),
             Text(message, style: PortalText.body(color: PortalColors.textSoft)),
             const SizedBox(height: 8),
             TextButton(
               onPressed: onRetry,
-              child: Text('Retry',
-                  style: PortalText.body(color: PortalColors.primary),),
+              child: Text(
+                'Retry',
+                style: PortalText.body(color: PortalColors.primary),
+              ),
             ),
           ],
         ),
@@ -215,7 +222,7 @@ class _TimelineItem extends StatelessWidget {
 
   String _formatDate(String iso) {
     try {
-      return DateFormat('d MMM yyyy').format(DateTime.parse(iso));
+      return DateFormat('d MMM yyyy').format(DateTime.parse(iso).toLocal());
     } catch (_) {
       return iso;
     }
@@ -266,9 +273,13 @@ class _TimelineItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: PortalText.heading(
-                      size: 15, color: PortalColors.primaryDark,),),
+              Text(
+                label,
+                style: PortalText.heading(
+                  size: 15,
+                  color: PortalColors.primaryDark,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 dateStr != null
@@ -307,25 +318,35 @@ class _TimelineItem extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4,),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: PortalColors.primary,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('In Progress',
-                          style: PortalText.caption(
-                              size: 11, color: Colors.white,),),
+                      child: Text(
+                        'In Progress',
+                        style: PortalText.caption(
+                          size: 11,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text('Work is actively underway at your site.',
-                    style: PortalText.caption(size: 12),),
+                Text(
+                  'Work is actively underway at your site.',
+                  style: PortalText.caption(size: 12),
+                ),
                 if (nextLabel.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text('Next: $nextLabel',
-                      style: PortalText.caption(size: 11)
-                          .copyWith(fontStyle: FontStyle.italic),),
+                  Text(
+                    'Next: $nextLabel',
+                    style: PortalText.caption(size: 11)
+                        .copyWith(fontStyle: FontStyle.italic),
+                  ),
                 ],
               ],
             ),
@@ -340,8 +361,10 @@ class _TimelineItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: PortalColors.border),
           ),
-          child: Text(label,
-              style: PortalText.body(size: 14, color: PortalColors.textSoft),),
+          child: Text(
+            label,
+            style: PortalText.body(size: 14, color: PortalColors.textSoft),
+          ),
         );
     }
   }

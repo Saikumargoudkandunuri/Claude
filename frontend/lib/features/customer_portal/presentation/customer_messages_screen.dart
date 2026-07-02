@@ -35,17 +35,24 @@ class CustomerMessagesScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline,
-                    size: 48, color: Color(0xFFDC2626),),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Color(0xFFDC2626),
+                ),
                 const SizedBox(height: 12),
-                Text('Failed to load updates',
-                    style: PortalText.body(color: PortalColors.textSoft),),
+                Text(
+                  'Failed to load updates',
+                  style: PortalText.body(color: PortalColors.textSoft),
+                ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () => ref.invalidate(customerMessagesProvider),
                   icon: const Icon(Icons.refresh, color: PortalColors.primary),
-                  label: Text('Retry',
-                      style: PortalText.body(color: PortalColors.primary),),
+                  label: Text(
+                    'Retry',
+                    style: PortalText.body(color: PortalColors.primary),
+                  ),
                 ),
               ],
             ),
@@ -97,7 +104,9 @@ class CustomerMessagesScreen extends ConsumerWidget {
 String _formatTimeAgo(String isoDate) {
   if (isoDate.isEmpty) return '';
   try {
-    final dt = DateTime.parse(isoDate);
+    // Parse the UTC timestamp from the backend and convert to local time so
+    // both the difference calculation and the fallback format are correct.
+    final dt = DateTime.parse(isoDate).toLocal();
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
@@ -163,11 +172,15 @@ class _TextCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Metal & More Interiors',
-                        style: PortalText.body(size: 13)
-                            .copyWith(fontWeight: FontWeight.w700),),
-                    Text(_formatTimeAgo(createdAt),
-                        style: PortalText.caption(size: 11),),
+                    Text(
+                      'Metal & More Interiors',
+                      style: PortalText.body(size: 13)
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      _formatTimeAgo(createdAt),
+                      style: PortalText.caption(size: 11),
+                    ),
                   ],
                 ),
               ),
@@ -177,16 +190,20 @@ class _TextCard extends StatelessWidget {
                   color: pill.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(pill.label,
-                    style: PortalText.caption(size: 11, color: pill.color),),
+                child: Text(
+                  pill.label,
+                  style: PortalText.caption(size: 11, color: pill.color),
+                ),
               ),
             ],
           ),
           if (title.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(title,
-                style: PortalText.body(size: 14)
-                    .copyWith(fontWeight: FontWeight.w600),),
+            Text(
+              title,
+              style: PortalText.body(size: 14)
+                  .copyWith(fontWeight: FontWeight.w600),
+            ),
           ],
           if (body.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -211,9 +228,11 @@ class _BrandAvatar extends StatelessWidget {
         gradient: PortalColors.heroGradient,
       ),
       child: Center(
-        child: Text('M',
-            style: PortalText.body(size: 16, color: Colors.white)
-                .copyWith(fontWeight: FontWeight.w700),),
+        child: Text(
+          'M',
+          style: PortalText.body(size: 16, color: Colors.white)
+              .copyWith(fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
@@ -323,9 +342,11 @@ class _VoiceCardState extends State<_VoiceCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.sender,
-                        style: PortalText.body(size: 13)
-                            .copyWith(fontWeight: FontWeight.w700),),
+                    Text(
+                      widget.sender,
+                      style: PortalText.body(size: 13)
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
                     Text(
                       'Voice update${_total.inSeconds > 0 ? ' · ${_total.inSeconds}s' : ''}',
                       style: PortalText.caption(size: 11),
@@ -376,11 +397,15 @@ class _VoiceCardState extends State<_VoiceCard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('${_fmt(_pos)} / ${_fmt(_total)}',
-                  style: PortalText.caption(size: 11),),
+              Text(
+                '${_fmt(_pos)} / ${_fmt(_total)}',
+                style: PortalText.caption(size: 11),
+              ),
               const Spacer(),
-              Text(_formatTimeAgo(widget.createdAt),
-                  style: PortalText.caption(size: 11),),
+              Text(
+                _formatTimeAgo(widget.createdAt),
+                style: PortalText.caption(size: 11),
+              ),
             ],
           ),
         ],
@@ -400,16 +425,23 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.menu_book_outlined,
-                size: 64, color: PortalColors.primary,),
+            const Icon(
+              Icons.menu_book_outlined,
+              size: 64,
+              color: PortalColors.primary,
+            ),
             const SizedBox(height: 16),
-            Text('Your Project Journal',
-                style: PortalText.heading(size: 22),
-                textAlign: TextAlign.center,),
+            Text(
+              'Your Project Journal',
+              style: PortalText.heading(size: 22),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text('Updates from our team will appear here.',
-                style: PortalText.body(size: 14, color: PortalColors.textSoft),
-                textAlign: TextAlign.center,),
+            Text(
+              'Updates from our team will appear here.',
+              style: PortalText.body(size: 14, color: PortalColors.textSoft),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 6),
             Text(
               'We share daily progress, photos, and\nvoice updates from your site.',

@@ -16,14 +16,16 @@ class Formatters {
     if (value == null) return '-';
     final dt = value is DateTime ? value : DateTime.tryParse(value.toString());
     if (dt == null) return '-';
-    return DateFormat('dd MMM yyyy').format(dt);
+    // Convert UTC timestamps from the backend to the device's local timezone
+    // before formatting so dates/times display correctly for the user's region.
+    return DateFormat('dd MMM yyyy').format(dt.toLocal());
   }
 
   static String dateTime(dynamic value) {
     if (value == null) return '-';
     final dt = value is DateTime ? value : DateTime.tryParse(value.toString());
     if (dt == null) return '-';
-    return DateFormat('dd MMM yyyy, hh:mm a').format(dt);
+    return DateFormat('dd MMM yyyy, hh:mm a').format(dt.toLocal());
   }
 
   /// Convert 'material_purchase' -> 'Material Purchase'.
@@ -60,8 +62,9 @@ class Formatters {
     } else if (digits.length > 10) {
       digits = digits.substring(digits.length - 10);
     }
-    if (digits.length != 10)
+    if (digits.length != 10) {
       return trimmed; // not a normal mobile — leave as-is
+    }
     return '+91$digits';
   }
 }

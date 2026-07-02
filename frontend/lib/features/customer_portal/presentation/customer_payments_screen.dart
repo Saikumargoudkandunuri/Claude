@@ -260,7 +260,7 @@ class _PaymentEntry extends StatelessWidget {
     String date = '';
     if (dateRaw != null) {
       final d = DateTime.tryParse(dateRaw);
-      if (d != null) date = DateFormat('d MMM yyyy').format(d);
+      if (d != null) date = DateFormat('d MMM yyyy').format(d.toLocal());
     }
 
     final color = received ? PortalColors.primary : PortalColors.accent;

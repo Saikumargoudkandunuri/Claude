@@ -408,7 +408,7 @@ class _PremiumStats extends StatelessWidget {
       data: (list) {
         for (final p in list) {
           final c = (p as Map)['created_at']?.toString();
-          final d = c == null ? null : DateTime.tryParse(c);
+          final d = c == null ? null : DateTime.tryParse(c)?.toLocal();
           if (d == null) continue;
           final diff =
               today.difference(DateTime(d.year, d.month, d.day)).inDays;
@@ -510,7 +510,10 @@ class _PhotosSection extends StatelessWidget {
 
   bool _isToday(String? iso) {
     if (iso == null) return false;
-    final d = DateTime.tryParse(iso);
+    // Parse UTC then convert to local so the day comparison is correct
+    // in the user's timezone (otherwise photos near midnight may appear
+    // on the wrong day).
+    final d = DateTime.tryParse(iso)?.toLocal();
     if (d == null) return false;
     final n = DateTime.now();
     return d.year == n.year && d.month == n.month && d.day == n.day;
