@@ -9,6 +9,7 @@ class Env {
   );
 
   /// Connection timeouts in milliseconds.
-  static const int connectTimeoutMs = 15000;
-  static const int receiveTimeoutMs = 30000;
+  static const int connectTimeoutMs = 30000; // 30s — covers Render cold-start
+  static const int receiveTimeoutMs =
+      120000; // 2 min — covers large file downloads
 }

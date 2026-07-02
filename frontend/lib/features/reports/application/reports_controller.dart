@@ -7,8 +7,10 @@ class ReportsRepository {
   ReportsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<Map<String, dynamic>>> listForProject(String projectId,
-      {String? date,}) async {
+  Future<List<Map<String, dynamic>>> listForProject(
+    String projectId, {
+    String? date,
+  }) async {
     final res = await _dio.get(
       '/projects/$projectId/reports',
       queryParameters: {if (date != null) 'date': date},
@@ -17,8 +19,18 @@ class ReportsRepository {
   }
 
   Future<Map<String, dynamic>> submit(
-      String projectId, Map<String, dynamic> body,) async {
-    final res = await _dio.post('/projects/$projectId/reports', data: body);
+    String projectId,
+    Map<String, dynamic> body,
+  ) async {
+    final res = await _dio.post(
+      '/projects/$projectId/reports',
+      data: body,
+      options: Options(
+        // First request after Render cold-start can take up to 60s.
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
+      ),
+    );
     return res.data['data'] as Map<String, dynamic>;
   }
 
@@ -28,12 +40,16 @@ class ReportsRepository {
   }
 
   /// All reports across projects (admin: all, supervisor: own projects).
-  Future<List<Map<String, dynamic>>> listAll({String? date, String? type}) async {
-    final res = await _dio.get('/reports', queryParameters: {
-      if (date != null) 'date': date,
-      if (type != null) 'type': type,
-      'limit': 100,
-    },);
+  Future<List<Map<String, dynamic>>> listAll(
+      {String? date, String? type}) async {
+    final res = await _dio.get(
+      '/reports',
+      queryParameters: {
+        if (date != null) 'date': date,
+        if (type != null) 'type': type,
+        'limit': 100,
+      },
+    );
     return (res.data['data'] as List).cast<Map<String, dynamic>>();
   }
 
@@ -48,12 +64,23 @@ class ReportsRepository {
       'category': category,
       'file': MultipartFile.fromBytes(bytes, filename: filename),
     });
-    await _dio.post('/reports/$reportId/media', data: form);
+    await _dio.post(
+      '/reports/$reportId/media',
+      data: form,
+      options: Options(
+        // File uploads need generous timeouts — especially on Render free tier
+        // which can be slow to respond after a cold-start, and large images
+        // can take time to upload over mobile connections.
+        sendTimeout: const Duration(minutes: 3),
+        receiveTimeout: const Duration(minutes: 2),
+      ),
+    );
   }
 }
 
 final reportsRepositoryProvider = Provider<ReportsRepository>(
-    (ref) => ReportsRepository(ref.watch(dioProvider)),);
+  (ref) => ReportsRepository(ref.watch(dioProvider)),
+);
 
 final projectReportsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, projectId) async {
